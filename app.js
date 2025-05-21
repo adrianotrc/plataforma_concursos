@@ -17,7 +17,7 @@ import {
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = { // ... suas chaves ...
-  apiKey: "AIzaSyD66lzjHSgnapaZL8YExZxhDZpOhkASKqo",
+  apiKey: "AIzaSyDu-bfPtdZPCfci3NN1knVZYAzG7Twztrg",
   authDomain: "plataforma-concursos-ai.firebaseapp.com",
   projectId: "plataforma-concursos-ai",
   storageBucket: "plataforma-concursos-ai.firebasestorage.app",
