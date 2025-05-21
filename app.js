@@ -86,3 +86,81 @@ if (formCadastro) {
         }
     });
 }
+
+// --- LÓGICA PARA A PÁGINA DE LOGIN (index.html) ---
+const formLogin = document.getElementById('form-login');
+
+if (formLogin) {
+    formLogin.addEventListener('submit', (evento) => {
+        evento.preventDefault(); // Impede o envio tradicional
+
+        const email = document.getElementById('login-email').value;
+        const senha = document.getElementById('login-senha').value;
+
+        if (email && senha) {
+            signInWithEmailAndPassword(auth, email, senha)
+                .then((userCredential) => {
+                    // Login bem-sucedido
+                    const user = userCredential.user;
+                    console.log("Usuário logado:", user);
+                    alert("Login realizado com sucesso!");
+                    
+                    // Redireciona para a página home
+                    window.location.href = 'home.html';
+                })
+                .catch((error) => {
+                    // Tratar erros de login
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    console.error("Erro no login:", errorCode, errorMessage);
+
+                    if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
+                        alert("E-mail ou senha inválidos. Por favor, tente novamente.");
+                    } else {
+                        alert("Erro ao fazer login: " + errorMessage);
+                    }
+                });
+        } else {
+            alert("Por favor, preencha e-mail e senha.");
+        }
+    });
+}
+
+// --- LÓGICA PARA A PÁGINA HOME (home.html) E LOGOUT ---
+const botaoLogout = document.getElementById('botao-logout');
+
+if (botaoLogout) {
+    botaoLogout.addEventListener('click', () => {
+        signOut(auth).then(() => {
+            // Logout bem-sucedido
+            console.log("Usuário deslogado");
+            alert("Você foi desconectado.");
+            window.location.href = 'index.html'; // Redireciona para a página de login
+        }).catch((error) => {
+            // Um erro ocorreu durante o logout
+            console.error("Erro ao fazer logout:", error);
+            alert("Erro ao desconectar: " + error.message);
+        });
+    });
+}
+
+// --- OBSERVADOR DE ESTADO DE AUTENTICAÇÃO ---
+onAuthStateChanged(auth, (user) => {
+    const currentPage = window.location.pathname.split('/').pop(); // Pega o nome do arquivo da URL atual
+
+    if (user) {
+        // Usuário está logado
+        console.log("Usuário está logado:", user);
+        // Se o usuário está logado e está na página de login ou cadastro, redireciona para home
+        if (currentPage === 'index.html' || currentPage === 'cadastro.html' || currentPage === '') {
+            window.location.href = 'home.html';
+        }
+    } else {
+        // Usuário está deslogado
+        console.log("Usuário está deslogado.");
+        // Se o usuário não está logado e está tentando acessar a home.html, redireciona para login
+        if (currentPage === 'home.html') {
+            window.location.href = 'index.html';
+        }
+    }
+});
