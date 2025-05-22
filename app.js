@@ -166,22 +166,52 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // --- LÓGICA PARA GERAR PLANO DE ESTUDOS (home.html) ---
-const botaoGerarPlano = document.getElementById('botao-gerar-plano');
+const formPlanoEstudos = document.getElementById('form-plano-estudos');
 const areaPlanoEstudos = document.getElementById('area-plano-estudos');
 
-if (botaoGerarPlano && areaPlanoEstudos) {
-    botaoGerarPlano.addEventListener('click', async () => {
-        console.log("Botão 'Gerar Plano de Estudos' clicado.");
-        areaPlanoEstudos.innerHTML = "<p>Gerando seu plano, aguarde...</p>"; // Feedback para o usuário
+if (formPlanoEstudos && areaPlanoEstudos) {
+    formPlanoEstudos.addEventListener('submit', async (evento) => {
+        evento.preventDefault(); // Impede o envio padrão do formulário
 
-        // Dados que enviaremos para o backend (por enquanto, podem ser fixos ou vazios)
-        // No futuro, pegaremos isso de campos de formulário na home.html
+        console.log("Formulário 'Gerar Plano de Estudos' enviado.");
+        areaPlanoEstudos.innerHTML = "<p>Gerando seu plano, aguarde...</p>";
+
+        // Coletar dados do formulário
+        const concursoObjetivo = document.getElementById('concurso-objetivo').value;
+        const faseConcurso = document.getElementById('fase-concurso').value;
+        const materiasEdital = document.getElementById('materias-edital').value;
+        const horasEstudoSemanais = document.getElementById('horas-estudo-semanais').value;
+
+        // Coletar os dias da semana selecionados
+        const diasSelecionados = [];
+        document.querySelectorAll('#dias-semana-estudo input[name="dia_semana"]:checked').forEach((checkbox) => {
+            diasSelecionados.push(checkbox.value);
+        });
+
+        const dataProva = document.getElementById('data-prova').value;
+        const dificuldadesMaterias = document.getElementById('dificuldades-materias').value;
+        const outrasConsideracoes = document.getElementById('outras-consideracoes').value;
+
+        // Validar se pelo menos um dia da semana foi selecionado (opcional, mas bom)
+        if (diasSelecionados.length === 0) {
+            alert("Por favor, selecione pelo menos um dia da semana para estudar.");
+            areaPlanoEstudos.innerHTML = "<p>Por favor, selecione os dias da semana.</p>";
+            return; // Interrompe se nenhum dia foi selecionado
+        }
+
         const dadosParaPlano = {
-            usuarioId: auth.currentUser ? auth.currentUser.uid : null, // Exemplo de dado útil
-            concurso: "TJ-SP Escrevente Técnico Judiciário", // Exemplo
-            tempoDisponivel: "3 horas por dia", // Exemplo
-            materiasPrioritarias: ["Português", "Direito Penal"] // Exemplo
+            usuarioId: auth.currentUser ? auth.currentUser.uid : null,
+            concurso: concursoObjetivo,
+            fase: faseConcurso,
+            materias: materiasEdital,
+            horas_semanais: horasEstudoSemanais,
+            dias_estudo: diasSelecionados, // Novo campo
+            data_prova: dataProva || null, 
+            dificuldades: dificuldadesMaterias || null,
+            outras_obs: outrasConsideracoes || null
         };
+
+        console.log("Enviando para o backend:", dadosParaPlano);
 
         try {
             // Fazendo a requisição POST para o nosso backend Flask
@@ -200,22 +230,26 @@ if (botaoGerarPlano && areaPlanoEstudos) {
             }
 
             const dadosDoPlano = await resposta.json(); // Converte a resposta JSON do backend para um objeto JS
-
             console.log("Plano recebido do backend:", dadosDoPlano);
 
-            // Exibindo o plano (simulado) na página
-            if (dadosDoPlano && dadosDoPlano.cronograma) {
-                let htmlPlano = `<h3>${dadosDoPlano.mensagem}</h3>`;
-                htmlPlano += `<p><strong>Concurso:</strong> ${dadosDoPlano.concurso_desejado}</p>`;
+            // Montar HTML para exibir o plano (ainda usando a resposta simulada do backend,
+            // mas incluindo alguns dados enviados pelo usuário para confirmação visual)
+            let htmlPlano = `<h3>${dadosDoPlano.mensagem}</h3>`;
+            htmlPlano += `<p><strong>Concurso Objetivo Solicitado:</strong> ${dadosDoPlano.concurso_desejado || 'Não informado'}</p>`;
+            htmlPlano += `<p><strong>Matérias Recebidas:</strong> ${dadosDoPlano.materias_recebidas || 'Não informadas'}</p>`;
+            htmlPlano += `<p><strong>Tempo Informado:</strong> ${dadosDoPlano.tempo_recebido || 'Não informado'}</p>`;
+
+            htmlPlano += "<h4>Cronograma Sugerido (Simulação do Backend):</h4>";
+            if (dadosDoPlano.cronograma && Array.isArray(dadosDoPlano.cronograma)) {
                 htmlPlano += "<ul>";
                 dadosDoPlano.cronograma.forEach(item => {
                     htmlPlano += `<li><strong>${item.dia}:</strong> ${item.foco}</li>`;
                 });
                 htmlPlano += "</ul>";
-                areaPlanoEstudos.innerHTML = htmlPlano;
             } else {
-                areaPlanoEstudos.innerHTML = "<p>Não foi possível gerar o plano ou formato inesperado.</p>";
+                 htmlPlano += "<p>Nenhum cronograma detalhado retornado pelo backend.</p>";
             }
+            areaPlanoEstudos.innerHTML = htmlPlano;
 
         } catch (error) {
             console.error("Erro ao chamar a API para gerar plano:", error);

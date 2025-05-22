@@ -75,3 +75,9 @@ a {
 a:hover {
     text-decoration: underline;
 }
+
+.checkbox-group label {
+    display: inline-block; /* Ou block, dependendo da preferência */
+    margin-right: 10px;
+    font-weight: normal; /* Para não ficar negrito como os labels principais */
+}
