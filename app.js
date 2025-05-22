@@ -164,3 +164,62 @@ onAuthStateChanged(auth, (user) => {
         }
     }
 });
+
+// --- LÓGICA PARA GERAR PLANO DE ESTUDOS (home.html) ---
+const botaoGerarPlano = document.getElementById('botao-gerar-plano');
+const areaPlanoEstudos = document.getElementById('area-plano-estudos');
+
+if (botaoGerarPlano && areaPlanoEstudos) {
+    botaoGerarPlano.addEventListener('click', async () => {
+        console.log("Botão 'Gerar Plano de Estudos' clicado.");
+        areaPlanoEstudos.innerHTML = "<p>Gerando seu plano, aguarde...</p>"; // Feedback para o usuário
+
+        // Dados que enviaremos para o backend (por enquanto, podem ser fixos ou vazios)
+        // No futuro, pegaremos isso de campos de formulário na home.html
+        const dadosParaPlano = {
+            usuarioId: auth.currentUser ? auth.currentUser.uid : null, // Exemplo de dado útil
+            concurso: "TJ-SP Escrevente Técnico Judiciário", // Exemplo
+            tempoDisponivel: "3 horas por dia", // Exemplo
+            materiasPrioritarias: ["Português", "Direito Penal"] // Exemplo
+        };
+
+        try {
+            // Fazendo a requisição POST para o nosso backend Flask
+            const resposta = await fetch('http://127.0.0.1:5000/gerar-plano-estudos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(dadosParaPlano), // Converte o objeto JS para uma string JSON
+            });
+
+            if (!resposta.ok) {
+                // Se a resposta do servidor não for OK (ex: erro 400, 500)
+                const erroTexto = await resposta.text(); // Tenta pegar mais detalhes do erro
+                throw new Error(`Erro do servidor: ${resposta.status} - ${erroTexto}`);
+            }
+
+            const dadosDoPlano = await resposta.json(); // Converte a resposta JSON do backend para um objeto JS
+
+            console.log("Plano recebido do backend:", dadosDoPlano);
+
+            // Exibindo o plano (simulado) na página
+            if (dadosDoPlano && dadosDoPlano.cronograma) {
+                let htmlPlano = `<h3>${dadosDoPlano.mensagem}</h3>`;
+                htmlPlano += `<p><strong>Concurso:</strong> ${dadosDoPlano.concurso_desejado}</p>`;
+                htmlPlano += "<ul>";
+                dadosDoPlano.cronograma.forEach(item => {
+                    htmlPlano += `<li><strong>${item.dia}:</strong> ${item.foco}</li>`;
+                });
+                htmlPlano += "</ul>";
+                areaPlanoEstudos.innerHTML = htmlPlano;
+            } else {
+                areaPlanoEstudos.innerHTML = "<p>Não foi possível gerar o plano ou formato inesperado.</p>";
+            }
+
+        } catch (error) {
+            console.error("Erro ao chamar a API para gerar plano:", error);
+            areaPlanoEstudos.innerHTML = `<p>Ocorreu um erro ao gerar seu plano: ${error.message}</p>`;
+        }
+    });
+}
