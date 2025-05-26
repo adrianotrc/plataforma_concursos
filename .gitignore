@@ -99,3 +99,6 @@ celerybeat.pid
 
 # macOS
 .DS_Store
+
+# OpenAI
+.env
