@@ -58,35 +58,67 @@ def gerar_plano():
                     prompt_usuario_info_list.append(f"{campo_formatado}: {value}")
 
         prompt_usuario_info = ". ".join(prompt_usuario_info_list) + "."
+        
+        import datetime # Precisaremos para calcular a diferença de datas
 
-        duracao_plano_meses = 3 # Exemplo, podemos tornar isso um input do usuário no futuro
-        instrucao_duracao = f"Crie um plano de estudos com duração aproximada de {duracao_plano_meses} meses. "
-        if dados_usuario.get('data_prova'):
-            instrucao_duracao = f"Crie um plano de estudos que se estenda até a data da prova: {dados_usuario.get('data_prova')}. "
+        data_prova_usuario_str = dados_usuario.get('data_prova')
+        fase_concurso_usuario = dados_usuario.get('fase')
+            
+        instrucao_duracao_e_detalhamento = ""
 
+        if data_prova_usuario_str:
+            try:
+                # Calcula o número de semanas até a data da prova
+                data_hoje = datetime.date.today()
+                # Ajuste para o formato de data que o input type="date" retorna (YYYY-MM-DD)
+                data_prova = datetime.datetime.strptime(data_prova_usuario_str, "%Y-%m-%d").date()
+                diferenca_dias = (data_prova - data_hoje).days
+                numero_semanas_total = diferenca_dias // 7
+
+                if numero_semanas_total > 0:
+                    instrucao_duracao_e_detalhamento = (
+                        f"O plano de estudos deve cobrir o período total de aproximadamente {numero_semanas_total} semanas, desde agora até a data da prova em {data_prova_usuario_str}. "
+                        "Para este período, forneça um FOCO GERAL para cada GRUPO DE 4 SEMANAS (ou para cada mês, se preferir). "
+                        "Adicionalmente, forneça um CRONOGRAMA SEMANAL DETALHADO (dia a dia, com matérias, tópicos sugeridos, tipo de estudo e duração em minutos para cada atividade) apenas para as PRIMEIRAS 4 SEMANAS do plano. "
+                        "Para os períodos subsequentes (após as primeiras 4 semanas), indique apenas o foco principal e as matérias a serem priorizadas em cada bloco de 4 semanas ou mês. "
+                    )
+                else:
+                    instrucao_duracao_e_detalhamento = "A data da prova informada já passou ou é muito próxima. Por favor, forneça uma data futura ou selecione uma fase pré-edital. Por enquanto, gere um plano intensivo para 1 semana. "
+            except ValueError:
+                instrucao_duracao_e_detalhamento = "A data da prova fornecida não está em um formato válido (AAAA-MM-DD). Por favor, corrija. Por enquanto, gere um plano para 12 semanas. "
+            
+        elif fase_concurso_usuario == 'pos_edital_publicado': 
+            instrucao_duracao_e_detalhamento = "Este é um cenário pós-edital, então crie um plano de estudos intensivo e detalhado para as próximas 6 a 8 semanas, com detalhamento semana a semana. "
+        else: # Pré-edital ou estudo de base sem data
+            instrucao_duracao_e_detalhamento = "Crie um plano de estudos detalhado para as próximas 12 semanas (aproximadamente 3 meses), com detalhamento semana a semana. "
 
         prompt_completo = (
-                "Você é um mentor especialista em preparação para concursos públicos no Brasil, altamente qualificado e que se baseia nos princípios e metodologias do 'Guia Definitivo de Aprovação em Concursos Públicos' de Adriano Torres e Felipe Silva. "
-                "Sua tarefa é criar um plano de estudos de médio a longo prazo, prático e detalhado, estritamente em formato JSON, para o perfil de usuário fornecido. O plano deve focar nas MATÉRIAS listadas pelo usuário. "
-                f"{instrucao_duracao}" # Adiciona a instrução de duração
-                "O objeto JSON principal deve ter uma chave 'plano_de_estudos'. "
-                "Dentro de 'plano_de_estudos', inclua: "
-                "1. 'mensagem_inicial': Uma string com uma saudação motivadora e breve introdução ao plano, mencionando o concurso foco do usuário e a duração do plano. "
-                "2. 'concurso_foco': Uma string com o nome do concurso informado pelo usuário. "
-                "3. 'estrutura_geral_meses': Uma lista (array) de objetos, onde cada objeto representa um MÊS do plano. Cada objeto de mês deve ter: "
-                "    a. 'mes': String (ex: 'Mês 1', 'Mês 2'). "
-                "    b. 'foco_principal_mes': String descrevendo o foco geral para aquele mês (ex: 'Construção de base teórica nas matérias principais', 'Intensificação de exercícios e primeiras revisões', 'Revisões gerais e simulados'). "
-                "    c. 'cronograma_semanal_tipo': Uma lista (array) de objetos para uma SEMANA TIPO daquele mês. Cada objeto nesta lista representa um dia de estudo (usando os DIAS DE ESTUDO FORNECIDOS PELO USUÁRIO) e deve ter as chaves: "
-                "        i. 'dia_da_semana': String (ex: 'Segunda-feira'). "
-                "        ii. 'atividades': String descrevendo as MATÉRIAS INFORMADAS PELO USUÁRIO a serem estudadas naquele dia, o TIPO DE ESTUDO (Teoria, Leitura de PDF, Resolução de Exercícios Específicos, Revisão Programada de Resumo/Mapa Mental, Simulados Curtos), e uma SUGESTÃO DE DURAÇÃO para cada atividade, distribuindo as horas semanais do usuário pelos seus dias de estudo. "
-                "Instruções Adicionais para o Plano: "
-                "- Baseie as 'atividades' estritamente nas MATÉRIAS INFORMADAS PELO USUÁRIO. Não adivinhe subtópicos, mas sugira o TIPO de estudo para cada matéria. "
-                "- Adapte a progressão do 'foco_principal_mes' e o tipo de 'atividades' à FASE DE PREPARAÇÃO informada (Pré-edital geral foca em base, Pré-edital específico aprofunda e revisa, Pós-edital intensifica exercícios e revisões finais). "
-                "- Considere as DIFICULDADES/FACILIDADES mencionadas para sugerir maior ou menor ênfase ou diferentes tipos de estudo para certas matérias. "
-                "- Utilize os princípios de periodização, ciclo PDCA (Plan-Do-Check-Act) conceitualmente na estrutura do plano, e a importância de revisões constantes, conforme o 'Guia Definitivo de Aprovação em Concursos Públicos'. "
-                "A resposta deve ser APENAS o JSON puro e válido, sem nenhum texto ou comentário adicional fora da estrutura JSON.\n\n"
-                f"Informações do usuário para gerar o plano: {prompt_usuario_info}"
-            )
+            "Você é um mentor especialista em preparação para concursos públicos no Brasil, altamente qualificado e que se baseia nos princípios e metodologias do 'Guia Definitivo de Aprovação em Concursos Públicos' de Adriano Torres e Felipe Silva. "
+            "Sua tarefa é criar um plano de estudos prático e detalhado, estritamente em formato JSON, para o perfil de usuário fornecido. O plano deve focar exclusivamente nas MATÉRIAS listadas pelo usuário. "
+            f"{instrucao_duracao_e_detalhamento}" # Instrução de duração e detalhamento APRIMORADA
+            "O objeto JSON principal deve ter uma chave 'plano_de_estudos'. "
+            "Dentro de 'plano_de_estudos', inclua: "
+            "1. 'mensagem_inicial': Uma string com uma saudação motivadora e breve introdução ao plano, mencionando o concurso foco do usuário e a duração ou objetivo do plano. "
+            "2. 'concurso_foco': Uma string com o nome do concurso informado pelo usuário. "
+            "3. 'visao_geral_periodos': Uma LISTA (array) de objetos, onde cada objeto representa um período maior do plano (ex: um bloco de 4 semanas, ou um mês). Cada objeto de período deve ter: "
+            "    a. 'periodo_descricao': String (ex: 'Mês 1', 'Semanas 1-4', 'Bloco Inicial'). "
+            "    b. 'foco_principal_periodo': String descrevendo o foco geral para aquele período. "
+            "    c. 'materias_prioritarias_periodo': String ou Lista de strings com as matérias a serem priorizadas no período. "
+            "    d. 'cronograma_semanal_detalhado_do_periodo': (OPCIONAL, APENAS SE SOLICITADO NO DETALHAMENTO) Uma lista (array) de objetos, onde cada objeto representa uma SEMANA. Cada objeto de semana deve ter: "
+            "        i. 'semana_numero_no_periodo': Number (ex: 1, 2, 3, 4 para o detalhamento das primeiras semanas). "
+            "        ii. 'foco_da_semana_especifico': String (um breve foco ou meta para aquela semana específica). "
+            "        iii. 'dias_de_estudo': Uma lista (array) de objetos (UTILIZE APENAS OS DIAS DE ESTUDO FORNECIDOS PELO USUÁRIO). Cada objeto de dia deve ter as chaves: "
+            "            - 'dia_da_semana': String (ex: 'Segunda-feira'). "
+            "            - 'atividades': Uma LISTA de objetos (sessões de estudo). Cada sessão deve ter: 'materia' (String), 'topico_sugerido' (String), 'tipo_de_estudo' (String), 'duracao_sugerida_minutos' (Number). "
+            "Instruções Adicionais Cruciais para o Plano: "
+            "- As 'atividades' devem usar estritamente as MATÉRIAS INFORMADAS PELO USUÁRIO. "
+            "- Adapte a intensidade, o 'tipo_de_estudo', e os focos à FASE DE PREPARAÇÃO informada. "
+            "- Para MATÉRIAS de MAIOR DIFICULDADE, sugira 'tipo_de_estudo' que reforce a base e aloque tempo proporcionalmente maior. "
+            "- Incorpore as OUTRAS OBSERVAÇÕES do usuário. "
+            "- Utilize os princípios de organização, ciclo de estudos, revisões periódicas, motivação e disciplina do 'Guia Definitivo de Aprovação em Concursos Públicos'. "
+            "A resposta deve ser APENAS o JSON puro e válido, sem nenhum texto ou comentário fora da estrutura JSON solicitada.\n\n"
+            f"Informações do usuário para gerar o plano: {prompt_usuario_info}"
+        )
 
         print("\n--- PROMPT ENVIADO PARA A IA ---")
         print(prompt_completo)
@@ -100,7 +132,7 @@ def gerar_plano():
                 {"role": "user", "content": prompt_completo}
             ],
             # response_format={"type": "json_object"} # Habilitar se o modelo suportar bem e para maior robustez
-            temperature=0.5 # Um pouco mais determinístico, mas ainda permitindo alguma variação útil
+            temperature=0.5 
         )
 
         plano_gerado_texto = resposta_openai.choices[0].message.content
@@ -111,14 +143,14 @@ def gerar_plano():
         # Tentativa de limpar e converter a resposta da IA
         resposta_limpa = plano_gerado_texto.strip()
         if resposta_limpa.startswith("```json"):
-            resposta_limpa = resposta_limpa[len("```json"):] # Remove ```json
+            resposta_limpa = resposta_limpa[len("```json"):] 
             if resposta_limpa.endswith("```"):
-                resposta_limpa = resposta_limpa[:-len("```")] # Remove ``` do final
-        elif resposta_limpa.startswith("```"): # Caso seja apenas ```
+                resposta_limpa = resposta_limpa[:-len("```")] 
+        elif resposta_limpa.startswith("```"): 
             resposta_limpa = resposta_limpa[len("```"):]
             if resposta_limpa.endswith("```"):
                 resposta_limpa = resposta_limpa[:-len("```")]
-
+        
         dados_plano_ia = json.loads(resposta_limpa.strip())
         return jsonify(dados_plano_ia)
 

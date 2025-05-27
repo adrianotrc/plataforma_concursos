@@ -130,16 +130,24 @@ if (botaoLogout) {
 
 // --- OBSERVADOR DE ESTADO DE AUTENTICAÇÃO ---
 onAuthStateChanged(auth, (user) => {
-    const currentPage = window.location.pathname.split('/').pop(); 
-
+    let currentPage = "";
+    try {
+        const pathParts = window.location.pathname.split('/');
+        currentPage = pathParts.pop() || pathParts.pop() || ""; 
+    } catch (e) {
+        console.warn("Não foi possível obter a página atual da URL:", e);
+    }
+    
     if (user) {
-        console.log("Usuário está logado:", user);
-        if (currentPage === 'index.html' || currentPage === 'cadastro.html' || currentPage === '' || !currentPage) { // Adicionado !currentPage para cobrir a raiz
+        console.log("Usuário está logado:", user.uid, "Página Atual:", currentPage);
+        if (currentPage === 'index.html' || currentPage === 'cadastro.html' || currentPage === '') {
+            console.log("Redirecionando para home.html pois usuário está logado e em página de auth/raiz.");
             window.location.href = 'home.html';
         }
     } else {
-        console.log("Usuário está deslogado.");
+        console.log("Usuário está deslogado. Página Atual:", currentPage);
         if (currentPage === 'home.html') {
+            console.log("Redirecionando para index.html pois usuário não está logado e tentou acessar home.html.");
             window.location.href = 'index.html';
         }
     }
@@ -156,7 +164,6 @@ if (formPlanoEstudos && areaPlanoEstudos) {
         console.log("Formulário 'Gerar Plano de Estudos' enviado.");
         areaPlanoEstudos.innerHTML = "<p>Gerando seu plano, aguarde...</p>";
 
-        // Coleta de dados do formulário
         const concursoObjetivo = document.getElementById('concurso-objetivo').value;
         const faseConcurso = document.getElementById('fase-concurso').value;
         const materiasEdital = document.getElementById('materias-edital').value;
@@ -169,9 +176,9 @@ if (formPlanoEstudos && areaPlanoEstudos) {
         const dificuldadesMaterias = document.getElementById('dificuldades-materias').value;
         const outrasConsideracoes = document.getElementById('outras-consideracoes').value;
 
-        if (diasSelecionados.length === 0) {
+        if (diasSelecionados.length === 0 && (concursoObjetivo || faseConcurso || materiasEdital) ) { // Alerta só se outros campos foram preenchidos
             alert("Por favor, selecione pelo menos um dia da semana para estudar.");
-            areaPlanoEstudos.innerHTML = "<p>Por favor, selecione os dias da semana.</p>";
+            areaPlanoEstudos.innerHTML = "<p>Por favor, selecione os dias da semana para gerar o plano.</p>";
             return; 
         }
 
@@ -198,60 +205,100 @@ if (formPlanoEstudos && areaPlanoEstudos) {
                 body: JSON.stringify(dadosParaPlano), 
             });
 
+            console.log("Resposta do fetch recebida, status:", resposta.status);
+
             if (!resposta.ok) {
                 const erroTexto = await resposta.text(); 
+                console.error("Resposta do servidor não OK:", erroTexto);
                 throw new Error(`Erro do servidor: ${resposta.status} - ${erroTexto}`);
             }
 
             const dadosDoPlano = await resposta.json(); 
             console.log("Plano recebido do backend (estrutura da IA):", dadosDoPlano);
 
-            // Lógica corrigida para exibir o plano da IA
+            // ########## INÍCIO DA LÓGICA DE EXIBIÇÃO ATUALIZADA ##########
             if (dadosDoPlano && dadosDoPlano.plano_de_estudos) {
+                console.log("Entrou no if principal para exibir plano_de_estudos");
                 const planoConteudo = dadosDoPlano.plano_de_estudos;
+                console.log("Objeto planoConteudo:", planoConteudo);
 
                 let htmlPlano = `<h3>${planoConteudo.mensagem_inicial || 'Seu Plano de Estudos Personalizado!'}</h3>`;
                 htmlPlano += `<p><strong>Concurso Foco:</strong> ${planoConteudo.concurso_foco || 'Não informado pela IA'}</p>`;
                 
-                if (planoConteudo.estrutura_geral_meses && Array.isArray(planoConteudo.estrutura_geral_meses)) {
-                    planoConteudo.estrutura_geral_meses.forEach((mesItem, indiceMes) => {
-                        htmlPlano += `<div class="mes-plano" style="margin-top: 15px; padding-top:10px; border-top: 1px solid #ccc;">`;
-                        htmlPlano += `<h4>Mês ${indiceMes + 1}: ${mesItem.foco_principal_mes || 'Foco do mês não especificado'}</h4>`;
+                // Verifica a chave 'visao_geral_periodos'
+                if (planoConteudo.visao_geral_periodos && Array.isArray(planoConteudo.visao_geral_periodos)) {
+                    console.log("Processando visao_geral_periodos:", planoConteudo.visao_geral_periodos);
+                    
+                    planoConteudo.visao_geral_periodos.forEach((periodoItem, indicePeriodo) => {
+                        htmlPlano += `<div class="periodo-plano" style="margin-top: 20px; padding:15px; border: 1px dashed #007bff; border-radius: 5px;">`;
+                        htmlPlano += `<h4>${periodoItem.periodo_descricao || `Período ${indicePeriodo + 1}`}: ${periodoItem.foco_principal_periodo || 'Foco do período não especificado'}</h4>`;
                         
-                        if (mesItem.cronograma_semanal_tipo && Array.isArray(mesItem.cronograma_semanal_tipo)) {
-                            htmlPlano += "<p><strong>Exemplo de Cronograma Semanal para este Mês:</strong></p><ul>";
-                            mesItem.cronograma_semanal_tipo.forEach(diaItem => {
-                                htmlPlano += `<li><strong>${diaItem.dia_da_semana || 'Dia não especificado'}:</strong> ${diaItem.atividades || 'Atividades não especificadas'}</li>`;
-                            });
-                            htmlPlano += "</ul>";
-                        } else {
-                            htmlPlano += "<p>Nenhum cronograma semanal detalhado para este mês.</p>";
+                        if(periodoItem.materias_prioritarias_periodo && Array.isArray(periodoItem.materias_prioritarias_periodo) && periodoItem.materias_prioritarias_periodo.length > 0){
+                            htmlPlano += `<p><strong>Matérias Prioritárias no Período:</strong> ${periodoItem.materias_prioritarias_periodo.join(", ")}</p>`;
                         }
-                        htmlPlano += `</div>`; 
+
+                        // Verifica se existe o cronograma_semanal_detalhado_do_periodo para este período
+                        if (periodoItem.cronograma_semanal_detalhado_do_periodo && Array.isArray(periodoItem.cronograma_semanal_detalhado_do_periodo)) {
+                            console.log(`Processando cronograma_semanal_detalhado para ${periodoItem.periodo_descricao}`);
+                            periodoItem.cronograma_semanal_detalhado_do_periodo.forEach((semanaItem) => {
+                                htmlPlano += `<div class="semana-plano" style="margin-top: 10px; padding-top:10px; border-top: 1px solid #ccc;">`;
+                                htmlPlano += `<h5>Semana ${semanaItem.semana_numero_no_periodo || ''}: ${semanaItem.foco_da_semana_especifico || 'Foco da semana não especificado'}</h5>`;
+                                
+                                if (semanaItem.dias_de_estudo && Array.isArray(semanaItem.dias_de_estudo)) {
+                                    htmlPlano += "<ul style='margin-left: 15px;'>"; // Lista para os dias da semana
+                                    semanaItem.dias_de_estudo.forEach(diaItem => {
+                                        htmlPlano += `<li style="margin-bottom: 10px;"><strong>${diaItem.dia_da_semana || 'Dia não especificado'}:</strong>`;
+                                        if (diaItem.atividades && Array.isArray(diaItem.atividades)) {
+                                            htmlPlano += "<ul style='list-style-type: circle; margin-left: 20px;'>"; // Lista interna para as atividades do dia
+                                            diaItem.atividades.forEach(atividade => {
+                                                htmlPlano += `<li>${atividade.materia || ''}${atividade.topico_sugerido ? ' (' + atividade.topico_sugerido + ')' : ''} - ${atividade.tipo_de_estudo || ''} (${atividade.duracao_sugerida_minutos || '?'} min)</li>`;
+                                            });
+                                            htmlPlano += "</ul>";
+                                        } else {
+                                            htmlPlano += " Nenhuma atividade detalhada para este dia.";
+                                        }
+                                        htmlPlano += `</li>`;
+                                    });
+                                    htmlPlano += "</ul>"; // Fecha lista dos dias da semana
+                                } else {
+                                    htmlPlano += "<p>Nenhum dia de estudo detalhado para esta semana.</p>";
+                                }
+                                htmlPlano += `</div>`; // Fecha div.semana-plano
+                            });
+                        } else {
+                             // Não mostra nada se não houver cronograma detalhado para este período (ex: meses futuros)
+                             console.log(`Sem cronograma semanal detalhado para ${periodoItem.periodo_descricao}`);
+                        }
+                        htmlPlano += `</div>`; // Fecha div.periodo-plano
                     });
                 } else {
-                     htmlPlano += "<p>Nenhuma estrutura de plano mensal retornada pela IA.</p>";
+                     htmlPlano += "<p>Nenhuma estrutura de visão geral de períodos retornada pela IA.</p>";
+                     console.log("Estrutura 'visao_geral_periodos' não encontrada ou não é um array:", planoConteudo.visao_geral_periodos);
                 }
                 areaPlanoEstudos.innerHTML = htmlPlano;
+                console.log("innerHTML de areaPlanoEstudos foi atualizado.");
             
             } else if (dadosDoPlano && dadosDoPlano.erro_processamento) { 
+                console.log("Entrou no else if para exibir erro_processamento");
                 areaPlanoEstudos.innerHTML = `
                     <p style="color: red;">Erro ao processar a resposta da IA:</p>
                     <p><strong>Mensagem:</strong> ${dadosDoPlano.erro_processamento}</p>
                     <p><strong>Detalhe do erro JSON:</strong> ${dadosDoPlano.detalhe_erro_json}</p>
                     <p><strong>Resposta Bruta da IA (para depuração):</strong></p>
-                    <pre style="white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 10px; border: 1px solid #ccc;">${dadosDoPlano.resposta_bruta_ia}</pre>
+                    <pre style="white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 10px; border: 1px solid #ccc;">${JSON.stringify(dadosDoPlano.resposta_bruta_ia, null, 2)}</pre>
                 `;
             } else if (dadosDoPlano && dadosDoPlano.erro_geral) { 
+                 console.log("Entrou no else if para exibir erro_geral");
                  areaPlanoEstudos.innerHTML = `<p style="color: red;">${dadosDoPlano.erro_geral}</p>`;
             } else {
+                console.log("Entrou no else final: Resposta da IA não reconhecida.");
                 areaPlanoEstudos.innerHTML = "<p>Resposta da IA não reconhecida ou estrutura inesperada.</p>";
-                console.log("Estrutura inesperada recebida do backend:", dadosDoPlano);
+                console.log("Estrutura inesperada recebida do backend (no else final):", dadosDoPlano);
             }
 
         } catch (error) {
-            console.error("Erro ao chamar a API para gerar plano:", error);
-            areaPlanoEstudos.innerHTML = `<p>Ocorreu um erro ao gerar seu plano: ${error.message}</p>`;
+            console.error("Erro GERAL ao chamar a API ou processar o plano:", error);
+            areaPlanoEstudos.innerHTML = `<p>Ocorreu um erro GRAVE ao gerar seu plano: ${error.message}</p>`;
         }
     });
 }
