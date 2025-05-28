@@ -1,6 +1,5 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
-// Adicione esta linha para o serviço de Autenticação:
 import { 
     getAuth, 
     createUserWithEmailAndPassword, 
@@ -8,11 +7,14 @@ import {
     signOut, 
     onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-auth.js";
-// Futuramente, se usarmos o Firestore:
-// import { getFirestore } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js"; 
-// import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-analytics.js";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+// ADICIONE/DESCOMENTE AS IMPORTAÇÕES DO FIRESTORE ABAIXO:
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    serverTimestamp // Para registrar a data de criação
+    // doc, setDoc, getDoc, updateDoc, deleteDoc, query, where, getDocs, onSnapshot // Outras funções que poderemos usar no futuro
+} from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js"; 
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -27,13 +29,12 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-// const analytics = getAnalytics(app);
-
 const auth = getAuth(app);
-// const db = getFirestore(app); 
+const db = getFirestore(app); // INICIALIZE O FIRESTORE (db)
 
 console.log("Firebase App inicializado");
 console.log("Firebase Auth inicializado");
+console.log("Firestore inicializado:", db); // Log para confirmar
 
 // --- LÓGICA PARA A PÁGINA DE CADASTRO (cadastro.html) ---
 const formCadastro = document.getElementById('form-cadastro');
@@ -152,6 +153,34 @@ onAuthStateChanged(auth, (user) => {
         }
     }
 });
+
+async function salvarPlanoNoFirestore(usuarioId, dadosDoPlanoGerado) {
+    if (!usuarioId || !dadosDoPlanoGerado || !dadosDoPlanoGerado.plano_de_estudos) {
+        console.error("Dados insuficientes para salvar o plano ou usuário não logado.");
+        return; // Não tenta salvar se não tiver os dados necessários
+    }
+
+    try {
+        // Cria uma referência para a coleção 'planos_usuarios'
+        // Se a coleção não existir, o Firebase a criará automaticamente.
+        const colecaoPlanos = collection(db, "planos_usuarios");
+
+        // Adiciona um novo documento à coleção
+        const docRef = await addDoc(colecaoPlanos, {
+            uidUsuario: usuarioId,
+            concursoFoco: dadosDoPlanoGerado.plano_de_estudos.concurso_foco || "Não especificado",
+            planoCompleto: dadosDoPlanoGerado.plano_de_estudos, // Salva todo o objeto do plano
+            dataCriacao: serverTimestamp(), // Pega a data/hora do servidor Firebase
+            // Você pode adicionar outros metadados aqui se desejar
+        });
+        console.log("Plano salvo no Firestore com ID: ", docRef.id);
+        alert("Seu plano de estudos foi salvo com sucesso!");
+
+    } catch (e) {
+        console.error("Erro ao salvar plano no Firestore: ", e);
+        alert("Houve um erro ao tentar salvar seu plano de estudos. Por favor, tente novamente.");
+    }
+}
 
 // --- LÓGICA PARA GERAR PLANO DE ESTUDOS (home.html) ---
 const formPlanoEstudos = document.getElementById('form-plano-estudos');
@@ -277,6 +306,14 @@ if (formPlanoEstudos && areaPlanoEstudos) {
                 }
                 areaPlanoEstudos.innerHTML = htmlPlano;
                 console.log("innerHTML de areaPlanoEstudos foi atualizado.");
+
+                // CHAMA A FUNÇÃO PARA SALVAR O PLANO APÓS EXIBI-LO
+                if (auth.currentUser) {
+                    salvarPlanoNoFirestore(auth.currentUser.uid, dadosDoPlano);
+                } else {
+                    console.warn("Usuário não está logado, plano não será salvo no Firestore.");
+                    // Poderia alertar o usuário aqui também, mas o onAuthStateChanged deve cuidar do acesso
+                }
             
             } else if (dadosDoPlano && dadosDoPlano.erro_processamento) { 
                 console.log("Entrou no else if para exibir erro_processamento");
