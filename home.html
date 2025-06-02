@@ -3,82 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - Plataforma Concursos</title>
-    <link rel="stylesheet" href="estilos.css">
+    <title>Dashboard - ConcursoIA</title>
+    <link rel="stylesheet" href="dashboard-lovable.css"> <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>Bem-vindo(a) à Plataforma!</h1>
-        <p>Você está logado.</p>
-
-        <hr>
-        
-        <h2>Plano de Estudos Personalizado com IA</h2>
-        <form id="form-plano-estudos">
-            <div>
-                <label for="concurso-objetivo">Qual concurso ou cargo você está focando?</label>
-                <input type="text" id="concurso-objetivo" required placeholder="Ex: Analista do Banco Central">
-            </div>
-            <div>
-                <label for="fase-concurso">Em qual fase de preparação você está?</label>
-                <select id="fase-concurso" required>
-                    <option value="">Selecione a fase...</option>
-                    <option value="base_sem_edital_especifico">Começando a estudar e/ou sem concurso específico para focar, sem edital</option>
-                    <option value="pre_edital_com_foco">Focando em concurso específico, mas ainda sem edital (usando edital anterior/base)</option>
-                    <option value="pos_edital_publicado">Focando em concurso específico, com edital publicado</option>
-                </select>
-            </div>
-            <div>
-                <label for="materias-edital">Liste as matérias/conteúdo programático principal (uma por linha ou separadas por vírgula):</label>
-                <textarea id="materias-edital" rows="4" required placeholder="Ex: Português, Direito Constitucional, Economia, Contabilidade"></textarea>
-            </div>
-            <div>
-                <label for="horas-estudo-semanais">Quantas horas líquidas você pode dedicar aos estudos por semana?</label>
-                <input type="number" id="horas-estudo-semanais" required placeholder="Ex: 20" min="1">
-            </div>
-            <div>
-                <label>Quais dias da semana você pretende estudar?</label>
-                <div id="dias-semana-estudo" class="checkbox-group">
-                    <label><input type="checkbox" name="dia_semana" value="segunda"> Segunda</label>
-                    <label><input type="checkbox" name="dia_semana" value="terca"> Terça</label>
-                    <label><input type="checkbox" name="dia_semana" value="quarta"> Quarta</label>
-                    <label><input type="checkbox" name="dia_semana" value="quinta"> Quinta</label>
-                    <label><input type="checkbox" name="dia_semana" value="sexta"> Sexta</label>
-                    <label><input type="checkbox" name="dia_semana" value="sabado"> Sábado</label>
-                    <label><input type="checkbox" name="dia_semana" value="domingo"> Domingo</label>
+    <div class="dashboard-layout">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="logo">
+                        <i class="fas fa-book-open"></i>
+                        <span>ConcursoIA</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <a href="#" class="btn btn-ghost"> <i class="fas fa-user"></i>
+                        <span>Meu Perfil</span>
+                    </a>
+                    <button id="botao-logout" class="btn btn-ghost"> <i class="fas fa-sign-out-alt"></i>
+                        <span>Sair</span>
+                    </button>
                 </div>
             </div>
-            <div>
-                <label for="data-prova">Qual a data da prova (se já definida)? (Opcional)</label>
-                <input type="date" id="data-prova">
-            </div>
-            <div>
-                <label for="dificuldades-materias">Você tem matérias específicas onde sente mais dificuldade ou facilidade? (Opcional)</label>
-                <textarea id="dificuldades-materias" rows="3" placeholder="Ex: Muita dificuldade em Contabilidade Avançada, facilidade em Direito Constitucional"></textarea>
-            </div>
-            <div>
-                <label for="outras-consideracoes">Alguma outra informação relevante para o plano? (Opcional)</label>
-                <textarea id="outras-consideracoes" rows="3" placeholder="Ex: Prefiro estudar mais teoria aos finais de semana, gosto de resumos..."></textarea>
-            </div>
-            <button type="submit" id="botao-gerar-plano">Gerar Plano de Estudos</button>
-        </form>
-        
-        <div id="area-plano-estudos" style="margin-top: 20px; padding: 10px; border: 1px solid #eee;">
-            <p>Preencha os campos acima e clique em "Gerar Plano de Estudos".</p>
-        </div>
+        </header>
 
-        <hr style="margin-top: 30px;">
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <a href="home.html" class="nav-item active"> <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="cronograma.html" class="nav-item"> <i class="fas fa-calendar-alt"></i>
+                    <span>Cronograma</span>
+                </a>
+                <a href="#" class="nav-item"> <i class="fas fa-book-open"></i>
+                    <span>Exercícios</span>
+                </a>
+                <a href="#" class="nav-item"> <i class="fas fa-file-alt"></i>
+                    <span>Correção de Textos</span>
+                </a>
+                <a href="#" class="nav-item"> <i class="fas fa-bullseye"></i>
+                    <span>Dicas Estratégicas</span>
+                </a>
+            </nav>
+        </aside>
 
-        <div id="secao-planos-salvos" style="margin-top: 20px;">
-            <h2>Meus Planos de Estudo Salvos</h2>
-            <ul id="lista-planos-salvos" style="list-style: none; padding-left: 0;">
-                <p id="mensagem-sem-planos">Nenhum plano salvo ainda. Gere um novo plano acima!</p>
-            </ul>
-        </div>
-        
-        <hr> 
-        <button id="botao-logout" style="margin-top: 20px;">Sair (Logout)</button>
+        <main class="main-content">
+            <div class="content-wrapper">
+                <div class="welcome-section">
+                    <h1>Bem-vindo ao seu Dashboard</h1>
+                    <p>Acesse todas as funcionalidades da plataforma para acelerar seus estudos</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header"><span class="stat-title">Dias de Estudo</span></div>
+                        <div class="stat-content"><div class="stat-number blue">15</div><p class="stat-subtitle">Últimos 30 dias</p></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><span class="stat-title">Exercícios Realizados</span></div>
+                        <div class="stat-content"><div class="stat-number green">247</div><p class="stat-subtitle">Este mês</p></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><span class="stat-title">Taxa de Acerto</span></div>
+                        <div class="stat-content"><div class="stat-number purple">78%</div><p class="stat-subtitle">Média geral</p></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><span class="stat-title">Textos Corrigidos</span></div>
+                        <div class="stat-content"><div class="stat-number orange">12</div><p class="stat-subtitle">Este mês</p></div>
+                    </div>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon blue"><i class="fas fa-calendar-alt"></i></div>
+                            <div class="feature-info"><h3>Cronograma Personalizado</h3><p>Crie e gerencie seu cronograma de estudos com IA</p></div>
+                        </div>
+                        <a href="cronograma.html" class="btn btn-primary btn-full">Acessar</a>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon green"><i class="fas fa-book-open"></i></div>
+                            <div class="feature-info"><h3>Exercícios Inteligentes</h3><p>Pratique com questões adaptadas ao seu nível</p></div>
+                        </div>
+                        <a href="#" class="btn btn-primary btn-full">Acessar</a> </div>
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon purple"><i class="fas fa-file-alt"></i></div>
+                            <div class="feature-info"><h3>Correção de Textos</h3><p>Tenha suas redações corrigidas pela IA</p></div>
+                        </div>
+                        <a href="#" class="btn btn-primary btn-full">Acessar</a> </div>
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon orange"><i class="fas fa-bullseye"></i></div>
+                            <div class="feature-info"><h3>Dicas Estratégicas</h3><p>Receba orientações personalizadas para sua aprovação</p></div>
+                        </div>
+                        <a href="#" class="btn btn-primary btn-full">Acessar</a> </div>
+                </div>
+
+                <div class="activity-card">
+                    <div class="activity-header"><h3>Atividade Recente</h3><p>Suas últimas ações na plataforma</p></div>
+                    <div class="activity-content">
+                        <div class="activity-item"><div class="activity-dot blue"></div><span class="activity-text">Completou 15 exercícios de Direito Constitucional</span><span class="activity-time">2 horas atrás</span></div>
+                        <div class="activity-item"><div class="activity-dot green"></div><span class="activity-text">Enviou redação para correção</span><span class="activity-time">1 dia atrás</span></div>
+                        <div class="activity-item"><div class="activity-dot purple"></div><span class="activity-text">Atualizou cronograma de estudos</span><span class="activity-time">3 dias atrás</span></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
     </div>
-    <script type="module" src="app.js"></script>
-</body>
+
+    <script src="dashboard.js"></script> <script type="module" src="app.js"></script> </body>
 </html>

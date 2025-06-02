@@ -26,7 +26,7 @@ const firebaseConfig = {
   storageBucket: "plataforma-concursos-ai.firebasestorage.app",
   messagingSenderId: "620928521514",
   appId: "1:620928521514:web:4bf7e6addab3485055ba53"
-  // measurementId: "G-FCHSYJJ7FB" // Opcional
+  // measurementId: "G-FCHSYJJ7FB"
 };
 
 // Initialize Firebase
@@ -43,13 +43,11 @@ console.log("Firestore inicializado:", db);
 function exibirPlanoNaTela(planoDeEstudosObjeto) {
     const areaPlano = document.getElementById('area-plano-estudos');
     if (!areaPlano) {
-        console.error("Elemento 'area-plano-estudos' não encontrado no DOM.");
+        console.error("Elemento 'area-plano-estudos' não encontrado no DOM para exibir o plano.");
         return;
     }
 
     if (planoDeEstudosObjeto) {
-        // O objeto planoDeEstudosObjeto já é o conteúdo do plano 
-        // (ex: o valor de dadosDoPlano.plano_de_estudos ou dadosFirestore.planoSalvo)
         const planoConteudo = planoDeEstudosObjeto; 
 
         let htmlPlano = `<h3>${planoConteudo.mensagem_inicial || 'Seu Plano de Estudos!'}</h3>`;
@@ -96,11 +94,11 @@ function exibirPlanoNaTela(planoDeEstudosObjeto) {
         } else {
              htmlPlano += "<p>Nenhuma estrutura de visão geral de períodos disponível neste plano.</p>";
         }
-        areaPlanoEstudos.innerHTML = htmlPlano;
+        areaPlano.innerHTML = htmlPlano;
         console.log("Plano exibido na tela pela função exibirPlanoNaTela.");
     
     } else {
-        areaPlanoEstudos.innerHTML = "<p>Não foi possível carregar os detalhes do plano (objeto vazio).</p>";
+        areaPlano.innerHTML = "<p>Não foi possível carregar os detalhes do plano (objeto vazio).</p>";
         console.log("Objeto do plano para exibição está vazio ou inválido:", planoDeEstudosObjeto);
     }
 }
@@ -108,11 +106,8 @@ function exibirPlanoNaTela(planoDeEstudosObjeto) {
 async function salvarPlanoNoFirestore(usuarioId, dadosDoPlanoCompletoRecebidoDaIA) {
     if (!usuarioId || !dadosDoPlanoCompletoRecebidoDaIA || !dadosDoPlanoCompletoRecebidoDaIA.plano_de_estudos) {
         console.error("Dados insuficientes para salvar o plano: usuário não logado ou estrutura de plano inválida.");
-        // Não vamos dar alert aqui para não interromper o fluxo caso a exibição já tenha ocorrido.
-        // O console.error é suficiente para depuração.
         return;
     }
-
     try {
         const colecaoPlanos = collection(db, "planos_usuarios");
         const docRef = await addDoc(colecaoPlanos, {
@@ -122,12 +117,9 @@ async function salvarPlanoNoFirestore(usuarioId, dadosDoPlanoCompletoRecebidoDaI
             dataCriacao: serverTimestamp(), 
         });
         console.log("Plano salvo no Firestore com ID: ", docRef.id);
-        // Removido o alert daqui para não ser repetitivo, o feedback de salvamento pode ser mais sutil no futuro
-        // alert("Seu plano de estudos foi salvo com sucesso!"); 
-
     } catch (e) {
         console.error("Erro ao salvar plano no Firestore: ", e);
-        alert("Houve um erro ao tentar salvar seu plano de estudos. Verifique o console para mais detalhes.");
+        alert("Houve um erro ao tentar salvar seu plano de estudos.");
     }
 }
 
@@ -136,8 +128,8 @@ async function carregarPlanosSalvos(uidUsuario) {
     const mensagemSemPlanos = document.getElementById('mensagem-sem-planos');
     const areaPlanoAtual = document.getElementById('area-plano-estudos'); 
     
-    if (!listaPlanosUl || !mensagemSemPlanos) { // Removida verificação de areaPlanoAtual daqui, pois pode não ser erro se não existir em todas as páginas
-        console.warn("Elementos da lista de planos salvos ('lista-planos-salvos' ou 'mensagem-sem-planos') não encontrados no DOM. Esta função só deve ser chamada na home.html.");
+    if (!listaPlanosUl || !mensagemSemPlanos) { 
+        console.warn("Elementos 'lista-planos-salvos' ou 'mensagem-sem-planos' não encontrados. Verifique se está na página correta (cronograma.html).");
         return;
     }
 
@@ -155,18 +147,22 @@ async function carregarPlanosSalvos(uidUsuario) {
         if (querySnapshot.empty) {
             listaPlanosUl.innerHTML = ''; 
             mensagemSemPlanos.style.display = 'block'; 
+            if(areaPlanoAtual){ // Limpa área principal se não há planos
+                areaPlanoAtual.innerHTML = '<p>Nenhum plano salvo encontrado. Gere um novo plano!</p>';
+            }
             console.log("Nenhum plano salvo encontrado para este usuário.");
             return;
         }
 
         listaPlanosUl.innerHTML = ''; 
+        let primeiroPlano = true; 
         querySnapshot.forEach((docSnapshot) => {
             const dadosFirestore = docSnapshot.data();
             const planoParaExibir = dadosFirestore.planoSalvo; 
 
-            if (!planoParaExibir) { // Verificação adicional
+            if (!planoParaExibir) { 
                 console.warn("Documento de plano salvo não contém a estrutura 'planoSalvo':", docSnapshot.id);
-                return; // Pula este item
+                return; 
             }
 
             const listItem = document.createElement('li');
@@ -185,10 +181,10 @@ async function carregarPlanosSalvos(uidUsuario) {
             
             listItem.addEventListener('click', () => {
                 console.log("Exibindo plano salvo do Firestore:", planoParaExibir);
-                if(areaPlanoAtual) { // Verifica se areaPlanoAtual existe antes de usá-lo
+                if(areaPlanoAtual) { 
                     areaPlanoAtual.innerHTML = ""; 
                     exibirPlanoNaTela(planoParaExibir); 
-                    window.scrollTo({ top: areaPlanoAtual.offsetTop - 20, behavior: 'smooth' }); 
+                    window.scrollTo({ top: areaPlanoAtual.offsetTop - 80, behavior: 'smooth' }); // Ajustado o scroll
                 } else {
                     console.error("Elemento 'area-plano-estudos' não encontrado para exibir o plano salvo.")
                 }
@@ -198,6 +194,15 @@ async function carregarPlanosSalvos(uidUsuario) {
             listItem.addEventListener('mouseout', () => listItem.style.backgroundColor = 'transparent');
 
             listaPlanosUl.appendChild(listItem);
+
+            // Se for o primeiro plano da lista e estivermos na página de cronograma, exibe-o
+            if (primeiroPlano && window.location.pathname.includes('cronograma.html')) {
+                if(areaPlanoAtual){
+                    areaPlanoAtual.innerHTML = ""; // Limpa "Nenhum plano para exibir..."
+                    exibirPlanoNaTela(planoParaExibir);
+                }
+                primeiroPlano = false; 
+            }
         });
 
     } catch (error) {
@@ -223,7 +228,6 @@ if (formCadastro) {
         if (email && senha) {
             createUserWithEmailAndPassword(auth, email, senha)
                 .then((userCredential) => {
-                    // const user = userCredential.user; // Removido pois user não é usado
                     console.log("Usuário cadastrado:", userCredential.user.uid);
                     alert("Cadastro realizado com sucesso! Você será redirecionado para o login.");
                     window.location.href = 'index.html'; 
@@ -256,10 +260,9 @@ if (formLogin) {
         if (email && senha) {
             signInWithEmailAndPassword(auth, email, senha)
                 .then((userCredential) => {
-                    // const user = userCredential.user; // Removido pois user não é usado
                     console.log("Usuário logado:", userCredential.user.uid);
-                    alert("Login realizado com sucesso!");
-                    window.location.href = 'home.html';
+                    // alert("Login realizado com sucesso!"); // Removido para navegação mais rápida
+                    window.location.href = 'home.html'; // Redireciona para o novo dashboard (home.html)
                 })
                 .catch((error) => {
                     const errorCode = error.code;
@@ -277,13 +280,13 @@ if (formLogin) {
     });
 }
 
-// --- LÓGICA PARA A PÁGINA HOME (home.html) E LOGOUT ---
+// --- LÓGICA PARA A PÁGINA HOME (Dashboard) E LOGOUT ---
 const botaoLogout = document.getElementById('botao-logout');
 if (botaoLogout) {
-    botaoLogout.addEventListener('click', () => {
+    botaoLogout.addEventListener('click', (evento) => {
+        evento.preventDefault(); // Adicionado para caso o botão de logout seja um link <a>
         signOut(auth).then(() => {
             console.log("Usuário deslogado");
-            // alert("Você foi desconectado."); // Removido alerta para fluxo mais rápido ao deslogar
             window.location.href = 'index.html'; 
         }).catch((error) => {
             console.error("Erro ao fazer logout:", error);
@@ -294,137 +297,148 @@ if (botaoLogout) {
 
 // --- OBSERVADOR DE ESTADO DE AUTENTICAÇÃO ---
 onAuthStateChanged(auth, (user) => {
-    let currentPage = "";
+    let currentPageName = "";
     try {
         const pathParts = window.location.pathname.split('/');
-        currentPage = pathParts.pop() || pathParts.pop() || ""; 
+        currentPageName = pathParts.pop() || pathParts.pop() || "index.html"; // Assume index.html se path for /
+        if (currentPageName === "") currentPageName = "index.html"; // Garante que a raiz seja tratada como index
     } catch (e) {
         console.warn("Não foi possível obter a página atual da URL:", e);
+        currentPageName = "index.html"; // Fallback
     }
     
     if (user) {
-        console.log("Usuário está logado:", user.uid, "Página Atual:", currentPage);
-        if (currentPage === 'index.html' || currentPage === 'cadastro.html' || currentPage === '') {
-            console.log("Redirecionando para home.html pois usuário está logado e em página de auth/raiz.");
+        console.log("Usuário está logado:", user.uid, "| Página Atual:", currentPageName);
+        // Redireciona para o dashboard se estiver nas páginas de login/cadastro
+        if (currentPageName === 'index.html' || currentPageName === 'cadastro.html') {
+            console.log("Redirecionando para home.html (Dashboard) pois usuário está logado.");
             window.location.href = 'home.html';
-        } else if (currentPage === 'home.html') {
-            console.log("Usuário na home.html, carregando planos salvos...");
-            // Garante que os elementos da home.html existam antes de chamar carregarPlanosSalvos
+        } else if (currentPageName === 'cronograma.html') {
+            // Se estiver na página de cronograma, carrega os planos salvos
+            console.log("Usuário na cronograma.html, carregando planos salvos...");
+            // Garante que os elementos da lista existam antes de chamar
             if (document.getElementById('lista-planos-salvos') && document.getElementById('mensagem-sem-planos')) {
                 carregarPlanosSalvos(user.uid); 
+            } else {
+                console.warn("Tentou carregar planos na cronograma.html, mas elementos da lista não foram encontrados.");
             }
         }
+        // NÃO chamaremos carregarPlanosSalvos para home.html (Dashboard) aqui,
+        // pois os elementos da lista de planos não existem mais lá.
+        
     } else {
-        console.log("Usuário está deslogado. Página Atual:", currentPage);
-        if (currentPage === 'home.html') {
-            console.log("Redirecionando para index.html pois usuário não está logado e tentou acessar home.html.");
+        console.log("Usuário está deslogado. Página Atual:", currentPageName);
+        if (currentPageName === 'home.html' || currentPageName === 'cronograma.html') {
+            console.log("Redirecionando para index.html pois usuário não está logado.");
             window.location.href = 'index.html';
         }
     }
 });
 
-// --- LÓGICA PARA GERAR PLANO DE ESTUDOS (home.html) ---
-const formPlanoEstudos = document.getElementById('form-plano-estudos');
-const areaPlanoEstudos = document.getElementById('area-plano-estudos');
+// --- LÓGICA PARA GERAR PLANO DE ESTUDOS (AGORA NA cronograma.html) ---
+// Precisamos garantir que esta lógica só tente rodar se os elementos existirem na página atual.
+// A melhor forma é verificar a página atual ou garantir que os IDs são únicos para cronograma.html
+if (window.location.pathname.includes('cronograma.html')) {
+    const formPlanoEstudos = document.getElementById('form-plano-estudos');
+    const areaPlanoEstudos = document.getElementById('area-plano-estudos');
+    const botaoMostrarForm = document.getElementById('botao-mostrar-form-novo-plano');
+    const containerForm = document.getElementById('container-form-novo-plano');
 
-if (formPlanoEstudos && areaPlanoEstudos) {
-    formPlanoEstudos.addEventListener('submit', async (evento) => {
-        evento.preventDefault(); 
-
-        console.log("Formulário 'Gerar Plano de Estudos' enviado.");
-        areaPlanoEstudos.innerHTML = "<p>Gerando seu plano, aguarde...</p>";
-
-        const concursoObjetivo = document.getElementById('concurso-objetivo').value;
-        const faseConcurso = document.getElementById('fase-concurso').value;
-        const materiasEdital = document.getElementById('materias-edital').value;
-        const horasEstudoSemanais = document.getElementById('horas-estudo-semanais').value;
-        const diasSelecionados = [];
-        document.querySelectorAll('#dias-semana-estudo input[name="dia_semana"]:checked').forEach((checkbox) => {
-            diasSelecionados.push(checkbox.value);
-        });
-        const dataProva = document.getElementById('data-prova').value;
-        const dificuldadesMaterias = document.getElementById('dificuldades-materias').value;
-        const outrasConsideracoes = document.getElementById('outras-consideracoes').value;
-
-        if (diasSelecionados.length === 0 && (concursoObjetivo || faseConcurso || materiasEdital) ) {
-            alert("Por favor, selecione pelo menos um dia da semana para estudar.");
-            areaPlanoEstudos.innerHTML = "<p>Por favor, selecione os dias da semana para gerar o plano.</p>";
-            return; 
-        }
-
-        const dadosParaPlano = {
-            usuarioId: auth.currentUser ? auth.currentUser.uid : null,
-            concurso: concursoObjetivo,
-            fase: faseConcurso,
-            materias: materiasEdital,
-            horas_semanais: horasEstudoSemanais,
-            dias_estudo: diasSelecionados, 
-            data_prova: dataProva || null, 
-            dificuldades: dificuldadesMaterias || null,
-            outras_obs: outrasConsideracoes || null
-        };
-
-        console.log("Enviando para o backend:", dadosParaPlano);
-
-        try {
-            const resposta = await fetch('http://127.0.0.1:5000/gerar-plano-estudos', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(dadosParaPlano), 
-            });
-
-            console.log("Resposta do fetch recebida, status:", resposta.status);
-
-            if (!resposta.ok) {
-                const erroTexto = await resposta.text(); 
-                console.error("Resposta do servidor não OK:", erroTexto);
-                throw new Error(`Erro do servidor: ${resposta.status} - ${erroTexto}`);
-            }
-
-            const dadosDoPlano = await resposta.json(); 
-            console.log("Plano recebido do backend (para gerar e salvar):", dadosDoPlano);
-
-            if (dadosDoPlano && dadosDoPlano.plano_de_estudos) {
-                console.log("Gerando exibição para o novo plano_de_estudos");
-                exibirPlanoNaTela(dadosDoPlano.plano_de_estudos);
-                
-                console.log("innerHTML de areaPlanoEstudos foi atualizado pela função exibirPlanoNaTela.");
-            
-                if (auth.currentUser) {
-                    console.log("Tentando salvar o plano gerado...");
-                    await salvarPlanoNoFirestore(auth.currentUser.uid, dadosDoPlano);
-                    // Após salvar, recarrega a lista de planos para incluir o novo
-                    // Garante que os elementos existam antes de chamar
-                    if (document.getElementById('lista-planos-salvos') && document.getElementById('mensagem-sem-planos')) {
-                       await carregarPlanosSalvos(auth.currentUser.uid);
-                    }
-                } else {
-                    console.warn("Usuário não está logado, plano gerado não será salvo no Firestore.");
-                }
-            
-            } else if (dadosDoPlano && dadosDoPlano.erro_processamento) { 
-                console.log("Entrou no else if para exibir erro_processamento");
-                areaPlanoEstudos.innerHTML = `
-                    <p style="color: red;">Erro ao processar a resposta da IA:</p>
-                    <p><strong>Mensagem:</strong> ${dadosDoPlano.erro_processamento}</p>
-                    <p><strong>Detalhe do erro JSON:</strong> ${dadosDoPlano.detalhe_erro_json}</p>
-                    <p><strong>Resposta Bruta da IA (para depuração):</strong></p>
-                    <pre style="white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 10px; border: 1px solid #ccc;">${JSON.stringify(dadosDoPlano.resposta_bruta_ia, null, 2)}</pre>
-                `;
-            } else if (dadosDoPlano && dadosDoPlano.erro_geral) { 
-                 console.log("Entrou no else if para exibir erro_geral");
-                 areaPlanoEstudos.innerHTML = `<p style="color: red;">${dadosDoPlano.erro_geral}</p>`;
+    if(botaoMostrarForm && containerForm){
+        botaoMostrarForm.addEventListener('click', () => {
+            if (containerForm.style.display === 'none' || containerForm.style.display === '') {
+                containerForm.style.display = 'block';
+                botaoMostrarForm.innerHTML = '<i class="fas fa-minus"></i> Esconder Formulário de Novo Plano';
             } else {
-                console.log("Entrou no else final: Resposta da IA não reconhecida.");
-                areaPlanoEstudos.innerHTML = "<p>Resposta da IA não reconhecida ou estrutura inesperada.</p>";
-                console.log("Estrutura inesperada recebida do backend (no else final):", dadosDoPlano);
+                containerForm.style.display = 'none';
+                botaoMostrarForm.innerHTML = '<i class="fas fa-plus"></i> Gerar Novo Cronograma';
+            }
+        });
+    }
+
+    if (formPlanoEstudos && areaPlanoEstudos) {
+        formPlanoEstudos.addEventListener('submit', async (evento) => {
+            evento.preventDefault(); 
+
+            console.log("Formulário 'Gerar Plano de Estudos' enviado (cronograma.html).");
+            areaPlanoEstudos.innerHTML = "<p>Gerando seu plano, aguarde...</p>";
+
+            const concursoObjetivo = document.getElementById('concurso-objetivo').value;
+            const faseConcurso = document.getElementById('fase-concurso').value;
+            const materiasEdital = document.getElementById('materias-edital').value;
+            const horasEstudoSemanais = document.getElementById('horas-estudo-semanais').value;
+            const diasSelecionados = [];
+            document.querySelectorAll('#dias-semana-estudo input[name="dia_semana"]:checked').forEach((checkbox) => {
+                diasSelecionados.push(checkbox.value);
+            });
+            const dataProva = document.getElementById('data-prova').value;
+            const dificuldadesMaterias = document.getElementById('dificuldades-materias').value;
+            const outrasConsideracoes = document.getElementById('outras-consideracoes').value;
+
+            if (diasSelecionados.length === 0 && (concursoObjetivo || faseConcurso || materiasEdital) ) {
+                alert("Por favor, selecione pelo menos um dia da semana para estudar.");
+                areaPlanoEstudos.innerHTML = "<p>Por favor, selecione os dias da semana para gerar o plano.</p>";
+                return; 
             }
 
-        } catch (error) {
-            console.error("Erro GERAL ao chamar a API ou processar o plano:", error);
-            areaPlanoEstudos.innerHTML = `<p>Ocorreu um erro GRAVE ao gerar seu plano: ${error.message}</p>`;
-        }
-    });
+            const dadosParaPlano = { /* ... (seu objeto dadosParaPlano como antes) ... */
+                usuarioId: auth.currentUser ? auth.currentUser.uid : null,
+                concurso: concursoObjetivo,
+                fase: faseConcurso,
+                materias: materiasEdital,
+                horas_semanais: horasEstudoSemanais,
+                dias_estudo: diasSelecionados, 
+                data_prova: dataProva || null, 
+                dificuldades: dificuldadesMaterias || null,
+                outras_obs: outrasConsideracoes || null
+            };
+
+            console.log("Enviando para o backend (cronograma.html):", dadosParaPlano);
+
+            try {
+                const resposta = await fetch('http://127.0.0.1:5000/gerar-plano-estudos', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json',},
+                    body: JSON.stringify(dadosParaPlano), 
+                });
+
+                console.log("Resposta do fetch recebida (cronograma.html), status:", resposta.status);
+
+                if (!resposta.ok) {
+                    const erroTexto = await resposta.text(); 
+                    console.error("Resposta do servidor não OK (cronograma.html):", erroTexto);
+                    throw new Error(`Erro do servidor: ${resposta.status} - ${erroTexto}`);
+                }
+
+                const dadosDoPlano = await resposta.json(); 
+                console.log("Plano recebido do backend (para gerar e salvar na cronograma.html):", dadosDoPlano);
+
+                if (dadosDoPlano && dadosDoPlano.plano_de_estudos) {
+                    console.log("Gerando exibição para o novo plano_de_estudos (cronograma.html)");
+                    exibirPlanoNaTela(dadosDoPlano.plano_de_estudos);
+                    
+                    if (auth.currentUser) {
+                        console.log("Tentando salvar o plano gerado (cronograma.html)...");
+                        await salvarPlanoNoFirestore(auth.currentUser.uid, dadosDoPlano);
+                        if (document.getElementById('lista-planos-salvos')) { // Garante que a lista exista
+                           await carregarPlanosSalvos(auth.currentUser.uid);
+                        }
+                    } else {
+                        console.warn("Usuário não está logado, plano gerado não será salvo (cronograma.html).");
+                    }
+                
+                } else if (dadosDoPlano && dadosDoPlano.erro_processamento) { 
+                    // ... (seu tratamento de erro_processamento, como na versão anterior)
+                } else if (dadosDoPlano && dadosDoPlano.erro_geral) { 
+                    // ... (seu tratamento de erro_geral, como na versão anterior)
+                } else {
+                    // ... (seu tratamento de else final, como na versão anterior)
+                }
+
+            } catch (error) {
+                console.error("Erro GERAL ao chamar a API ou processar o plano (cronograma.html):", error);
+                areaPlanoEstudos.innerHTML = `<p>Ocorreu um erro GRAVE ao gerar seu plano: ${error.message}</p>`;
+            }
+        });
+    }
 }

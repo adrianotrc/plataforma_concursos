@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Cronograma - ConcursoIA</title>
+    <link rel="stylesheet" href="dashboard-lovable.css"> <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Estilos adicionais para inputs e textareas do formulário, se necessário */
+        .form-input-concursoia, .form-textarea-concursoia, #fase-concurso {
+            width: 100%; /* Ocupa a largura total do container pai */
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .checkbox-group label {
+            display: inline-block; 
+            margin-right: 15px;
+            font-weight: normal;
+        }
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        /* Ajuste para o container do formulário ter um padding interno */
+        #container-form-novo-plano div {
+            margin-bottom:15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebarToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="logo">
+                        <i class="fas fa-book-open"></i>
+                        <span>ConcursoIA</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <a href="#" class="btn btn-ghost">
+                        <i class="fas fa-user"></i>
+                        <span>Meu Perfil</span>
+                    </a>
+                    <button id="botao-logout" class="btn btn-ghost">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Sair</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <a href="home.html" class="nav-item"> 
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="cronograma.html" class="nav-item active"> <i class="fas fa-calendar-alt"></i>
+                    <span>Cronograma</span>
+                </a>
+                <a href="#" class="nav-item"> 
+                    <i class="fas fa-book-open"></i>
+                    <span>Exercícios</span>
+                </a>
+                <a href="#" class="nav-item"> 
+                    <i class="fas fa-file-alt"></i>
+                    <span>Correção de Textos</span>
+                </a>
+                <a href="#" class="nav-item"> 
+                    <i class="fas fa-bullseye"></i>
+                    <span>Dicas Estratégicas</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="content-wrapper">
+                <div class="welcome-section" style="margin-bottom: 20px;">
+                    <h1>Meu Cronograma Personalizado</h1>
+                    <p>Gere um novo plano de estudos ou visualize seus planos salvos.</p>
+                </div>
+
+                <button id="botao-mostrar-form-novo-plano" class="btn btn-primary" style="margin-bottom: 20px; display: block; width: fit-content;">
+                    <i class="fas fa-plus"></i> Gerar Novo Cronograma
+                </button>
+                
+                <div id="container-form-novo-plano" style="display: none; margin-bottom: 30px; padding: 20px; background-color: #f0f8ff; border: 1px solid #add8e6; border-radius: 8px;">
+                    <h3>Defina as Preferências para seu Novo Plano</h3>
+                    <form id="form-plano-estudos">
+                        <div>
+                            <label for="concurso-objetivo">Qual concurso ou cargo você está focando?</label>
+                            <input type="text" id="concurso-objetivo" required placeholder="Ex: Analista do Banco Central" class="form-input-concursoia">
+                        </div>
+                        <div>
+                            <label for="fase-concurso">Em qual fase de preparação você está?</label>
+                            <select id="fase-concurso" required class="form-input-concursoia">
+                                <option value="">Selecione a fase...</option>
+                                <option value="base_sem_edital_especifico">Começando a estudar e/ou sem concurso específico para focar, sem edital</option>
+                                <option value="pre_edital_com_foco">Focando em concurso específico, mas ainda sem edital (usando edital anterior/base)</option>
+                                <option value="pos_edital_publicado">Focando em concurso específico, com edital publicado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="materias-edital">Liste as matérias/conteúdo programático principal (uma por linha ou separadas por vírgula):</label>
+                            <textarea id="materias-edital" rows="4" required placeholder="Ex: Português, Direito Constitucional, Economia, Contabilidade" class="form-textarea-concursoia"></textarea>
+                        </div>
+                        <div>
+                            <label for="horas-estudo-semanais">Quantas horas líquidas você pode dedicar aos estudos por semana?</label>
+                            <input type="number" id="horas-estudo-semanais" required placeholder="Ex: 20" min="1" class="form-input-concursoia">
+                        </div>
+                        <div>
+                            <label>Quais dias da semana você pretende estudar?</label>
+                            <div id="dias-semana-estudo" class="checkbox-group">
+                                <label><input type="checkbox" name="dia_semana" value="segunda"> Segunda</label>
+                                <label><input type="checkbox" name="dia_semana" value="terca"> Terça</label>
+                                <label><input type="checkbox" name="dia_semana" value="quarta"> Quarta</label>
+                                <label><input type="checkbox" name="dia_semana" value="quinta"> Quinta</label>
+                                <label><input type="checkbox" name="dia_semana" value="sexta"> Sexta</label>
+                                <label><input type="checkbox" name="dia_semana" value="sabado"> Sábado</label>
+                                <label><input type="checkbox" name="dia_semana" value="domingo"> Domingo</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="data-prova">Qual a data da prova (se já definida)? (Opcional)</label>
+                            <input type="date" id="data-prova" class="form-input-concursoia">
+                        </div>
+                        <div>
+                            <label for="dificuldades-materias">Você tem matérias específicas onde sente mais dificuldade ou facilidade? (Opcional)</label>
+                            <textarea id="dificuldades-materias" rows="3" placeholder="Ex: Muita dificuldade em Contabilidade Avançada, facilidade em Direito Constitucional" class="form-textarea-concursoia"></textarea>
+                        </div>
+                        <div>
+                            <label for="outras-consideracoes">Alguma outra informação relevante para o plano? (Opcional)</label>
+                            <textarea id="outras-consideracoes" rows="3" placeholder="Ex: Prefiro estudar mais teoria aos finais de semana, gosto de resumos..." class="form-textarea-concursoia"></textarea>
+                        </div>
+                        <button type="submit" id="botao-gerar-plano" class="btn btn-primary" style="margin-top:15px; width: auto;">Gerar Plano de Estudos</button>
+                    </form>
+                </div>
+
+                <div id="area-plano-estudos" style="margin-top: 20px; padding: 20px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+                    <p>Seu plano de estudos mais recente será exibido aqui. Se não houver, gere um novo.</p>
+                </div>
+
+                <div id="secao-planos-salvos" style="margin-top: 32px; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+                    <h2>Meus Planos de Estudo Salvos</h2>
+                    <ul id="lista-planos-salvos" style="list-style: none; padding-left: 0; margin-top: 15px;">
+                        <p id="mensagem-sem-planos">Nenhum plano salvo ainda.</p>
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    </div>
+
+    <script src="dashboard.js"></script> 
+    <script type="module" src="app.js"></script> 
+</body>
+</html>
