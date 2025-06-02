@@ -7,13 +7,15 @@ import {
     signOut, 
     onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-auth.js";
-// ADICIONE/DESCOMENTE AS IMPORTAÇÕES DO FIRESTORE ABAIXO:
 import { 
     getFirestore, 
     collection, 
     addDoc, 
-    serverTimestamp // Para registrar a data de criação
-    // doc, setDoc, getDoc, updateDoc, deleteDoc, query, where, getDocs, onSnapshot // Outras funções que poderemos usar no futuro
+    serverTimestamp,
+    query,
+    where,
+    getDocs,
+    orderBy
 } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js"; 
 
 // Your web app's Firebase configuration
@@ -24,40 +26,205 @@ const firebaseConfig = {
   storageBucket: "plataforma-concursos-ai.firebasestorage.app",
   messagingSenderId: "620928521514",
   appId: "1:620928521514:web:4bf7e6addab3485055ba53"
-  // measurementId: "G-FCHSYJJ7FB"
+  // measurementId: "G-FCHSYJJ7FB" // Opcional
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app); // INICIALIZE O FIRESTORE (db)
+const db = getFirestore(app); 
 
 console.log("Firebase App inicializado");
 console.log("Firebase Auth inicializado");
-console.log("Firestore inicializado:", db); // Log para confirmar
+console.log("Firestore inicializado:", db);
+
+// --- FUNÇÕES AUXILIARES PARA PLANOS DE ESTUDO ---
+
+function exibirPlanoNaTela(planoDeEstudosObjeto) {
+    const areaPlano = document.getElementById('area-plano-estudos');
+    if (!areaPlano) {
+        console.error("Elemento 'area-plano-estudos' não encontrado no DOM.");
+        return;
+    }
+
+    if (planoDeEstudosObjeto) {
+        // O objeto planoDeEstudosObjeto já é o conteúdo do plano 
+        // (ex: o valor de dadosDoPlano.plano_de_estudos ou dadosFirestore.planoSalvo)
+        const planoConteudo = planoDeEstudosObjeto; 
+
+        let htmlPlano = `<h3>${planoConteudo.mensagem_inicial || 'Seu Plano de Estudos!'}</h3>`;
+        htmlPlano += `<p><strong>Concurso Foco:</strong> ${planoConteudo.concurso_foco || 'Não informado'}</p>`;
+        
+        if (planoConteudo.visao_geral_periodos && Array.isArray(planoConteudo.visao_geral_periodos)) {
+            planoConteudo.visao_geral_periodos.forEach((periodoItem, indicePeriodo) => {
+                htmlPlano += `<div class="periodo-plano" style="margin-top: 20px; padding:15px; border: 1px dashed #007bff; border-radius: 5px;">`;
+                htmlPlano += `<h4>${periodoItem.periodo_descricao || `Período ${indicePeriodo + 1}`}: ${periodoItem.foco_principal_periodo || 'Foco do período não especificado'}</h4>`;
+                
+                if(periodoItem.materias_prioritarias_periodo && Array.isArray(periodoItem.materias_prioritarias_periodo) && periodoItem.materias_prioritarias_periodo.length > 0){
+                    htmlPlano += `<p><strong>Matérias Prioritárias no Período:</strong> ${periodoItem.materias_prioritarias_periodo.join(", ")}</p>`;
+                }
+
+                if (periodoItem.cronograma_semanal_detalhado_do_periodo && Array.isArray(periodoItem.cronograma_semanal_detalhado_do_periodo)) {
+                    periodoItem.cronograma_semanal_detalhado_do_periodo.forEach((semanaItem) => {
+                        htmlPlano += `<div class="semana-plano" style="margin-top: 10px; padding-top:10px; border-top: 1px solid #ccc;">`;
+                        htmlPlano += `<h5>Semana ${semanaItem.semana_numero_no_periodo || ''}: ${semanaItem.foco_da_semana_especifico || 'Foco da semana não especificado'}</h5>`;
+                        
+                        if (semanaItem.dias_de_estudo && Array.isArray(semanaItem.dias_de_estudo)) {
+                            htmlPlano += "<ul style='margin-left: 15px;'>"; 
+                            semanaItem.dias_de_estudo.forEach(diaItem => {
+                                htmlPlano += `<li style="margin-bottom: 10px;"><strong>${diaItem.dia_da_semana || 'Dia não especificado'}:</strong>`;
+                                if (diaItem.atividades && Array.isArray(diaItem.atividades)) {
+                                    htmlPlano += "<ul style='list-style-type: circle; margin-left: 20px;'>"; 
+                                    diaItem.atividades.forEach(atividade => {
+                                        htmlPlano += `<li>${atividade.materia || ''}${atividade.topico_sugerido ? ' (' + atividade.topico_sugerido + ')' : ''} - ${atividade.tipo_de_estudo || ''} (${atividade.duracao_sugerida_minutos || '?'} min)</li>`;
+                                    });
+                                    htmlPlano += "</ul>";
+                                } else {
+                                    htmlPlano += " Nenhuma atividade detalhada para este dia.";
+                                }
+                                htmlPlano += `</li>`;
+                            });
+                            htmlPlano += "</ul>"; 
+                        } else {
+                            htmlPlano += "<p>Nenhum dia de estudo detalhado para esta semana.</p>";
+                        }
+                        htmlPlano += `</div>`; 
+                    });
+                }
+                htmlPlano += `</div>`; 
+            });
+        } else {
+             htmlPlano += "<p>Nenhuma estrutura de visão geral de períodos disponível neste plano.</p>";
+        }
+        areaPlanoEstudos.innerHTML = htmlPlano;
+        console.log("Plano exibido na tela pela função exibirPlanoNaTela.");
+    
+    } else {
+        areaPlanoEstudos.innerHTML = "<p>Não foi possível carregar os detalhes do plano (objeto vazio).</p>";
+        console.log("Objeto do plano para exibição está vazio ou inválido:", planoDeEstudosObjeto);
+    }
+}
+
+async function salvarPlanoNoFirestore(usuarioId, dadosDoPlanoCompletoRecebidoDaIA) {
+    if (!usuarioId || !dadosDoPlanoCompletoRecebidoDaIA || !dadosDoPlanoCompletoRecebidoDaIA.plano_de_estudos) {
+        console.error("Dados insuficientes para salvar o plano: usuário não logado ou estrutura de plano inválida.");
+        // Não vamos dar alert aqui para não interromper o fluxo caso a exibição já tenha ocorrido.
+        // O console.error é suficiente para depuração.
+        return;
+    }
+
+    try {
+        const colecaoPlanos = collection(db, "planos_usuarios");
+        const docRef = await addDoc(colecaoPlanos, {
+            uidUsuario: usuarioId,
+            concursoFoco: dadosDoPlanoCompletoRecebidoDaIA.plano_de_estudos.concurso_foco || "Não especificado",
+            planoSalvo: dadosDoPlanoCompletoRecebidoDaIA.plano_de_estudos, 
+            dataCriacao: serverTimestamp(), 
+        });
+        console.log("Plano salvo no Firestore com ID: ", docRef.id);
+        // Removido o alert daqui para não ser repetitivo, o feedback de salvamento pode ser mais sutil no futuro
+        // alert("Seu plano de estudos foi salvo com sucesso!"); 
+
+    } catch (e) {
+        console.error("Erro ao salvar plano no Firestore: ", e);
+        alert("Houve um erro ao tentar salvar seu plano de estudos. Verifique o console para mais detalhes.");
+    }
+}
+
+async function carregarPlanosSalvos(uidUsuario) {
+    const listaPlanosUl = document.getElementById('lista-planos-salvos');
+    const mensagemSemPlanos = document.getElementById('mensagem-sem-planos');
+    const areaPlanoAtual = document.getElementById('area-plano-estudos'); 
+    
+    if (!listaPlanosUl || !mensagemSemPlanos) { // Removida verificação de areaPlanoAtual daqui, pois pode não ser erro se não existir em todas as páginas
+        console.warn("Elementos da lista de planos salvos ('lista-planos-salvos' ou 'mensagem-sem-planos') não encontrados no DOM. Esta função só deve ser chamada na home.html.");
+        return;
+    }
+
+    listaPlanosUl.innerHTML = '<li>Carregando seus planos...</li>'; 
+    mensagemSemPlanos.style.display = 'none';
+
+    try {
+        const colecaoPlanos = collection(db, "planos_usuarios");
+        const q = query(colecaoPlanos, 
+                        where("uidUsuario", "==", uidUsuario), 
+                        orderBy("dataCriacao", "desc"));
+
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            listaPlanosUl.innerHTML = ''; 
+            mensagemSemPlanos.style.display = 'block'; 
+            console.log("Nenhum plano salvo encontrado para este usuário.");
+            return;
+        }
+
+        listaPlanosUl.innerHTML = ''; 
+        querySnapshot.forEach((docSnapshot) => {
+            const dadosFirestore = docSnapshot.data();
+            const planoParaExibir = dadosFirestore.planoSalvo; 
+
+            if (!planoParaExibir) { // Verificação adicional
+                console.warn("Documento de plano salvo não contém a estrutura 'planoSalvo':", docSnapshot.id);
+                return; // Pula este item
+            }
+
+            const listItem = document.createElement('li');
+            listItem.style.padding = '10px';
+            listItem.style.borderBottom = '1px solid #eee';
+            listItem.style.cursor = 'pointer';
+            
+            const dataCriacao = dadosFirestore.dataCriacao && dadosFirestore.dataCriacao.toDate ? 
+                                dadosFirestore.dataCriacao.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 
+                                'Data desconhecida';
+
+            listItem.innerHTML = `
+                <strong>Concurso:</strong> ${planoParaExibir.concurso_foco || 'Não especificado'} <br>
+                <small>Criado em: ${dataCriacao}</small>
+            `;
+            
+            listItem.addEventListener('click', () => {
+                console.log("Exibindo plano salvo do Firestore:", planoParaExibir);
+                if(areaPlanoAtual) { // Verifica se areaPlanoAtual existe antes de usá-lo
+                    areaPlanoAtual.innerHTML = ""; 
+                    exibirPlanoNaTela(planoParaExibir); 
+                    window.scrollTo({ top: areaPlanoAtual.offsetTop - 20, behavior: 'smooth' }); 
+                } else {
+                    console.error("Elemento 'area-plano-estudos' não encontrado para exibir o plano salvo.")
+                }
+            });
+
+            listItem.addEventListener('mouseover', () => listItem.style.backgroundColor = '#f9f9f9');
+            listItem.addEventListener('mouseout', () => listItem.style.backgroundColor = 'transparent');
+
+            listaPlanosUl.appendChild(listItem);
+        });
+
+    } catch (error) {
+        console.error("Erro ao carregar planos salvos:", error);
+        listaPlanosUl.innerHTML = '<li>Ocorreu um erro ao carregar seus planos.</li>';
+        mensagemSemPlanos.style.display = 'none';
+    }
+}
 
 // --- LÓGICA PARA A PÁGINA DE CADASTRO (cadastro.html) ---
 const formCadastro = document.getElementById('form-cadastro');
-
 if (formCadastro) {
     formCadastro.addEventListener('submit', (evento) => {
         evento.preventDefault(); 
-
         const nome = document.getElementById('cadastro-nome').value; 
         const email = document.getElementById('cadastro-email').value;
         const senha = document.getElementById('cadastro-senha').value;
         const confirmaSenha = document.getElementById('cadastro-confirma-senha').value;
-
         if (senha !== confirmaSenha) {
             alert("As senhas não coincidem!");
             return; 
         }
-
         if (email && senha) {
             createUserWithEmailAndPassword(auth, email, senha)
                 .then((userCredential) => {
-                    const user = userCredential.user;
-                    console.log("Usuário cadastrado:", user);
+                    // const user = userCredential.user; // Removido pois user não é usado
+                    console.log("Usuário cadastrado:", userCredential.user.uid);
                     alert("Cadastro realizado com sucesso! Você será redirecionado para o login.");
                     window.location.href = 'index.html'; 
                 })
@@ -81,19 +248,16 @@ if (formCadastro) {
 
 // --- LÓGICA PARA A PÁGINA DE LOGIN (index.html) ---
 const formLogin = document.getElementById('form-login');
-
 if (formLogin) {
     formLogin.addEventListener('submit', (evento) => {
         evento.preventDefault(); 
-
         const email = document.getElementById('login-email').value;
         const senha = document.getElementById('login-senha').value;
-
         if (email && senha) {
             signInWithEmailAndPassword(auth, email, senha)
                 .then((userCredential) => {
-                    const user = userCredential.user;
-                    console.log("Usuário logado:", user);
+                    // const user = userCredential.user; // Removido pois user não é usado
+                    console.log("Usuário logado:", userCredential.user.uid);
                     alert("Login realizado com sucesso!");
                     window.location.href = 'home.html';
                 })
@@ -115,12 +279,11 @@ if (formLogin) {
 
 // --- LÓGICA PARA A PÁGINA HOME (home.html) E LOGOUT ---
 const botaoLogout = document.getElementById('botao-logout');
-
 if (botaoLogout) {
     botaoLogout.addEventListener('click', () => {
         signOut(auth).then(() => {
             console.log("Usuário deslogado");
-            alert("Você foi desconectado.");
+            // alert("Você foi desconectado."); // Removido alerta para fluxo mais rápido ao deslogar
             window.location.href = 'index.html'; 
         }).catch((error) => {
             console.error("Erro ao fazer logout:", error);
@@ -144,6 +307,12 @@ onAuthStateChanged(auth, (user) => {
         if (currentPage === 'index.html' || currentPage === 'cadastro.html' || currentPage === '') {
             console.log("Redirecionando para home.html pois usuário está logado e em página de auth/raiz.");
             window.location.href = 'home.html';
+        } else if (currentPage === 'home.html') {
+            console.log("Usuário na home.html, carregando planos salvos...");
+            // Garante que os elementos da home.html existam antes de chamar carregarPlanosSalvos
+            if (document.getElementById('lista-planos-salvos') && document.getElementById('mensagem-sem-planos')) {
+                carregarPlanosSalvos(user.uid); 
+            }
         }
     } else {
         console.log("Usuário está deslogado. Página Atual:", currentPage);
@@ -153,34 +322,6 @@ onAuthStateChanged(auth, (user) => {
         }
     }
 });
-
-async function salvarPlanoNoFirestore(usuarioId, dadosDoPlanoGerado) {
-    if (!usuarioId || !dadosDoPlanoGerado || !dadosDoPlanoGerado.plano_de_estudos) {
-        console.error("Dados insuficientes para salvar o plano ou usuário não logado.");
-        return; // Não tenta salvar se não tiver os dados necessários
-    }
-
-    try {
-        // Cria uma referência para a coleção 'planos_usuarios'
-        // Se a coleção não existir, o Firebase a criará automaticamente.
-        const colecaoPlanos = collection(db, "planos_usuarios");
-
-        // Adiciona um novo documento à coleção
-        const docRef = await addDoc(colecaoPlanos, {
-            uidUsuario: usuarioId,
-            concursoFoco: dadosDoPlanoGerado.plano_de_estudos.concurso_foco || "Não especificado",
-            planoCompleto: dadosDoPlanoGerado.plano_de_estudos, // Salva todo o objeto do plano
-            dataCriacao: serverTimestamp(), // Pega a data/hora do servidor Firebase
-            // Você pode adicionar outros metadados aqui se desejar
-        });
-        console.log("Plano salvo no Firestore com ID: ", docRef.id);
-        alert("Seu plano de estudos foi salvo com sucesso!");
-
-    } catch (e) {
-        console.error("Erro ao salvar plano no Firestore: ", e);
-        alert("Houve um erro ao tentar salvar seu plano de estudos. Por favor, tente novamente.");
-    }
-}
 
 // --- LÓGICA PARA GERAR PLANO DE ESTUDOS (home.html) ---
 const formPlanoEstudos = document.getElementById('form-plano-estudos');
@@ -205,7 +346,7 @@ if (formPlanoEstudos && areaPlanoEstudos) {
         const dificuldadesMaterias = document.getElementById('dificuldades-materias').value;
         const outrasConsideracoes = document.getElementById('outras-consideracoes').value;
 
-        if (diasSelecionados.length === 0 && (concursoObjetivo || faseConcurso || materiasEdital) ) { // Alerta só se outros campos foram preenchidos
+        if (diasSelecionados.length === 0 && (concursoObjetivo || faseConcurso || materiasEdital) ) {
             alert("Por favor, selecione pelo menos um dia da semana para estudar.");
             areaPlanoEstudos.innerHTML = "<p>Por favor, selecione os dias da semana para gerar o plano.</p>";
             return; 
@@ -243,76 +384,24 @@ if (formPlanoEstudos && areaPlanoEstudos) {
             }
 
             const dadosDoPlano = await resposta.json(); 
-            console.log("Plano recebido do backend (estrutura da IA):", dadosDoPlano);
+            console.log("Plano recebido do backend (para gerar e salvar):", dadosDoPlano);
 
-            // ########## INÍCIO DA LÓGICA DE EXIBIÇÃO ATUALIZADA ##########
             if (dadosDoPlano && dadosDoPlano.plano_de_estudos) {
-                console.log("Entrou no if principal para exibir plano_de_estudos");
-                const planoConteudo = dadosDoPlano.plano_de_estudos;
-                console.log("Objeto planoConteudo:", planoConteudo);
-
-                let htmlPlano = `<h3>${planoConteudo.mensagem_inicial || 'Seu Plano de Estudos Personalizado!'}</h3>`;
-                htmlPlano += `<p><strong>Concurso Foco:</strong> ${planoConteudo.concurso_foco || 'Não informado pela IA'}</p>`;
+                console.log("Gerando exibição para o novo plano_de_estudos");
+                exibirPlanoNaTela(dadosDoPlano.plano_de_estudos);
                 
-                // Verifica a chave 'visao_geral_periodos'
-                if (planoConteudo.visao_geral_periodos && Array.isArray(planoConteudo.visao_geral_periodos)) {
-                    console.log("Processando visao_geral_periodos:", planoConteudo.visao_geral_periodos);
-                    
-                    planoConteudo.visao_geral_periodos.forEach((periodoItem, indicePeriodo) => {
-                        htmlPlano += `<div class="periodo-plano" style="margin-top: 20px; padding:15px; border: 1px dashed #007bff; border-radius: 5px;">`;
-                        htmlPlano += `<h4>${periodoItem.periodo_descricao || `Período ${indicePeriodo + 1}`}: ${periodoItem.foco_principal_periodo || 'Foco do período não especificado'}</h4>`;
-                        
-                        if(periodoItem.materias_prioritarias_periodo && Array.isArray(periodoItem.materias_prioritarias_periodo) && periodoItem.materias_prioritarias_periodo.length > 0){
-                            htmlPlano += `<p><strong>Matérias Prioritárias no Período:</strong> ${periodoItem.materias_prioritarias_periodo.join(", ")}</p>`;
-                        }
-
-                        // Verifica se existe o cronograma_semanal_detalhado_do_periodo para este período
-                        if (periodoItem.cronograma_semanal_detalhado_do_periodo && Array.isArray(periodoItem.cronograma_semanal_detalhado_do_periodo)) {
-                            console.log(`Processando cronograma_semanal_detalhado para ${periodoItem.periodo_descricao}`);
-                            periodoItem.cronograma_semanal_detalhado_do_periodo.forEach((semanaItem) => {
-                                htmlPlano += `<div class="semana-plano" style="margin-top: 10px; padding-top:10px; border-top: 1px solid #ccc;">`;
-                                htmlPlano += `<h5>Semana ${semanaItem.semana_numero_no_periodo || ''}: ${semanaItem.foco_da_semana_especifico || 'Foco da semana não especificado'}</h5>`;
-                                
-                                if (semanaItem.dias_de_estudo && Array.isArray(semanaItem.dias_de_estudo)) {
-                                    htmlPlano += "<ul style='margin-left: 15px;'>"; // Lista para os dias da semana
-                                    semanaItem.dias_de_estudo.forEach(diaItem => {
-                                        htmlPlano += `<li style="margin-bottom: 10px;"><strong>${diaItem.dia_da_semana || 'Dia não especificado'}:</strong>`;
-                                        if (diaItem.atividades && Array.isArray(diaItem.atividades)) {
-                                            htmlPlano += "<ul style='list-style-type: circle; margin-left: 20px;'>"; // Lista interna para as atividades do dia
-                                            diaItem.atividades.forEach(atividade => {
-                                                htmlPlano += `<li>${atividade.materia || ''}${atividade.topico_sugerido ? ' (' + atividade.topico_sugerido + ')' : ''} - ${atividade.tipo_de_estudo || ''} (${atividade.duracao_sugerida_minutos || '?'} min)</li>`;
-                                            });
-                                            htmlPlano += "</ul>";
-                                        } else {
-                                            htmlPlano += " Nenhuma atividade detalhada para este dia.";
-                                        }
-                                        htmlPlano += `</li>`;
-                                    });
-                                    htmlPlano += "</ul>"; // Fecha lista dos dias da semana
-                                } else {
-                                    htmlPlano += "<p>Nenhum dia de estudo detalhado para esta semana.</p>";
-                                }
-                                htmlPlano += `</div>`; // Fecha div.semana-plano
-                            });
-                        } else {
-                             // Não mostra nada se não houver cronograma detalhado para este período (ex: meses futuros)
-                             console.log(`Sem cronograma semanal detalhado para ${periodoItem.periodo_descricao}`);
-                        }
-                        htmlPlano += `</div>`; // Fecha div.periodo-plano
-                    });
-                } else {
-                     htmlPlano += "<p>Nenhuma estrutura de visão geral de períodos retornada pela IA.</p>";
-                     console.log("Estrutura 'visao_geral_periodos' não encontrada ou não é um array:", planoConteudo.visao_geral_periodos);
-                }
-                areaPlanoEstudos.innerHTML = htmlPlano;
-                console.log("innerHTML de areaPlanoEstudos foi atualizado.");
-
-                // CHAMA A FUNÇÃO PARA SALVAR O PLANO APÓS EXIBI-LO
+                console.log("innerHTML de areaPlanoEstudos foi atualizado pela função exibirPlanoNaTela.");
+            
                 if (auth.currentUser) {
-                    salvarPlanoNoFirestore(auth.currentUser.uid, dadosDoPlano);
+                    console.log("Tentando salvar o plano gerado...");
+                    await salvarPlanoNoFirestore(auth.currentUser.uid, dadosDoPlano);
+                    // Após salvar, recarrega a lista de planos para incluir o novo
+                    // Garante que os elementos existam antes de chamar
+                    if (document.getElementById('lista-planos-salvos') && document.getElementById('mensagem-sem-planos')) {
+                       await carregarPlanosSalvos(auth.currentUser.uid);
+                    }
                 } else {
-                    console.warn("Usuário não está logado, plano não será salvo no Firestore.");
-                    // Poderia alertar o usuário aqui também, mas o onAuthStateChanged deve cuidar do acesso
+                    console.warn("Usuário não está logado, plano gerado não será salvo no Firestore.");
                 }
             
             } else if (dadosDoPlano && dadosDoPlano.erro_processamento) { 
