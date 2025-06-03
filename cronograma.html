@@ -1,32 +1,112 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Cronograma - ConcursoIA</title>
     <link rel="stylesheet" href="dashboard-lovable.css"> <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Estilos adicionais para inputs e textareas do formulário, se necessário */
+        /* Estilos para o formulário de cronograma e outras seções específicas desta página */
+        #container-form-novo-plano {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        #container-form-novo-plano h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #343a40;
+        }
+        #form-plano-estudos div { 
+            margin-bottom: 15px;
+        }
+        #form-plano-estudos label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
         .form-input-concursoia, .form-textarea-concursoia, #fase-concurso {
-            width: 100%; /* Ocupa a largura total do container pai */
+            width: 100%;
             padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
+            margin-top: 5px; 
+            border: 1px solid #ced4da;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 1rem;
+        }
+        .form-textarea-concursoia {
+            resize: vertical;
         }
         .checkbox-group label {
             display: inline-block; 
             margin-right: 15px;
             font-weight: normal;
+            color: #495057;
         }
         .checkbox-group input[type="checkbox"] {
             margin-right: 5px;
+            vertical-align: middle;
         }
-        /* Ajuste para o container do formulário ter um padding interno */
-        #container-form-novo-plano div {
-            margin-bottom:15px;
+        
+        #area-plano-estudos { 
+            margin-top: 20px; 
+            padding: 20px; 
+            background-color: #ffffff; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            border: 1px solid #e5e7eb; 
+            min-height: 100px;
+            max-height: 70vh; 
+            overflow-y: auto;
         }
+        #area-plano-estudos .feature-header h3 { color: #1d4ed8; margin-bottom: 0; }
+        #area-plano-estudos .periodo-plano h4 { margin-top: 15px; color: #1e40af; margin-bottom: 10px; }
+        #area-plano-estudos .semana-plano h5 { margin-top: 10px; color: #1f2937; margin-bottom: 5px;}
+        #area-plano-estudos ul { padding-left: 20px; margin-top: 5px; }
+        #area-plano-estudos ul ul { list-style: circle; }
+        #area-plano-estudos li { margin-bottom: 5px; }
+
+        .botao-fechar-plano {
+            display: block; 
+            width: fit-content;
+            margin: 0 auto 15px auto; 
+            padding: 8px 15px;
+            background-color: #6c757d; 
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .botao-fechar-plano:hover {
+            background-color: #5a6268;
+        }
+
+        #secao-planos-salvos { 
+            margin-top: 32px; 
+            background-color: #ffffff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            border: 1px solid #e5e7eb;
+        }
+        #secao-planos-salvos h2 { margin-top:0; margin-bottom: 15px; }
+        #lista-planos-salvos { list-style: none; padding-left: 0; }
+        #lista-planos-salvos .activity-item:hover { background-color: #f0f8ff; }
+
+        /* Estilos do Lovable para .schedule-day que você forneceu para cronograma.html */
+        .schedule-container { margin-top: 10px; } 
+        .schedule-day { margin-bottom: 15px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 6px; background-color: #fdfdfd; }
+        .day-header { font-weight: 600; margin-bottom: 8px; color: #333; font-size: 0.95em; }
+        .task-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid #f7f7f7; font-size: 0.9em; }
+        .task-item:last-child { border-bottom: none; }
+        .task-time { font-size: 0.85em; color: #555; min-width: 70px; }
+        .task-subject { flex: 1; font-weight: 500; color: #444;}
+        .task-status.pending { color: #888; }
+        .task-status.completed { color: #10b981; } /* Adicionado para consistência */
     </style>
 </head>
 <body>
@@ -34,48 +114,23 @@
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="header-left">
-                    <button class="sidebar-toggle" id="sidebarToggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="logo">
-                        <i class="fas fa-book-open"></i>
-                        <span>ConcursoIA</span>
-                    </div>
+                    <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+                    <div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div>
                 </div>
                 <div class="header-right">
-                    <a href="#" class="btn btn-ghost">
-                        <i class="fas fa-user"></i>
-                        <span>Meu Perfil</span>
-                    </a>
-                    <button id="botao-logout" class="btn btn-ghost">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Sair</span>
-                    </button>
+                    <a href="#" class="btn btn-ghost"><i class="fas fa-user"></i><span>Meu Perfil</span></a>
+                    <button id="botao-logout" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button>
                 </div>
             </div>
         </header>
 
         <aside class="sidebar" id="sidebar">
             <nav class="sidebar-nav">
-                <a href="home.html" class="nav-item"> 
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="cronograma.html" class="nav-item active"> <i class="fas fa-calendar-alt"></i>
-                    <span>Cronograma</span>
-                </a>
-                <a href="#" class="nav-item"> 
-                    <i class="fas fa-book-open"></i>
-                    <span>Exercícios</span>
-                </a>
-                <a href="#" class="nav-item"> 
-                    <i class="fas fa-file-alt"></i>
-                    <span>Correção de Textos</span>
-                </a>
-                <a href="#" class="nav-item"> 
-                    <i class="fas fa-bullseye"></i>
-                    <span>Dicas Estratégicas</span>
-                </a>
+                <a href="home.html" class="nav-item"> <i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="cronograma.html" class="nav-item active"> <i class="fas fa-calendar-alt"></i><span>Cronograma</span></a>
+                <a href="#" class="nav-item"> <i class="fas fa-book-open"></i><span>Exercícios</span></a>
+                <a href="#" class="nav-item"> <i class="fas fa-file-alt"></i><span>Correção de Textos</span></a>
+                <a href="dicas-estrategicas.html" class="nav-item"> <i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
             </nav>
         </aside>
 
@@ -90,7 +145,7 @@
                     <i class="fas fa-plus"></i> Gerar Novo Cronograma
                 </button>
                 
-                <div id="container-form-novo-plano" style="display: none; margin-bottom: 30px; padding: 20px; background-color: #f0f8ff; border: 1px solid #add8e6; border-radius: 8px;">
+                <div id="container-form-novo-plano" style="display: none;">
                     <h3>Defina as Preferências para seu Novo Plano</h3>
                     <form id="form-plano-estudos">
                         <div>
@@ -142,16 +197,23 @@
                     </form>
                 </div>
 
-                <div id="area-plano-estudos" style="margin-top: 20px; padding: 20px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
-                    <p>Seu plano de estudos mais recente será exibido aqui. Se não houver, gere um novo.</p>
-                </div>
+                <div id="area-plano-estudos">
+                    </div>
 
-                <div id="secao-planos-salvos" style="margin-top: 32px; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+                <div id="secao-planos-salvos">
                     <h2>Meus Planos de Estudo Salvos</h2>
-                    <ul id="lista-planos-salvos" style="list-style: none; padding-left: 0; margin-top: 15px;">
+                    <ul id="lista-planos-salvos">
                         <p id="mensagem-sem-planos">Nenhum plano salvo ainda.</p>
                     </ul>
                 </div>
+
+                <div class="activity-card" style="margin-top: 32px;">
+                     <div class="activity-header"><h3>Recomendações da IA (Placeholder)</h3><p>Sugestões personalizadas para otimizar seus estudos</p></div>
+                     <div class="activity-content">
+                         <div class="activity-item"><div class="activity-dot blue"></div><span class="activity-text">Foque mais em Direito Constitucional nos próximos 3 dias</span><span class="activity-time">Agora</span></div>
+                     </div>
+                 </div>
+
             </div>
         </main>
 

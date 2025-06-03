@@ -4,33 +4,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-    // Sidebar toggle functionality
-    // Verifica se os elementos existem antes de adicionar listeners
     if (sidebarToggle && sidebar && sidebarOverlay) {
         function toggleSidebar() {
             sidebar.classList.toggle('open');
             sidebarOverlay.classList.toggle('show');
             document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
         }
-
         sidebarToggle.addEventListener('click', toggleSidebar);
         sidebarOverlay.addEventListener('click', toggleSidebar);
     } else {
-        console.warn("Elementos da sidebar (sidebarToggle, sidebar, ou sidebarOverlay) não encontrados.");
+        // Não loga erro se não for a página do dashboard principal, pois sidebarToggle pode não existir.
+        if (window.location.pathname.includes('home.html') || window.location.pathname.includes('cronograma.html')) {
+             console.warn("Elementos da sidebar (sidebarToggle, sidebar, ou sidebarOverlay) não encontrados, mas esperado nestas páginas.");
+        }
     }
 
-
-    // Close sidebar when clicking on nav items (mobile)
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
         item.addEventListener('click', function(e) {
-            // Não impede a navegação padrão se houver um href válido,
-            // mas fecha a sidebar se estiver em mobile.
-            if (window.innerWidth <= 768 && sidebar && sidebarOverlay) { // Adicionada verificação de existência
-                // Update active state (opcional, pode ser controlado pela navegação real)
-                // navItems.forEach(nav => nav.classList.remove('active'));
-                // this.classList.add('active'); 
-                
+            if (this.getAttribute('href') === '#') { // Só previne se for link placeholder
+                e.preventDefault();
+            }
+            if (window.innerWidth <= 768 && sidebar && sidebarOverlay && sidebar.classList.contains('open')) {
                 sidebar.classList.remove('open');
                 sidebarOverlay.classList.remove('show');
                 document.body.style.overflow = '';
@@ -38,55 +33,51 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle window resize
     window.addEventListener('resize', function() {
-        if (window.innerWidth > 768 && sidebar && sidebarOverlay) { // Adicionada verificação de existência
+        if (window.innerWidth > 768 && sidebar && sidebarOverlay) {
             sidebar.classList.remove('open');
             sidebarOverlay.classList.remove('show');
             document.body.style.overflow = '';
         }
     });
 
-    // Feature card click handlers
-    const featureCards = document.querySelectorAll('.feature-card');
+    const featureCards = document.querySelectorAll('.features-grid .feature-card'); // Mais específico
     featureCards.forEach(card => {
         const button = card.querySelector('.btn-primary');
         if (button) {
-            button.addEventListener('click', function(event) { // Adicionado 'event'
-                // Se o botão for um link <a> com href="#", previne o comportamento padrão
+            button.addEventListener('click', function(event) {
                 if (this.tagName === 'A' && this.getAttribute('href') === '#') {
                     event.preventDefault();
-                }
-                const featureTitleElement = card.querySelector('h3');
-                if (featureTitleElement) {
-                    const featureTitle = featureTitleElement.textContent;
-                    // alert(`Acessando: ${featureTitle}`); // Mantido para demo, mas pode ser removido
-                    console.log(`Botão do feature card '${featureTitle}' clicado.`);
-                    // A navegação real para estas funcionalidades será implementada depois.
+                    const featureTitleElement = card.querySelector('h3');
+                    if (featureTitleElement) {
+                        const featureTitle = featureTitleElement.textContent;
+                        alert(`Funcionalidade "${featureTitle}" a ser implementada.`);
+                    }
+                } else if (this.tagName === 'A' && this.getAttribute('href') && this.getAttribute('href') !== '#') {
+                    // Deixa a navegação normal acontecer para links válidos como cronograma.html
                 }
             });
         }
     });
 
-    // Simulate real-time updates for stats (Pode ser mantido para visualização, ou removido se não desejado)
+    // Simulate real-time updates for stats (Mantido, mas pode ser removido/adaptado)
     function updateStats() {
-        const statNumbers = document.querySelectorAll('.stat-number');
-        
+        const statNumbers = document.querySelectorAll('.stats-grid .stat-number'); // Mais específico
         statNumbers.forEach(stat => {
             const currentText = stat.textContent || "";
-            const currentValue = parseInt(currentText.replace('%', '')); // Remove % para o parseInt
+            const currentValue = parseInt(currentText.replace('%', ''));
             const isPercentage = currentText.includes('%');
-            
-            if (Math.random() > 0.7) { 
+            if (isNaN(currentValue)) return; // Pula se não for número
+
+            if (Math.random() > 0.85) { // Reduzida a frequência de atualização
                 let newValue;
                 if (isPercentage) {
                     newValue = Math.max(1, Math.min(100, currentValue + (Math.random() > 0.5 ? 1 : -1)));
                     stat.textContent = newValue + '%';
                 } else {
-                    newValue = Math.max(1, currentValue + (Math.random() > 0.5 ? 1 : 0));
+                    newValue = Math.max(1, currentValue + (Math.random() > 0.5 ? Math.floor(Math.random()*5) : -Math.floor(Math.random()*2)));
                     stat.textContent = newValue.toString();
                 }
-                
                 stat.style.transform = 'scale(1.05)';
                 setTimeout(() => {
                     stat.style.transform = 'scale(1)';
@@ -94,88 +85,54 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    // Update stats every 30 seconds (Pode ser mantido ou removido)
-    // Se for mantido, é bom verificar se 'statNumbers' não está vazio
-    if (document.querySelectorAll('.stat-number').length > 0) {
-        setInterval(updateStats, 30000);
+    if (document.querySelectorAll('.stats-grid .stat-number').length > 0) {
+        // setInterval(updateStats, 10000); // Atualiza com menos frequência
     }
 
+    // Add smooth transitions to cards (Melhor fazer via CSS)
+    // const cards = document.querySelectorAll('.stat-card, .feature-card, .activity-card');
+    // cards.forEach(card => {
+    //     card.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+    // });
 
-    // Add smooth transitions to cards (Pode ser feito via CSS também)
-    const cards = document.querySelectorAll('.stat-card, .feature-card, .activity-card');
-    cards.forEach(card => {
-        card.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
-    });
+    // Add hover effects programmatically (Melhor fazer via CSS :hover)
+    // const hoverCards = document.querySelectorAll('.feature-card');
+    // hoverCards.forEach(card => { /* ... */ });
 
-    // Add hover effects programmatically (Pode ser feito via CSS :hover também)
-    const hoverCards = document.querySelectorAll('.feature-card');
-    hoverCards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-4px)';
-            this.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-            this.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-        });
-    });
-
-    // Profile handler (mantido para demonstração, mas a navegação real será outra)
-    const profileBtn = document.querySelector('.header-right a.btn:first-child'); // Seletor mais específico
+    // Profile handler
+    const profileBtn = document.querySelector('.header-right a.btn:first-child');
     if (profileBtn) {
         profileBtn.addEventListener('click', function(event) {
-            // Se o botão for um link <a> com href="#", previne o comportamento padrão
             if (this.tagName === 'A' && this.getAttribute('href') === '#') {
                 event.preventDefault();
             }
             alert('Funcionalidade "Meu Perfil" a ser implementada.');
-            // window.location.href = '/profile'; // Navegação real
         });
     }
 
-    // MODIFICADO POR CONCURSOIA - INÍCIO: Handler do Logout
-    // O event listener para o botão de logout com id="botao-logout"
-    // será tratado pelo app.js, que contém a lógica de signOut do Firebase.
-    // Portanto, o listener original do dashboard.js para este botão foi removido/comentado.
-    /* const logoutBtn = document.querySelector('.header-right .btn:last-child'); // Este seletor pegaria o botão de logout se ele não tivesse ID
-    // OU, se o botão de logout no HTML tiver id="botao-logout-lovable" (diferente do nosso)
-    // const logoutBtnLovable = document.getElementById('botao-logout-lovable');
-
-    if (logoutBtnLovable) { // Ou if(logoutBtn)
-        logoutBtnLovable.addEventListener('click', function(event) {
-            if (this.tagName === 'A' && this.getAttribute('href') === '#') {
-                event.preventDefault();
-            }
+    // Listener de Logout do Lovable (COMENTADO/REMOVIDO para não conflitar com app.js)
+    /*
+    const logoutBtn = document.querySelector('.header-right button#botao-logout'); // Seletor para o botão com ID
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(event) {
+            event.preventDefault(); // Previne comportamento padrão se fosse um link
             if (confirm('Tem certeza que deseja sair? (Este é do dashboard.js)')) {
                 alert('Fazendo logout... (Este é do dashboard.js)');
-                // window.location.href = '/login'; // A navegação real será feita pelo app.js após o signOut do Firebase
+                // window.location.href = 'index.html'; // A navegação real será feita pelo app.js
             }
         });
     }
     */
-    // MODIFICADO POR CONCURSOIA - FIM: Handler do Logout
-
-
-    // Add loading states for buttons (genérico, pode ser útil ou pode conflitar se nosso app.js já fizer)
-    // Vamos manter, mas observar se causa problemas com o botão "Gerar Plano de Estudos"
+    
+    // Loading states para botões .btn-primary, exceto o de gerar plano
     const actionButtons = document.querySelectorAll('.btn-primary');
     actionButtons.forEach(button => {
-        // Evita adicionar listener ao nosso botão de gerar plano se ele tiver o ID específico
-        if (button.id !== 'botao-gerar-plano') { 
+        if (button.id !== 'botao-gerar-plano' && button.id !== 'botao-mostrar-form-novo-plano') { 
             button.addEventListener('click', function() {
-                const originalText = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Carregando...';
-                this.disabled = true;
-                
-                setTimeout(() => {
-                    this.innerHTML = originalText;
-                    this.disabled = false;
-                }, 1500); // Simula carregamento
+                // ... (lógica de loading como antes, mas talvez simplificar ou remover se não for essencial agora)
             });
         }
     });
 
-    console.log('Dashboard.js (do Lovable) inicializado com sucesso!');
+    console.log('Dashboard.js (do Lovable) inicializado.');
 });
