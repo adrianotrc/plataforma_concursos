@@ -32,10 +32,11 @@ def ola_mundo():
 
 @app.route("/gerar-plano-estudos", methods=['POST'])
 def gerar_plano():
-    # ... (Seu código da função gerar_plano como estava na última versão, sem alterações aqui)
     if not client: 
-        return jsonify({"erro": "Cliente OpenAI não está inicializado. Verifique a configuração da chave de API no backend."}), 500
+        return jsonify({"erro": "Cliente OpenAI não está inicializado."}), 500
+
     dados_usuario = request.json
+    
     print("===============================================")
     print("DADOS DO USUÁRIO (PLANO) RECEBIDOS PELO BACKEND:")
     if dados_usuario:
@@ -45,16 +46,47 @@ def gerar_plano():
         print("  Nenhum dado JSON recebido no corpo da requisição.")
         return jsonify({"erro": "Nenhum dado recebido do usuário."}), 400
     print("===============================================")
+
     try:
+        # 1. Construir a string de informações do usuário primeiro
         prompt_usuario_info_list = []
         for key, value in dados_usuario.items():
             if value: 
                 if key == "dias_estudo" and isinstance(value, list):
                     prompt_usuario_info_list.append(f"Dias da Semana para Estudo: {', '.join(value)}")
+                elif key == "outras_obs": # Não inclui 'outras_obs' diretamente aqui, pois será tratada abaixo
+                    continue
                 else:
                     campo_formatado = key.replace("_", " ").capitalize()
                     prompt_usuario_info_list.append(f"{campo_formatado}: {value}")
-        prompt_usuario_info = ". ".join(prompt_usuario_info_list) + "."
+        prompt_usuario_info_base = ". ".join(prompt_usuario_info_list) + "."
+
+        # 2. Extrair e formatar a preferência diária das 'outras_obs'
+        preferencia_diaria_instrucao = "" # Instrução específica para o prompt sobre o padrão diário
+        outras_obs_texto_para_ia = "" # Texto das outras_obs para incluir no final
+        
+        outras_obs_usuario = dados_usuario.get('outras_obs', "")
+        if outras_obs_usuario:
+            outras_obs_lower = outras_obs_usuario.lower()
+            # Tenta detectar um padrão como "Xh por dia sendo Yh cada materia"
+            # Esta detecção pode ser aprimorada com regex se necessário
+            if "h por dia" in outras_obs_lower and ("h cada materia" in outras_obs_lower or "h por materia" in outras_obs_lower):
+                preferencia_diaria_instrucao = (
+                    f"IMPORTANTÍSSIMO: O usuário especificou uma preferência de estudo diário: '{outras_obs_usuario}'. "
+                    "Nas 'atividades' diárias, ESFORCE-SE AO MÁXIMO para seguir essa estrutura de horas totais por dia e divisão de tempo por matéria. "
+                    "Por exemplo, se o usuário disse '2h por dia sendo 1h cada matéria', você deve sugerir DUAS sessões de estudo de 60 minutos cada, com matérias distintas ou alternadas, para cada dia de estudo."
+                )
+            else:
+                # Se não for uma preferência de estrutura diária, apenas repassa como observação geral
+                outras_obs_texto_para_ia = f"Outras Observações do Usuário: {outras_obs_usuario}. "
+        
+        # Concatenar todas as informações do usuário para o prompt final
+        prompt_usuario_final_info = prompt_usuario_info_base
+        if outras_obs_texto_para_ia: # Adiciona outras_obs se não foram interpretadas como preferência_diaria
+             prompt_usuario_final_info += " " + outras_obs_texto_para_ia
+
+
+        # 3. Lógica para instrucao_duracao_e_detalhamento (como antes)
         data_prova_usuario_str = dados_usuario.get('data_prova')
         fase_concurso_usuario = dados_usuario.get('fase')
         instrucao_duracao_e_detalhamento = ""
@@ -68,23 +100,25 @@ def gerar_plano():
                 if numero_semanas_total > 0:
                     instrucao_duracao_e_detalhamento = (
                         f"O plano de estudos deve cobrir o período total de aproximadamente {numero_semanas_total} semanas, desde agora até a data da prova em {data_prova_usuario_str}. "
-                        "Para este período, forneça um FOCO GERAL para cada GRUPO DE 4 SEMANAS (ou para cada mês, se preferir). "
+                        "Para este período, forneça um FOCO GERAL para cada GRUPO DE 4 SEMANAS (ou para cada mês). "
                         "Adicionalmente, forneça um CRONOGRAMA SEMANAL DETALHADO (dia a dia, com matérias, tópicos sugeridos, tipo de estudo e duração em minutos para cada atividade) apenas para as PRIMEIRAS 4 SEMANAS do plano. "
                         "Para os períodos subsequentes (após as primeiras 4 semanas), indique apenas o foco principal e as matérias a serem priorizadas em cada bloco de 4 semanas ou mês. "
                     )
                 else:
-                    instrucao_duracao_e_detalhamento = "A data da prova informada já passou ou é muito próxima. Gere um plano intensivo para 1 semana. "
+                    instrucao_duracao_e_detalhamento = "A data da prova informada já passou ou é muito próxima. Gere um plano intensivo para 1 semana, detalhado semana a semana. "
             except ValueError:
-                instrucao_duracao_e_detalhamento = "A data da prova fornecida não está em um formato válido (AAAA-MM-DD). Gere um plano para 12 semanas. "
+                instrucao_duracao_e_detalhamento = "A data da prova fornecida não está em um formato válido (AAAA-MM-DD). Por favor, corrija. Por enquanto, gere um plano para 12 semanas, detalhado semana a semana. "
         elif fase_concurso_usuario == 'pos_edital_publicado': 
             instrucao_duracao_e_detalhamento = "Este é um cenário pós-edital, então crie um plano de estudos intensivo e detalhado para as próximas 6 a 8 semanas, com detalhamento semana a semana. "
         else: 
             instrucao_duracao_e_detalhamento = "Crie um plano de estudos detalhado para as próximas 12 semanas (aproximadamente 3 meses), com detalhamento semana a semana. "
+
+        # 4. Construção do prompt_completo FINAL
         prompt_completo = (
             "Você é um mentor especialista em preparação para concursos públicos no Brasil, altamente qualificado e que se baseia nos princípios e metodologias do 'Guia Definitivo de Aprovação em Concursos Públicos' de Adriano Torres e Felipe Silva. "
-            "Sua tarefa é criar um plano de estudos prático e detalhado, estritamente em formato JSON, para o perfil de usuário fornecido. O plano deve focar exclusivamente nas MATÉRIAS listadas pelo usuário. "
-            f"{instrucao_duracao_e_detalhamento}" 
-            f"{detalhamento_sugerido}" 
+            "Sua tarefa é criar um plano de estudos prático e altamente detalhado, estritamente em formato JSON, para o perfil de usuário fornecido. O plano deve focar exclusivamente nas MATÉRIAS listadas pelo usuário. "
+            f"{instrucao_duracao_e_detalhamento}"
+            f"{detalhamento_sugerido}"
             "O objeto JSON principal deve ter uma chave 'plano_de_estudos'. "
             "Dentro de 'plano_de_estudos', inclua: "
             "1. 'mensagem_inicial': Uma string com uma saudação motivadora e breve introdução ao plano. "
@@ -93,19 +127,30 @@ def gerar_plano():
             "    a. 'periodo_descricao': String. "
             "    b. 'foco_principal_periodo': String. "
             "    c. 'materias_prioritarias_periodo': Lista de strings. "
-            "    d. 'cronograma_semanal_detalhado_do_periodo': (OPCIONAL, APENAS SE SOLICITADO NO DETALHAMENTO PARA AS PRIMEIRAS SEMANAS) Uma LISTA de objetos (semanas). Cada semana deve ter: "
+            "    d. 'cronograma_semanal_detalhado_do_periodo': (OPCIONAL, APENAS SE SOLICITADO NO DETALHAMENTO) Uma LISTA de objetos (semanas). Cada semana deve ter: "
             "        i. 'semana_numero_no_periodo': Number. "
             "        ii. 'foco_da_semana_especifico': String. "
-            "        iii. 'dias_de_estudo': Uma LISTA de objetos (dias). Cada dia deve ter 'dia_da_semana' (String) e 'atividades' (LISTA de objetos, cada um com 'materia', 'topico_sugerido', 'tipo_de_estudo', 'duracao_sugerida_minutos'). "
+            "        iii. 'dias_de_estudo': Uma LISTA de objetos (UTILIZE APENAS OS DIAS DE ESTUDO FORNECIDOS PELO USUÁRIO). Cada objeto de dia deve ter as chaves: "
+            "            - 'dia_da_semana': String. "
+            "            - 'atividades': Uma LISTA de objetos (sessões de estudo). Cada sessão de estudo deve ter as chaves: "
+            "                - 'materia': String (UMA das MATÉRIAS INFORMADAS PELO USUÁRIO). "
+            "                - 'topico_sugerido': String (Sugira um TÓPICO CONCRETO E ESPECÍFICO). "
+            "                - 'tipo_de_estudo': String (Sugira um TIPO DE ESTUDO VARIADO E ESPECÍFICO). "
+            "                - 'duracao_sugerida_minutos': Number (duração em minutos. A soma das durações no dia deve ser consistente com as horas semanais e dias de estudo informados). "
             "Instruções Adicionais Cruciais para o Plano: "
-            "- As 'atividades' devem usar estritamente as MATÉRIAS INFORMADAS PELO USUÁRIO. "
+            f"{preferencia_diaria_instrucao} " # <<<< INSTRUÇÃO DA PREFERÊNCIA DIÁRIA AQUI
+            "- Para cada dia de estudo, se nenhuma preferência diária específica foi dada pelo usuário, distribua de 1 a 3 sessões de estudo. Se uma preferência diária foi dada, siga-a. " # AJUSTADO
+            "- Baseie as 'atividades' estritamente nas MATÉRIAS INFORMADAS PELO USUÁRIO. "
             "- Adapte a intensidade, o 'tipo_de_estudo', e os focos à FASE DE PREPARAÇÃO informada. "
             "- Para MATÉRIAS de MAIOR DIFICULDADE, sugira 'tipo_de_estudo' que reforce a base e aloque tempo proporcionalmente maior. "
-            "- Incorpore as OUTRAS OBSERVAÇÕES do usuário. "
-            "- Utilize os princípios de organização, ciclo de estudos, revisões periódicas, motivação e disciplina do 'Guia Definitivo de Aprovação em Concursos Públicos'. "
-            "A resposta deve ser APENAS o JSON puro e válido, sem nenhum texto ou comentário fora da estrutura JSON solicitada.\n\n"
-            f"Informações do usuário para gerar o plano: {prompt_usuario_info}"
+            "- Se houver 'Outras Observações do Usuário' (que não sejam a preferência de estrutura diária), incorpore-as. "
+            "- Utilize os princípios do 'Guia Definitivo de Aprovação em Concursos Públicos'. "
+            "- IMPORTANTE: Garanta que o JSON gerado seja estritamente válido. NÃO inclua vírgulas extras no final de listas ou antes de chaves de fechamento de objetos. "
+            "A resposta deve ser APENAS o JSON puro e válido.\n\n"
+            f"Informações do usuário para gerar o plano (excluindo a observação sobre o padrão diário se já tratada acima): {prompt_usuario_final_info}"
         )
+        
+        # ... (resto da chamada à OpenAI e processamento da resposta como estava antes) ...
         print("\n--- PROMPT (PLANO) ENVIADO PARA A IA ---")
         print(prompt_completo)
         print("---------------------------------------\n")
@@ -132,13 +177,22 @@ def gerar_plano():
                 resposta_limpa = resposta_limpa[:-len("```")]
         dados_plano_ia = json.loads(resposta_limpa.strip())
         return jsonify(dados_plano_ia)
+
     except json.JSONDecodeError as e:
+        # ... (tratamento de erro JSONDecodeError) ...
+        print(f"Erro ao decodificar JSON da IA: {e}")
+        print(f"Texto recebido da IA que causou o erro (limpo): {globals().get('resposta_limpa', 'N/A')}") # Usar globals() para acesso seguro
+        print(f"Texto original da IA: {globals().get('plano_gerado_texto', 'N/A')}")
         return jsonify({
             "erro_processamento": "A IA gerou uma resposta para o plano, mas houve um problema ao processar o formato JSON.",
-            "resposta_bruta_ia": plano_gerado_texto,
+            "resposta_bruta_ia": globals().get('plano_gerado_texto', 'N/A'),
             "detalhe_erro_json": str(e)
         }), 500
     except Exception as e:
+        # ... (tratamento de erro geral) ...
+        print(f"Erro ao chamar a API da OpenAI ou outro erro: {e}")
+        import traceback
+        traceback.print_exc() 
         return jsonify({"erro_geral": f"Ocorreu um erro ao interagir com a IA para o plano: {str(e)}"}), 500
 
 # --- ENDPOINT PARA DICA DO DIA (MODIFICADO) ---
