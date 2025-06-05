@@ -4,66 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dicas Estratégicas - ConcursoIA</title>
-    <link rel="stylesheet" href="dashboard-lovable.css"> <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="dashboard-lovable.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Estilos específicos da página de Dicas */
         .ai-tip-content { margin-top: 20px; }
         .tip-highlight { display: flex; align-items: flex-start; gap: 12px; padding: 16px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px; margin-bottom: 16px; }
         .tip-highlight i { color: #3b82f6; margin-top: 2px; }
         .tip-preview { margin: 16px 0; padding: 12px; background: #f9fafb; border-radius: 6px; font-style: italic; color: #6b7280; }
-        
-        .category-tips-display {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f9f9f9; 
-            border-radius: 6px;
-            border: 1px solid #eee;
-        }
+        .category-tips-display { margin-top: 15px; padding: 10px; background-color: #f9f9f9; border-radius: 6px; border: 1px solid #eee; }
         .category-tips-display h5 { margin-top: 0; margin-bottom: 10px; color: #1f2937; }
         .category-tips-display ul { list-style-type: disc; padding-left: 20px; margin-bottom: 10px; }
         .category-tips-display li { margin-bottom: 8px; color: #374151; }
-        .btn-fechar-categoria-dicas { 
-            margin-top: 10px; background-color: #6c757d; color:white; 
-            padding: 5px 10px; border:none; border-radius:4px; 
-            cursor:pointer; font-size:0.8em;
-        }
+        .btn-fechar-categoria-dicas { margin-top: 10px; background-color: #6c757d; color:white; padding: 5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:0.8em; }
         .btn-fechar-categoria-dicas:hover { background-color: #5a6268; }
-
-        /* Estilo para os itens em "Dicas Recentes" (reutilizando .activity-item do Lovable) */
-        #dicas-recentes-lista .activity-item {
-            padding: 12px 0; /* Ajuste de padding se necessário */
-        }
-        #dicas-recentes-lista .activity-item .tip-text { /* Nova classe para o texto da dica */
-            flex: 1;
-            color: #374151; /* Cor principal do texto */
-            font-size: 0.9em;
-        }
-        #dicas-recentes-lista .activity-item .tip-category { /* Nova classe para a categoria da dica */
-            font-size: 0.8em;
-            color: #6b7280;
-            margin-left: auto; /* Empurra para a direita */
-            background-color: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
+        #dicas-recentes-lista .activity-item { padding: 12px 0; }
+        #dicas-recentes-lista .activity-item .tip-text { flex: 1; color: #374151; font-size: 0.9em; }
+        #dicas-recentes-lista .activity-item .tip-category { font-size: 0.8em; color: #6b7280; margin-left: auto; background-color: #e9ecef; padding: 2px 6px; border-radius: 4px; }
+        .tip-item { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid #f3f4f6; }
+        .tip-item:last-child { border-bottom: none; }
+        .tip-icon { width: 40px; height: 40px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #6b7280; }
+        .tip-content { flex: 1; }
+        .tip-title { font-weight: 500; color: #1f2937; margin-bottom: 4px; }
+        .tip-description { font-size: 14px; color: #6b7280; }
+        .tip-status { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .tip-status.implemented { background: #d1fae5; color: #065f46; }
+        .tip-status.pending { background: #fef3c7; color: #92400e; }
+        .tip-status.new { background: #ede9fe; color: #6b46c1; }
     </style>
 </head>
 <body>
     <div class="dashboard-layout">
         <header class="dashboard-header">
             <div class="header-content">
-                <div class="header-left">
-                    <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
-                    <div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div>
-                </div>
-                <div class="header-right">
-                    <a href="#" class="btn btn-ghost"><i class="fas fa-user"></i><span>Meu Perfil</span></a>
-                    <button id="botao-logout" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button>
-                </div>
+                <div class="header-left"><button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button><div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div></div>
+                <div class="header-right"><a href="meu-perfil.html" class="btn btn-ghost"><i class="fas fa-user"></i><span>Meu Perfil</span></a><button id="botao-logout" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button></div>
             </div>
         </header>
-
         <aside class="sidebar" id="sidebar">
             <nav class="sidebar-nav">
                 <a href="home.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
@@ -71,94 +47,28 @@
                 <a href="#" class="nav-item"><i class="fas fa-book-open"></i><span>Exercícios</span></a>
                 <a href="#" class="nav-item"><i class="fas fa-file-alt"></i><span>Correção de Textos</span></a>
                 <a href="dicas-estrategicas.html" class="nav-item active"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
+                <a href="meu-perfil.html" class="nav-item"><i class="fas fa-user-cog"></i><span>Meu Perfil</span></a>
             </nav>
         </aside>
-
         <main class="main-content">
             <div class="content-wrapper">
-                <div class="welcome-section">
-                    <h1>Dicas Estratégicas</h1>
-                    <p>Receba orientações personalizadas baseadas no seu perfil de estudos</p>
-                </div>
-
+                <div class="welcome-section"><h1>Dicas Estratégicas</h1><p>Receba orientações personalizadas</p></div>
                 <div class="feature-card" style="margin-bottom: 32px;">
-                    <div class="feature-header">
-                        <div class="feature-icon blue"><i class="fas fa-robot"></i></div>
-                        <div class="feature-info"><h3>Dica do Dia da IA</h3><p>Recomendação personalizada baseada no seu desempenho</p></div>
-                    </div>
-                    <div class="ai-tip-content">
-                        <div id="dica-do-dia-area"> 
-                            <div class="tip-highlight">
-                                <i class="fas fa-lightbulb"></i>
-                                <span>Clique abaixo para gerar sua dica do dia!</span>
-                            </div>
-                        </div>
-                        <button id="botao-gerar-dica" class="btn btn-primary" style="margin-top: 16px;">
-                            <i class="fas fa-play"></i>
-                            Gerar Nova Dica
-                        </button>
-                    </div>
+                    <div class="feature-header"><div class="feature-icon blue"><i class="fas fa-robot"></i></div><div class="feature-info"><h3>Dica do Dia da IA</h3><p>Recomendação personalizada</p></div></div>
+                    <div class="ai-tip-content"><div id="dica-do-dia-area"><div class="tip-highlight"><i class="fas fa-lightbulb"></i><span>Clique para gerar sua dica!</span></div></div><button id="botao-gerar-dica" class="btn btn-primary" style="margin-top: 16px;"><i class="fas fa-play"></i>Gerar Nova Dica</button></div>
                 </div>
-
                 <h2>Dicas por Categoria</h2>
                 <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-header">
-                            <div class="feature-icon green"><i class="fas fa-clock"></i></div>
-                            <div class="feature-info"><h3>Gestão de Tempo</h3><p>Otimize seu tempo de estudo</p></div>
-                        </div>
-                        <div class="tip-preview"><p>"Use a técnica Pomodoro: 25 min de estudo + 5 min de pausa"</p></div>
-                        <button class="btn btn-primary btn-full btn-categoria-dica" data-categoria="gestao_de_tempo">Ver Dicas</button>
-                        <div class="category-tips-display" id="tips-gestao_de_tempo" style="display: none;"></div>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-header">
-                            <div class="feature-icon purple"><i class="fas fa-brain"></i></div>
-                            <div class="feature-info"><h3>Memorização</h3><p>Técnicas para fixar conteúdo</p></div>
-                        </div>
-                        <div class="tip-preview"><p>"Crie mapas mentais para conectar conceitos complexos"</p></div>
-                        <button class="btn btn-primary btn-full btn-categoria-dica" data-categoria="memorizacao">Ver Dicas</button>
-                        <div class="category-tips-display" id="tips-memorizacao" style="display: none;"></div>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-header">
-                             <div class="feature-icon orange"><i class="fas fa-tasks"></i></div>
-                            <div class="feature-info"><h3>Resolução de Questões</h3><p>Estratégias para provas</p></div>
-                        </div>
-                        <div class="tip-preview"><p>"Leia todas as alternativas antes de marcar a resposta"</p></div>
-                        <button class="btn btn-primary btn-full btn-categoria-dica" data-categoria="resolucao_de_questoes">Ver Dicas</button>
-                        <div class="category-tips-display" id="tips-resolucao_de_questoes" style="display: none;"></div>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-header">
-                            <div class="feature-icon blue"><i class="fas fa-heart"></i></div>
-                            <div class="feature-info"><h3>Bem-estar</h3><p>Cuide da sua saúde mental</p></div>
-                        </div>
-                        <div class="tip-preview"><p>"Mantenha uma rotina de exercícios para reduzir o estresse"</p></div>
-                        <button class="btn btn-primary btn-full btn-categoria-dica" data-categoria="bem_estar">Ver Dicas</button>
-                        <div class="category-tips-display" id="tips-bem_estar" style="display: none;"></div>
-                    </div>
+                    <div class="feature-card"><div class="feature-header"><div class="feature-icon green"><i class="fas fa-clock"></i></div><div class="feature-info"><h3>Gestão de Tempo</h3><p>Otimize seu tempo</p></div></div><div class="tip-preview"><p>"Use a técnica Pomodoro..."</p></div><button class="btn btn-primary btn-full btn-categoria-dica" data-categoria="gestao_de_tempo">Ver Dicas</button><div class="category-tips-display" id="tips-gestao_de_tempo" style="display: none;"></div></div>
+                    <div class="feature-card"><div class="feature-header"><div class="feature-icon purple"><i class="fas fa-brain"></i></div><div class="feature-info"><h3>Memorização</h3><p>Técnicas para fixar</p></div></div><div class="tip-preview"><p>"Crie mapas mentais..."</p></div><button class="btn btn-primary btn-full btn-categoria-dica" data-categoria="memorizacao">Ver Dicas</button><div class="category-tips-display" id="tips-memorizacao" style="display: none;"></div></div>
+                    <div class="feature-card"><div class="feature-header"><div class="feature-icon orange"><i class="fas fa-tasks"></i></div><div class="feature-info"><h3>Resolução de Questões</h3><p>Estratégias para provas</p></div></div><div class="tip-preview"><p>"Leia todas as alternativas..."</p></div><button class="btn btn-primary btn-full btn-categoria-dica" data-categoria="resolucao_de_questoes">Ver Dicas</button><div class="category-tips-display" id="tips-resolucao_de_questoes" style="display: none;"></div></div>
+                    <div class="feature-card"><div class="feature-header"><div class="feature-icon blue"><i class="fas fa-heart"></i></div><div class="feature-info"><h3>Bem-estar</h3><p>Cuide da sua saúde mental</p></div></div><div class="tip-preview"><p>"Mantenha uma rotina de exercícios..."</p></div><button class="btn btn-primary btn-full btn-categoria-dica" data-categoria="bem_estar">Ver Dicas</button><div class="category-tips-display" id="tips-bem_estar" style="display: none;"></div></div>
                 </div>
-
-                <div class="activity-card" style="margin-top:32px;">
-                    <div class="activity-header">
-                        <h3>Dicas Visualizadas Recentemente</h3>
-                        <p>Suas últimas recomendações e dicas acessadas</p>
-                    </div>
-                    <div id="dicas-recentes-lista" class="activity-content" style="padding-top: 10px;">
-                        <p id="mensagem-sem-dicas-recentes">Nenhuma dica visualizada recentemente.</p>
-                    </div>
-                </div>
-                
-                </div>
+                <div class="activity-card" style="margin-top:32px;"><div class="activity-header"><h3>Dicas Visualizadas Recentemente</h3><p>Suas últimas recomendações</p></div><div id="dicas-recentes-lista" class="activity-content" style="padding-top: 10px;"><p id="mensagem-sem-dicas-recentes">Nenhuma dica visualizada.</p></div></div>
+            </div>
         </main>
-
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
     </div>
-
     <script src="dashboard.js"></script>
     <script type="module" src="app.js"></script> 
 </body>

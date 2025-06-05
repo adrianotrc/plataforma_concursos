@@ -4,100 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Cronograma - ConcursoIA</title>
-    <link rel="stylesheet" href="dashboard-lovable.css"> <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="dashboard-lovable.css"> 
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Estilos para o formulário de cronograma e outras seções específicas desta página */
-        #container-form-novo-plano {
-            padding: 20px;
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            margin-bottom: 30px;
-        }
-        #container-form-novo-plano h3 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: #343a40;
-        }
-        #form-plano-estudos div { 
-            margin-bottom: 15px;
-        }
-        #form-plano-estudos label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #495057;
-        }
-        .form-input-concursoia, .form-textarea-concursoia, #fase-concurso {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px; 
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 1rem;
-        }
-        .form-textarea-concursoia {
-            resize: vertical;
-        }
-        .checkbox-group label {
-            display: inline-block; 
-            margin-right: 15px;
-            font-weight: normal;
-            color: #495057;
-        }
-        .checkbox-group input[type="checkbox"] {
-            margin-right: 5px;
-            vertical-align: middle;
-        }
-        
-        #area-plano-estudos { 
-            margin-top: 20px; 
-            padding: 20px; 
-            background-color: #ffffff; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-            border: 1px solid #e5e7eb; 
-            min-height: 100px;
-            max-height: 70vh; 
-            overflow-y: auto;
-        }
+        #container-form-novo-plano { padding: 20px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 30px; }
+        #container-form-novo-plano h3 { margin-top: 0; margin-bottom: 20px; color: #343a40; }
+        #form-plano-estudos div.form-field-group { margin-bottom: 18px; }
+        #form-plano-estudos label { display: block; margin-bottom: 6px; font-weight: 500; color: #495057; font-size: 0.95rem; }
+        .form-input-concursoia, .form-textarea-concursoia, #fase-concurso, #duracao-sessao-estudo { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        .form-textarea-concursoia { resize: vertical; }
+        #horarios-dias-semana .dia-horario-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        #horarios-dias-semana .dia-horario-item input[type="checkbox"] { width: auto; flex-shrink: 0; margin-top:0; }
+        #horarios-dias-semana .dia-horario-item label.dia-label { width: 90px; margin-bottom: 0; font-weight: normal; }
+        #horarios-dias-semana .dia-horario-item input[type="number"].horas-por-dia-input { width: 100px; padding: 8px; font-size: 0.9rem; }
+        #area-plano-estudos { margin-top: 20px; padding: 20px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; min-height: 100px; max-height: 70vh; overflow-y: auto; }
         #area-plano-estudos .feature-header h3 { color: #1d4ed8; margin-bottom: 0; }
         #area-plano-estudos .periodo-plano h4 { margin-top: 15px; color: #1e40af; margin-bottom: 10px; }
         #area-plano-estudos .semana-plano h5 { margin-top: 10px; color: #1f2937; margin-bottom: 5px;}
         #area-plano-estudos ul { padding-left: 20px; margin-top: 5px; }
         #area-plano-estudos ul ul { list-style: circle; }
         #area-plano-estudos li { margin-bottom: 5px; }
-
-        .botao-fechar-plano {
-            display: block; 
-            width: fit-content;
-            margin: 0 auto 15px auto; 
-            padding: 8px 15px;
-            background-color: #6c757d; 
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-        }
-        .botao-fechar-plano:hover {
-            background-color: #5a6268;
-        }
-
-        #secao-planos-salvos { 
-            margin-top: 32px; 
-            background-color: #ffffff; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-            border: 1px solid #e5e7eb;
-        }
+        .botao-fechar-plano { display: block; width: fit-content; margin: 0 auto 15px auto; padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+        .botao-fechar-plano:hover { background-color: #5a6268; }
+        #secao-planos-salvos { margin-top: 32px; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; }
         #secao-planos-salvos h2 { margin-top:0; margin-bottom: 15px; }
         #lista-planos-salvos { list-style: none; padding-left: 0; }
         #lista-planos-salvos .activity-item:hover { background-color: #f0f8ff; }
-
-        /* Estilos do Lovable para .schedule-day que você forneceu para cronograma.html */
         .schedule-container { margin-top: 10px; } 
         .schedule-day { margin-bottom: 15px; padding: 10px; border: 1px solid #f0f0f0; border-radius: 6px; background-color: #fdfdfd; }
         .day-header { font-weight: 600; margin-bottom: 8px; color: #333; font-size: 0.95em; }
@@ -106,120 +38,51 @@
         .task-time { font-size: 0.85em; color: #555; min-width: 70px; }
         .task-subject { flex: 1; font-weight: 500; color: #444;}
         .task-status.pending { color: #888; }
-        .task-status.completed { color: #10b981; } /* Adicionado para consistência */
+        .task-status.completed { color: #10b981; }
     </style>
 </head>
 <body>
     <div class="dashboard-layout">
         <header class="dashboard-header">
             <div class="header-content">
-                <div class="header-left">
-                    <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
-                    <div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div>
-                </div>
-                <div class="header-right">
-                    <a href="#" class="btn btn-ghost"><i class="fas fa-user"></i><span>Meu Perfil</span></a>
-                    <button id="botao-logout" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button>
-                </div>
+                <div class="header-left"><button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button><div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div></div>
+                <div class="header-right"><a href="meu-perfil.html" class="btn btn-ghost"><i class="fas fa-user"></i><span>Meu Perfil</span></a><button id="botao-logout" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button></div>
             </div>
         </header>
-
         <aside class="sidebar" id="sidebar">
             <nav class="sidebar-nav">
-                <a href="home.html" class="nav-item"> <i class="fas fa-chart-line"></i><span>Dashboard</span></a>
-                <a href="cronograma.html" class="nav-item active"> <i class="fas fa-calendar-alt"></i><span>Cronograma</span></a>
-                <a href="#" class="nav-item"> <i class="fas fa-book-open"></i><span>Exercícios</span></a>
-                <a href="#" class="nav-item"> <i class="fas fa-file-alt"></i><span>Correção de Textos</span></a>
-                <a href="dicas-estrategicas.html" class="nav-item"> <i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
+                <a href="home.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="cronograma.html" class="nav-item active"><i class="fas fa-calendar-alt"></i><span>Cronograma</span></a>
+                <a href="#" class="nav-item"><i class="fas fa-book-open"></i><span>Exercícios</span></a>
+                <a href="#" class="nav-item"><i class="fas fa-file-alt"></i><span>Correção de Textos</span></a>
+                <a href="dicas-estrategicas.html" class="nav-item"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
+                <a href="meu-perfil.html" class="nav-item"><i class="fas fa-user-cog"></i><span>Meu Perfil</span></a>
             </nav>
         </aside>
-
         <main class="main-content">
             <div class="content-wrapper">
-                <div class="welcome-section" style="margin-bottom: 20px;">
-                    <h1>Meu Cronograma Personalizado</h1>
-                    <p>Gere um novo plano de estudos ou visualize seus planos salvos.</p>
-                </div>
-
-                <button id="botao-mostrar-form-novo-plano" class="btn btn-primary" style="margin-bottom: 20px; display: block; width: fit-content;">
-                    <i class="fas fa-plus"></i> Gerar Novo Cronograma
-                </button>
-                
+                <div class="welcome-section" style="margin-bottom: 20px;"><h1>Meu Cronograma Personalizado</h1><p>Gere um novo plano de estudos ou visualize seus planos salvos.</p></div>
+                <button id="botao-mostrar-form-novo-plano" class="btn btn-primary" style="margin-bottom: 20px; display: block; width: fit-content;"><i class="fas fa-plus"></i> Gerar Novo Cronograma</button>
                 <div id="container-form-novo-plano" style="display: none;">
                     <h3>Defina as Preferências para seu Novo Plano</h3>
                     <form id="form-plano-estudos">
-                        <div>
-                            <label for="concurso-objetivo">Qual concurso ou cargo você está focando?</label>
-                            <input type="text" id="concurso-objetivo" required placeholder="Ex: Analista do Banco Central" class="form-input-concursoia">
-                        </div>
-                        <div>
-                            <label for="fase-concurso">Em qual fase de preparação você está?</label>
-                            <select id="fase-concurso" required class="form-input-concursoia">
-                                <option value="">Selecione a fase...</option>
-                                <option value="base_sem_edital_especifico">Começando a estudar e/ou sem concurso específico para focar, sem edital</option>
-                                <option value="pre_edital_com_foco">Focando em concurso específico, mas ainda sem edital (usando edital anterior/base)</option>
-                                <option value="pos_edital_publicado">Focando em concurso específico, com edital publicado</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="materias-edital">Liste as matérias/conteúdo programático principal (uma por linha ou separadas por vírgula):</label>
-                            <textarea id="materias-edital" rows="4" required placeholder="Ex: Português, Direito Constitucional, Economia, Contabilidade" class="form-textarea-concursoia"></textarea>
-                        </div>
-                        <div>
-                            <label for="horas-estudo-semanais">Quantas horas líquidas você pode dedicar aos estudos por semana?</label>
-                            <input type="number" id="horas-estudo-semanais" required placeholder="Ex: 20" min="1" class="form-input-concursoia">
-                        </div>
-                        <div>
-                            <label>Quais dias da semana você pretende estudar?</label>
-                            <div id="dias-semana-estudo" class="checkbox-group">
-                                <label><input type="checkbox" name="dia_semana" value="segunda"> Segunda</label>
-                                <label><input type="checkbox" name="dia_semana" value="terca"> Terça</label>
-                                <label><input type="checkbox" name="dia_semana" value="quarta"> Quarta</label>
-                                <label><input type="checkbox" name="dia_semana" value="quinta"> Quinta</label>
-                                <label><input type="checkbox" name="dia_semana" value="sexta"> Sexta</label>
-                                <label><input type="checkbox" name="dia_semana" value="sabado"> Sábado</label>
-                                <label><input type="checkbox" name="dia_semana" value="domingo"> Domingo</label>
-                            </div>
-                        </div>
-                        <div>
-                            <label for="data-prova">Qual a data da prova (se já definida)? (Opcional)</label>
-                            <input type="date" id="data-prova" class="form-input-concursoia">
-                        </div>
-                        <div>
-                            <label for="dificuldades-materias">Você tem matérias específicas onde sente mais dificuldade ou facilidade? (Opcional)</label>
-                            <textarea id="dificuldades-materias" rows="3" placeholder="Ex: Muita dificuldade em Contabilidade Avançada, facilidade em Direito Constitucional" class="form-textarea-concursoia"></textarea>
-                        </div>
-                        <div>
-                            <label for="outras-consideracoes">Alguma outra informação relevante para o plano? (Opcional)</label>
-                            <textarea id="outras-consideracoes" rows="3" placeholder="Ex: Prefiro estudar mais teoria aos finais de semana, gosto de resumos..." class="form-textarea-concursoia"></textarea>
-                        </div>
+                        <div class="form-field-group"><label for="concurso-objetivo">Qual concurso ou cargo você está focando?</label><input type="text" id="concurso-objetivo" required placeholder="Ex: Analista do Banco Central" class="form-input-concursoia"></div>
+                        <div class="form-field-group"><label for="fase-concurso">Em qual fase de preparação você está?</label><select id="fase-concurso" required class="form-input-concursoia"><option value="">Selecione a fase...</option><option value="base_sem_edital_especifico">Começando a estudar e/ou sem concurso específico para focar, sem edital</option><option value="pre_edital_com_foco">Focando em concurso específico, mas ainda sem edital (usando edital anterior/base)</option><option value="pos_edital_publicado">Focando em concurso específico, com edital publicado</option></select></div>
+                        <div class="form-field-group"><label for="materias-edital">Liste as matérias/conteúdo programático principal (uma por linha ou separadas por vírgula):</label><textarea id="materias-edital" rows="4" required placeholder="Ex: Português, Direito Constitucional, Economia, Contabilidade" class="form-textarea-concursoia"></textarea></div>
+                        <div class="form-field-group"><label>Estabeleça quantas horas pretende estudar em cada dia da semana selecionado:</label><div id="horarios-dias-semana" style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;"><div class="dia-horario-item"><input type="checkbox" id="check-segunda" name="dia_semana_check" value="segunda"><label for="check-segunda" class="dia-label">Segunda:</label><input type="number" class="horas-por-dia-input" data-dia="segunda" min="0" max="12" step="0.25" placeholder="Ex: 2.5" style="width: 100px; padding: 8px;" disabled></div><div class="dia-horario-item"><input type="checkbox" id="check-terca" name="dia_semana_check" value="terca"><label for="check-terca" class="dia-label">Terça:</label><input type="number" class="horas-por-dia-input" data-dia="terca" min="0" max="12" step="0.25" placeholder="Ex: 1.5" style="width: 100px; padding: 8px;" disabled></div><div class="dia-horario-item"><input type="checkbox" id="check-quarta" name="dia_semana_check" value="quarta"><label for="check-quarta" class="dia-label">Quarta:</label><input type="number" class="horas-por-dia-input" data-dia="quarta" min="0" max="12" step="0.25" placeholder="Ex: 3" style="width: 100px; padding: 8px;" disabled></div><div class="dia-horario-item"><input type="checkbox" id="check-quinta" name="dia_semana_check" value="quinta"><label for="check-quinta" class="dia-label">Quinta:</label><input type="number" class="horas-por-dia-input" data-dia="quinta" min="0" max="12" step="0.25" placeholder="Ex: 2" style="width: 100px; padding: 8px;" disabled></div><div class="dia-horario-item"><input type="checkbox" id="check-sexta" name="dia_semana_check" value="sexta"><label for="check-sexta" class="dia-label">Sexta:</label><input type="number" class="horas-por-dia-input" data-dia="sexta" min="0" max="12" step="0.25" placeholder="Ex: 1" style="width: 100px; padding: 8px;" disabled></div><div class="dia-horario-item"><input type="checkbox" id="check-sabado" name="dia_semana_check" value="sabado"><label for="check-sabado" class="dia-label">Sábado:</label><input type="number" class="horas-por-dia-input" data-dia="sabado" min="0" max="12" step="0.25" placeholder="Ex: 4" style="width: 100px; padding: 8px;" disabled></div><div class="dia-horario-item"><input type="checkbox" id="check-domingo" name="dia_semana_check" value="domingo"><label for="check-domingo" class="dia-label">Domingo:</label><input type="number" class="horas-por-dia-input" data-dia="domingo" min="0" max="12" step="0.25" placeholder="Ex: 0" style="width: 100px; padding: 8px;" disabled></div></div></div>
+                        <div class="form-field-group"><label for="duracao-sessao-estudo">Quantos minutos você pretende se dedicar a cada matéria por sessão de estudo?</label><select id="duracao-sessao-estudo" required class="form-input-concursoia"><option value="25">25 minutos (Pomodoro Curto)</option><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="50">50 minutos</option><option value="60" selected>60 minutos (1 hora)</option><option value="75">75 minutos (1h 15min)</option><option value="90">90 minutos (1h 30min)</option><option value="120">120 minutos (2 horas)</option></select></div>
+                        <div class="form-field-group"><label for="data-prova">Qual a data da prova (se já definida)? (Opcional)</label><input type="date" id="data-prova" class="form-input-concursoia"></div>
+                        <div class="form-field-group"><label for="dificuldades-materias">Você tem matérias específicas onde sente mais dificuldade ou facilidade? (Opcional)</label><textarea id="dificuldades-materias" rows="3" placeholder="Ex: Muita dificuldade em Contabilidade Avançada..." class="form-textarea-concursoia"></textarea></div>
+                        <div class="form-field-group"><label for="outras-consideracoes">Alguma outra informação relevante para o plano? (Opcional)</label><textarea id="outras-consideracoes" rows="3" placeholder="Ex: Prefiro estudar mais teoria aos finais de semana..." class="form-textarea-concursoia"></textarea></div>
                         <button type="submit" id="botao-gerar-plano" class="btn btn-primary" style="margin-top:15px; width: auto;">Gerar Plano de Estudos</button>
                     </form>
                 </div>
-
-                <div id="area-plano-estudos">
-                    </div>
-
-                <div id="secao-planos-salvos">
-                    <h2>Meus Planos de Estudo Salvos</h2>
-                    <ul id="lista-planos-salvos">
-                        <p id="mensagem-sem-planos">Nenhum plano salvo ainda.</p>
-                    </ul>
-                </div>
-
-                <div class="activity-card" style="margin-top: 32px;">
-                     <div class="activity-header"><h3>Recomendações da IA (Placeholder)</h3><p>Sugestões personalizadas para otimizar seus estudos</p></div>
-                     <div class="activity-content">
-                         <div class="activity-item"><div class="activity-dot blue"></div><span class="activity-text">Foque mais em Direito Constitucional nos próximos 3 dias</span><span class="activity-time">Agora</span></div>
-                     </div>
-                 </div>
-
+                <div id="area-plano-estudos"></div>
+                <div id="secao-planos-salvos"><h2>Meus Planos de Estudo Salvos</h2><ul id="lista-planos-salvos"><p id="mensagem-sem-planos">Nenhum plano salvo ainda.</p></ul></div>
             </div>
         </main>
-
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
     </div>
-
     <script src="dashboard.js"></script> 
     <script type="module" src="app.js"></script> 
 </body>
