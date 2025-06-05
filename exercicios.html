@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo de Exercícios - ConcursoIA</title>
+    <link rel="stylesheet" href="dashboard-lovable.css"> 
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .form-exercicios .form-field-group { margin-bottom: 18px; }
+        .form-exercicios label { display: block; margin-bottom: 6px; font-weight: 500; color: #495057; }
+        .form-exercicios input { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; }
+        
+        #area-exercicios { margin-top: 30px; }
+        .questao-container { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .questao-enunciado { font-weight: 600; margin-bottom: 15px; line-height: 1.5; }
+        .opcoes-container { display: flex; flex-direction: column; gap: 10px; }
+        .opcao-label { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; }
+        .opcao-label:hover { background-color: #f9fafb; }
+        .opcao-label.selected { background-color: #dbeafe; border-color: #3b82f6; }
+        .opcao-label input[type="radio"] { margin-top: 4px; flex-shrink: 0; }
+        .resultado-feedback { margin-top: 15px; padding: 15px; border-radius: 6px; border-left: 4px solid; }
+        .resultado-feedback.correto { background-color: #dcfce7; border-color: #22c55e; }
+        .resultado-feedback.incorreto { background-color: #fee2e2; border-color: #ef4444; }
+        .explicacao { margin-top: 10px; font-size: 0.9em; color: #4b5563; line-height: 1.6; }
+
+        .exercise-history-item { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid #f3f4f6; }
+        .exercise-history-item:last-child { border-bottom: none; }
+        .exercise-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .exercise-subject { font-weight: 500; color: #1f2937; }
+        .exercise-details { font-size: 12px; color: #6b7280; }
+        .exercise-score { font-weight: 600; font-size: 18px; }
+        .exercise-score.bom { color: #10b981; }
+        .exercise-score.medio { color: #f59e0b; }
+        .exercise-score.ruim { color: #ef4444; }
+        .exercise-time { font-size: 12px; color: #9ca3af; min-width: 80px; text-align: right; }
+    </style>
+</head>
+<body class="dashboard-layout">
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="header-left"><button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button><a href="home.html" style="text-decoration:none;color:inherit;"><div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div></a></div>
+            <div class="header-right"><a href="meu-perfil.html" class="btn btn-ghost"><i class="fas fa-user"></i><span>Meu Perfil</span></a><button id="botao-logout" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button></div>
+        </div>
+    </header>
+    <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+            <a href="home.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+            <a href="cronograma.html" class="nav-item"><i class="fas fa-calendar-alt"></i><span>Cronograma</span></a>
+            <a href="exercicios.html" class="nav-item active"><i class="fas fa-book-open"></i><span>Exercícios</span></a>
+            <a href="#" class="nav-item"><i class="fas fa-file-alt"></i><span>Correção de Textos</span></a>
+            <a href="dicas-estrategicas.html" class="nav-item"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
+            <a href="meu-perfil.html" class="nav-item"><i class="fas fa-user-cog"></i><span>Meu Perfil</span></a>
+        </nav>
+    </aside>
+    <main class="main-content">
+        <div class="content-wrapper">
+            <div class="welcome-section"><h1>Módulo de Exercícios</h1><p>Pratique com questões geradas por IA adaptadas ao seu estudo.</p></div>
+            
+            <div class="stats-grid" style="margin-bottom: 32px;">
+                <div class="stat-card"><div class="stat-header"><span class="stat-title">Acerto Geral</span></div><div class="stat-content"><div class="stat-number blue">--%</div></div></div>
+                <div class="stat-card"><div class="stat-header"><span class="stat-title">Questões Totais</span></div><div class="stat-content"><div class="stat-number green">0</div></div></div>
+                <div class="stat-card"><div class="stat-header"><span class="stat-title">Sequência de Dias</span></div><div class="stat-content"><div class="stat-number purple">0</div></div></div>
+            </div>
+
+            <div id="historico-exercicios-card" class="activity-card">
+                <div class="activity-header">
+                    <h3>Histórico Recente de Exercícios</h3>
+                    <p>Suas últimas 5 sessões</p>
+                </div>
+                <div id="historico-exercicios-lista" class="activity-content">
+                    <p id="mensagem-sem-historico">Nenhuma sessão de exercícios encontrada.</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 32px;">
+                <button id="botao-mostrar-form-exercicios" class="btn btn-secondary" style="width: 100%; text-align: center;">
+                    <i class="fas fa-plus"></i> Gerar Novos Exercícios
+                </button>
+                <div id="container-form-exercicios" style="display: none; margin-top: 15px;">
+                    <div class="feature-card">
+                        <h3>Defina os Parâmetros</h3>
+                        <form id="form-exercicios" class="form-exercicios" style="margin-top: 20px;">
+                            <div class="form-field-group"><label for="exercicio-materia">Matéria</label><input type="text" id="exercicio-materia" required placeholder="Ex: Direito Constitucional"></div>
+                            <div class="form-field-group"><label for="exercicio-topico">Tópico</label><input type="text" id="exercicio-topico" required placeholder="Ex: Artigo 5º"></div>
+                            <div class="form-field-group"><label for="exercicio-quantidade">Quantidade de Questões (1-10)</label><input type="number" id="exercicio-quantidade" min="1" max="10" placeholder="Padrão: 5"></div>
+                            <div class="form-field-group"><label for="exercicio-banca">Banca Examinadora (opcional)</label><input type="text" id="exercicio-banca" placeholder="Ex: FGV, Cebraspe"></div>
+                            <button type="submit" id="botao-gerar-exercicios" class="btn btn-primary">Gerar Exercícios</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div id="area-exercicios">
+                </div>
+        </div>
+    </main>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <script src="dashboard.js"></script> 
+    <script type="module" src="app.js"></script> 
+</body>
+</html>

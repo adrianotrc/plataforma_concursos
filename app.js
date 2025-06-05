@@ -45,6 +45,54 @@ const db = getFirestore(app);
 console.log("app.js: Firebase App inicializado");
 
 // --- FUNÇÕES AUXILIARES ---
+
+async function getAuthenticatedUserProfile(user) {
+    if (!user) return null;
+    let nomeFinal = user.displayName;
+    let firestoreData = {};
+    try {
+        const userDocRef = doc(db, "usuarios", user.uid);
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+            firestoreData = docSnap.data();
+            if (firestoreData.nome) { nomeFinal = firestoreData.nome; }
+        }
+        if (nomeFinal && user.displayName !== nomeFinal) {
+            await updateProfile(user, { displayName: nomeFinal });
+            console.log("Nome do Auth sincronizado com o do Firestore.");
+        }
+    } catch (error) { console.error("Erro ao buscar/sincronizar dados do perfil:", error); }
+    return { uid: user.uid, email: user.email, nome: nomeFinal, firestoreData };
+}
+async function carregarDadosDoPerfil(userProfile) {
+    if (!userProfile) return;
+    const nomeInput = document.getElementById('perfil-nome');
+    const emailInput = document.getElementById('perfil-email');
+    const telInput = document.getElementById('perfil-telefone');
+    const nascInput = document.getElementById('perfil-nascimento');
+    const planoSpan = document.getElementById('plano-atual-usuario');
+
+    if (nomeInput) nomeInput.value = userProfile.nome || '';
+    if (emailInput) emailInput.value = userProfile.email || '';
+    if (emailInput) emailInput.disabled = true;
+    if (nomeInput) nomeInput.disabled = false;
+
+    if (userProfile.firestoreData) {
+        if (telInput) telInput.value = userProfile.firestoreData.telefone || '';
+        if (nascInput) nascInput.value = userProfile.firestoreData.dataNascimento || '';
+        if (planoSpan) planoSpan.textContent = userProfile.firestoreData.planoAssinatura || 'Experimental';
+    }
+}
+
+function getCurrentPageName() {
+    try {
+        const pathName = window.location.pathname;
+        let pageName = pathName.substring(pathName.lastIndexOf('/') + 1);
+        if (pageName === "") pageName = "index.html";
+        return pageName;
+    } catch (e) { return "index.html"; }
+}
+
 // (Definições completas de todas as funções)
 
 function exibirPlanoNaTela(planoDeEstudosObjeto) {
@@ -171,51 +219,133 @@ async function carregarDicasRecentes(uidUsuario) {
         });
     } catch (error) { console.error("Erro ao carregar dicas recentes:", error); listaDicas.innerHTML = '<li>Erro ao carregar.</li>';}
 }
-async function getAuthenticatedUserProfile(user) {
-    if (!user) return null;
-    let nomeFinal = user.displayName;
-    let firestoreData = {};
+
+async function salvarSessaoExercicios(uid, dadosSessao) {
+    if (!uid || !dadosSessao) return;
     try {
-        const userDocRef = doc(db, "usuarios", user.uid);
-        const docSnap = await getDoc(userDocRef);
-        if (docSnap.exists()) {
-            firestoreData = docSnap.data();
-            if (firestoreData.nome) { nomeFinal = firestoreData.nome; }
-        }
-        if (nomeFinal && user.displayName !== nomeFinal) {
-            await updateProfile(user, { displayName: nomeFinal });
-            console.log("Nome do Auth sincronizado com o do Firestore.");
-        }
-    } catch (error) { console.error("Erro ao buscar/sincronizar dados do perfil:", error); }
-    return { uid: user.uid, email: user.email, nome: nomeFinal, firestoreData };
+        await addDoc(collection(db, "sessoes_exercicios"), { uidUsuario: uid, ...dadosSessao, dataSessao: serverTimestamp() });
+        console.log("Sessão de exercícios salva no Firestore.");
+        carregarHistoricoExercicios(uid); // Recarrega o histórico para mostrar a nova sessão
+    } catch (error) { console.error("Erro ao salvar sessão de exercícios:", error); }
 }
-async function carregarDadosDoPerfil(userProfile) {
-    if (!userProfile) return;
-    const nomeInput = document.getElementById('perfil-nome');
-    const emailInput = document.getElementById('perfil-email');
-    const telInput = document.getElementById('perfil-telefone');
-    const nascInput = document.getElementById('perfil-nascimento');
-    const planoSpan = document.getElementById('plano-atual-usuario');
 
-    if (nomeInput) nomeInput.value = userProfile.nome || '';
-    if (emailInput) emailInput.value = userProfile.email || '';
-    if (emailInput) emailInput.disabled = true;
-    if (nomeInput) nomeInput.disabled = false;
+async function carregarHistoricoExercicios(uid) {
+    const listaHistorico = document.getElementById('historico-exercicios-lista');
+    const msgSemHistorico = document.getElementById('mensagem-sem-historico');
+    if (!listaHistorico || !msgSemHistorico) return;
 
-    if (userProfile.firestoreData) {
-        if (telInput) telInput.value = userProfile.firestoreData.telefone || '';
-        if (nascInput) nascInput.value = userProfile.firestoreData.dataNascimento || '';
-        if (planoSpan) planoSpan.textContent = userProfile.firestoreData.planoAssinatura || 'Experimental';
+    listaHistorico.innerHTML = '<p>Carregando histórico...</p>';
+    msgSemHistorico.style.display = 'none';
+
+    try {
+        const q = query(collection(db, "sessoes_exercicios"), where("uidUsuario", "==", uid), orderBy("dataSessao", "desc"), limit(5));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            listaHistorico.innerHTML = '';
+            msgSemHistorico.style.display = 'block';
+            return;
+        }
+
+        listaHistorico.innerHTML = '';
+        querySnapshot.forEach((doc) => {
+            const sessao = doc.data();
+            const itemEl = document.createElement('div');
+            itemEl.className = 'exercise-history-item';
+
+            const percentual = Math.round((sessao.totalAcertos / sessao.totalQuestoes) * 100);
+            let scoreClass = 'bom';
+            if (percentual < 70) scoreClass = 'medio';
+            if (percentual < 50) scoreClass = 'ruim';
+            
+            const data = sessao.dataSessao?.toDate().toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'}) || 'Recentemente';
+
+            itemEl.innerHTML = `
+                <div class="exercise-info">
+                    <span class="exercise-subject">${sessao.materia} - ${sessao.topico}</span>
+                    <span class="exercise-details">${sessao.totalQuestoes} questões • ${sessao.totalAcertos} corretas</span>
+                </div>
+                <div class="exercise-score ${scoreClass}">${percentual}%</div>
+                <span class="exercise-time">${data}</span>
+            `;
+            listaHistorico.appendChild(itemEl);
+        });
+    } catch (error) {
+        console.error("Erro ao carregar histórico de exercícios:", error);
+        listaHistorico.innerHTML = '<p>Erro ao carregar histórico.</p>';
     }
 }
-function getCurrentPageName() {
-    try {
-        const pathName = window.location.pathname;
-        let pageName = pathName.substring(pathName.lastIndexOf('/') + 1);
-        if (pageName === "") pageName = "index.html";
-        return pageName;
-    } catch (e) { return "index.html"; }
+
+function renderizarExercicios(exercicios, areaExercicios, dadosFormulario) {
+    if (!areaExercicios) return;
+    areaExercicios.innerHTML = ''; 
+    exercicios.forEach((exercicio, index) => {
+        const questaoEl = document.createElement('div');
+        questaoEl.className = 'questao-container';
+        let opcoesHtml = '';
+        if(exercicio.opcoes && Array.isArray(exercicio.opcoes)){
+            exercicio.opcoes.forEach(opcao => {
+                opcoesHtml += `
+                    <label class="opcao-label">
+                        <input type="radio" name="questao-${index}" value="${opcao.letra}">
+                        <strong>${opcao.letra})</strong> <span>${opcao.texto || ''}</span>
+                    </label>
+                `;
+            });
+        }
+        questaoEl.innerHTML = `
+            <div class="questao-enunciado">${index + 1}) ${exercicio.enunciado || 'Enunciado não disponível.'}</div>
+            <div class="opcoes-container" id="opcoes-q${index}">${opcoesHtml}</div>
+            <div class="resultado-feedback" id="feedback-q${index}" style="display:none;"></div>
+        `;
+        areaExercicios.appendChild(questaoEl);
+    });
+
+    if (exercicios.length > 0) {
+        const botaoCorrigir = document.createElement('button');
+        botaoCorrigir.id = 'botao-corrigir-exercicios';
+        botaoCorrigir.className = 'btn btn-primary';
+        botaoCorrigir.style.marginTop = '20px';
+        botaoCorrigir.textContent = 'Corrigir Exercícios';
+        areaExercicios.appendChild(botaoCorrigir);
+
+        botaoCorrigir.addEventListener('click', () => {
+            let acertos = 0;
+            const respostasUsuario = [];
+
+            exercicios.forEach((exercicio, index) => {
+                const feedbackEl = document.getElementById(`feedback-q${index}`);
+                const respostaSelecionadaEl = document.querySelector(`input[name="questao-${index}"]:checked`);
+                let letraSelecionada = null;
+
+                if (respostaSelecionadaEl) {
+                    letraSelecionada = respostaSelecionadaEl.value;
+                    document.querySelectorAll(`input[name="questao-${index}"]`).forEach(radio => radio.disabled = true);
+
+                    if (letraSelecionada === exercicio.resposta_correta) {
+                        acertos++;
+                        feedbackEl.innerHTML = `<strong>Correto!</strong><div class="explicacao">${exercicio.explicacao || ''}</div>`;
+                        feedbackEl.className = 'resultado-feedback correto';
+                    } else {
+                        feedbackEl.innerHTML = `<strong>Incorreto.</strong> Resposta correta: <strong>${exercicio.resposta_correta}</strong>.<div class="explicacao">${exercicio.explicacao || ''}</div>`;
+                        feedbackEl.className = 'resultado-feedback incorreto';
+                    }
+                    feedbackEl.style.display = 'block';
+                }
+                respostasUsuario.push({ questao: exercicio.enunciado, respostaUser: letraSelecionada, respostaCorreta: exercicio.resposta_correta });
+            });
+            
+            botaoCorrigir.textContent = `Você acertou ${acertos} de ${exercicios.length} questões!`;
+            botaoCorrigir.disabled = true;
+
+            if(auth.currentUser){
+                const dadosSessao = { ...dadosFormulario, totalQuestoes: exercicios.length, totalAcertos: acertos };
+                salvarSessaoExercicios(auth.currentUser.uid, dadosSessao);
+            }
+        });
+    }
 }
+
 
 // --- LÓGICA DE INICIALIZAÇÃO E EVENTOS ---
 
@@ -223,7 +353,6 @@ function getCurrentPageName() {
 function attachPageEventListeners(currentPage, user) {
     console.log("Anexando listeners para a página:", currentPage);
 
-    // Listener de Logout (anexado se o botão existir)
     const elBotaoLogout = document.getElementById('botao-logout');
     if (elBotaoLogout && !elBotaoLogout.dataset.listenerAttached) {
         elBotaoLogout.addEventListener('click', (e) => {
@@ -231,10 +360,8 @@ function attachPageEventListeners(currentPage, user) {
             signOut(auth).catch(err => console.error("Erro no logout:", err));
         });
         elBotaoLogout.dataset.listenerAttached = 'true';
-        console.log("Listener de Logout ANEXADO.");
     }
     
-    // Listeners específicos da página
     if (currentPage === 'login.html') {
         const formLogin = document.getElementById('form-login');
         if (formLogin) {
@@ -292,8 +419,8 @@ function attachPageEventListeners(currentPage, user) {
                 e.preventDefault(); 
                 const areaPlano = document.getElementById('area-plano-estudos');
                 if(areaPlano) areaPlano.innerHTML = "<p>Gerando plano...</p>";
-                const dados = {
-                    usuarioId: user?.uid,
+                const dadosParaPlano = {
+                    usuarioId: auth.currentUser?.uid,
                     concurso: document.getElementById('concurso-objetivo').value,
                     fase: document.getElementById('fase-concurso').value,
                     materias: document.getElementById('materias-edital').value,
@@ -303,17 +430,17 @@ function attachPageEventListeners(currentPage, user) {
                     dificuldades: document.getElementById('dificuldades-materias').value || null,
                     outras_obs: document.getElementById('outras-consideracoes').value || null
                 };
-                if (dados.horarios_estudo_dias.length === 0) {
+                if (dadosParaPlano.horarios_estudo_dias.length === 0) {
                     alert("Selecione dias e horas de estudo.");
                     if(areaPlano) areaPlano.innerHTML = "<p>Selecione dias e horas.</p>"; return; 
                 }
                 try {
-                    const resp = await fetch('http://127.0.0.1:5000/gerar-plano-estudos', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(dados) });
+                    const resp = await fetch('http://127.0.0.1:5000/gerar-plano-estudos', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(dadosParaPlano) });
                     if (!resp.ok) { throw new Error(`Erro servidor: ${resp.status}`); }
                     const plano = await resp.json(); 
                     if (plano?.plano_de_estudos) {
                         exibirPlanoNaTela(plano.plano_de_estudos);
-                        if (user) { await salvarPlanoNoFirestore(user.uid, plano); await carregarPlanosSalvos(user.uid); }
+                        if (auth.currentUser) { await salvarPlanoNoFirestore(auth.currentUser.uid, plano); await carregarPlanosSalvos(auth.currentUser.uid); }
                     } else { throw new Error('Resposta da IA inválida.'); }
                 } catch (error) { if(areaPlano) areaPlano.innerHTML = `<p style="color:red;">Erro: ${error.message}</p>`; }
             });
@@ -325,12 +452,12 @@ function attachPageEventListeners(currentPage, user) {
             botaoGerarDica.addEventListener('click', async () => {
                 dicaDoDiaArea.innerHTML = '<div class="tip-highlight"><i class="fas fa-spinner fa-spin"></i> <span>Gerando...</span></div>';
                 try {
-                    const resp = await fetch('http://127.0.0.1:5000/gerar-dica-do-dia', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ usuarioId: user?.uid }) });
+                    const resp = await fetch('http://127.0.0.1:5000/gerar-dica-do-dia', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ usuarioId: auth.currentUser?.uid }) });
                     if (!resp.ok) { throw new Error(`Erro servidor: ${resp.status}`); }
                     const dados = await resp.json();
                     if (dados?.dica_estrategica) {
                         dicaDoDiaArea.innerHTML = `<div class="tip-highlight"><i class="fas fa-lightbulb"></i><span>${dados.dica_estrategica}</span></div>`;
-                        if (user) { await salvarDicaRecente(user.uid, dados.dica_estrategica, "Dica do Dia"); }
+                        if (auth.currentUser) { await salvarDicaRecente(auth.currentUser.uid, dados.dica_estrategica, "Dica do Dia"); }
                     } else { dicaDoDiaArea.innerHTML = '<div class="tip-highlight"><i class="fas fa-times-circle"></i> <span>Nenhuma dica.</span></div>'; }
                 } catch (error) { dicaDoDiaArea.innerHTML = `<div class="tip-highlight"><i class="fas fa-exclamation-triangle"></i> <span style="color:red;">Erro: ${error.message}</span></div>`; }
             });
@@ -347,14 +474,14 @@ function attachPageEventListeners(currentPage, user) {
                     targetArea.innerHTML = `<div><i class="fas fa-spinner fa-spin"></i> Buscando...</div>`;
                     botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                     try {
-                        const resp = await fetch('http://127.0.0.1:5000/gerar-dicas-por-categoria', { method: 'POST', headers: { 'Content-Type': 'application/json',}, body: JSON.stringify({ categoria, usuarioId: user?.uid }) });
+                        const resp = await fetch('http://127.0.0.1:5000/gerar-dicas-por-categoria', { method: 'POST', headers: { 'Content-Type': 'application/json',}, body: JSON.stringify({ categoria, usuarioId: auth.currentUser?.uid }) });
                         if (!resp.ok) { throw new Error(`Erro servidor: ${resp.status}`); }
                         const dados = await resp.json();
                         if (dados?.dicas_categoria?.dicas) {
                             let html = `<h5 style="margin-bottom:10px;">Dicas: ${dados.dicas_categoria.categoria_dica || categoria}</h5><ul>`;
                             dados.dicas_categoria.dicas.forEach(dica => {
                                 html += `<li style='margin-bottom:8px;'>${dica}</li>`;
-                                if (user) { salvarDicaRecente(user.uid, dica, dados.dicas_categoria.categoria_dica || categoria); }
+                                if (auth.currentUser) { salvarDicaRecente(auth.currentUser.uid, dica, dados.dicas_categoria.categoria_dica || categoria); }
                             });
                             html += "</ul><button class='btn-fechar-categoria-dicas'>Fechar</button>";
                             targetArea.innerHTML = html; botao.innerHTML = 'Esconder Dicas';
@@ -376,8 +503,7 @@ function attachPageEventListeners(currentPage, user) {
                 const nomeInput = document.getElementById('perfil-nome');
                 const novoNome = nomeInput.value;
                 try {
-                    const userDocRef = doc(db, "usuarios", currentUser.uid);
-                    await setDoc(userDocRef, { 
+                    await setDoc(doc(db, "usuarios", currentUser.uid), { 
                         nome: novoNome || null, 
                         telefone: document.getElementById('perfil-telefone').value || null,
                         dataNascimento: document.getElementById('perfil-nascimento').value || null,
@@ -411,21 +537,62 @@ function attachPageEventListeners(currentPage, user) {
                 }
             });
         }
+    } 
+    // ########## NOVO BLOCO PARA A PÁGINA DE EXERCÍCIOS ##########
+    else if (currentPage === 'exercicios.html') {
+        const formExercicios = document.getElementById('form-exercicios');
+        const areaExercicios = document.getElementById('area-exercicios');
+
+        if (formExercicios) {
+            formExercicios.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                areaExercicios.innerHTML = '<div class="feature-card" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> Gerando seus exercícios, aguarde...</div>';
+
+                // Lógica de coleta de dados mais robusta
+                const quantidadeInput = document.getElementById('exercicio-quantidade');
+                const concursoInput = document.getElementById('exercicio-concurso');
+                const bancaInput = document.getElementById('exercicio-banca');
+
+                const dados = {
+                    materia: document.getElementById('exercicio-materia').value,
+                    topico: document.getElementById('exercicio-topico').value,
+                    quantidade: quantidadeInput ? quantidadeInput.value || 5 : 5,
+                    concurso: concursoInput ? concursoInput.value : "",
+                    banca: bancaInput ? bancaInput.value : "",
+                };
+
+                try {
+                    const resp = await fetch('http://127.0.0.1:5000/gerar-exercicios', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(dados) });
+                    if (!resp.ok) { 
+                        const erroServidor = await resp.json();
+                        throw new Error(`Erro no servidor: ${erroServidor.erro_geral || resp.status}`); 
+                    }
+                    
+                    const data = await resp.json();
+                    if (data.exercicios && data.exercicios.length > 0) {
+                        renderizarExercicios(data.exercicios, areaExercicios);
+                    } else {
+                        areaExercicios.innerHTML = '<p>Não foi possível gerar os exercícios. Tente novamente com um tópico diferente.</p>';
+                    }
+                } catch (error) {
+                    areaExercicios.innerHTML = `<p style="color:red;">Ocorreu um erro: ${error.message}</p>`;
+                }
+            });
+        }
     }
 }
 
 // --- Ponto de Entrada Principal ---
 
 // Configura o observador de autenticação para rodar imediatamente
+// Observador de autenticação: Lida com redirecionamentos e carregamento de dados iniciais
 onAuthStateChanged(auth, async (user) => {
-    // A lógica de roteamento e carregamento de dados é tratada aqui.
-    // Ela garante que, quando o DOM carregar, o estado do usuário já seja conhecido.
-    const currentPageNameAuth = getCurrentPageName();
-    const paginasProtegidas = ['home.html', 'cronograma.html', 'dicas-estrategicas.html', 'meu-perfil.html'];
-    const paginasDeLoginOuCadastro = ['login.html', 'cadastro.html'];
+    const currentPage = getCurrentPageName(); 
+    const paginasProtegidas = ['home.html', 'cronograma.html', 'dicas-estrategicas.html', 'meu-perfil.html', 'exercicios.html'];
+    const paginasDeAutenticacao = ['login.html', 'cadastro.html']; 
     const landingPage = 'index.html';
 
-    if (user) {
+    if (user) { 
         const userProfile = await getAuthenticatedUserProfile(user);
         if (!userProfile) { signOut(auth); return; }
 
@@ -439,24 +606,86 @@ onAuthStateChanged(auth, async (user) => {
             if (nomeUsuarioDashboard) { nomeUsuarioDashboard.textContent = userProfile.nome || userProfile.email; }
         }
 
-        if (paginasDeLoginOuCadastro.includes(currentPageNameAuth) || currentPageNameAuth === landingPage) {
+        if (paginasDeAutenticacao.includes(currentPage) || currentPage === landingPage) {
             window.location.href = 'home.html';
-        } else if (currentPageNameAuth === 'cronograma.html') {
-            carregarPlanosSalvos(user.uid);
-        } else if (currentPageNameAuth === 'dicas-estrategicas.html') {
-            carregarDicasRecentes(user.uid);
-        } else if (currentPageNameAuth === 'meu-perfil.html') {
-            carregarDadosDoPerfil(userProfile);
+            return;
         }
-    } else {
-        if (paginasProtegidas.includes(currentPageNameAuth)) {
-            window.location.href = 'login.html';
-        }
+
+        // Carrega dados iniciais da página
+        if (currentPage === 'cronograma.html') { carregarPlanosSalvos(user.uid); }
+        else if (currentPage === 'dicas-estrategicas.html') { carregarDicasRecentes(user.uid); }
+        else if (currentPage === 'meu-perfil.html') { carregarDadosDoPerfil(userProfile); }
+        else if (currentPage === 'exercicios.html') { carregarHistoricoExercicios(user.uid); } // CARREGA HISTÓRICO
+    
+    } else { 
+        if (paginasProtegidas.includes(currentPage)) { window.location.href = 'login.html'; }
     }
 });
 
-// A anexação dos listeners de clique/submit depende do DOM
+// Anexa os listeners de evento quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
     const currentPage = getCurrentPageName();
-    attachPageEventListeners(currentPage, auth.currentUser);
+    console.log("DOM Carregado. Anexando listeners para:", currentPage);
+
+    // Listener de Logout (anexado se o botão existir)
+    const elBotaoLogout = document.getElementById('botao-logout');
+    if (elBotaoLogout && !elBotaoLogout.dataset.listenerAttached) {
+        elBotaoLogout.addEventListener('click', (e) => {
+            e.preventDefault();
+            signOut(auth).catch(err => console.error("Erro no logout:", err));
+        });
+        elBotaoLogout.dataset.listenerAttached = 'true';
+    }
+    
+    // Listeners para a PÁGINA DE EXERCÍCIOS
+    if (currentPage === 'exercicios.html') {
+        const formExercicios = document.getElementById('form-exercicios');
+        const areaExercicios = document.getElementById('area-exercicios');
+        const botaoMostrarForm = document.getElementById('botao-mostrar-form-exercicios');
+        const containerForm = document.getElementById('container-form-exercicios');
+
+        // Lógica para mostrar/esconder o formulário
+        if (botaoMostrarForm && containerForm) {
+            botaoMostrarForm.addEventListener('click', () => {
+                const isHidden = containerForm.style.display === 'none' || !containerForm.style.display;
+                containerForm.style.display = isHidden ? 'block' : 'none';
+                botaoMostrarForm.innerHTML = isHidden ? '<i class="fas fa-minus"></i> Fechar Formulário' : '<i class="fas fa-plus"></i> Gerar Novos Exercícios';
+                if (isHidden) { areaExercicios.innerHTML = ''; } // Limpa a área de exercícios antigos ao abrir o form
+            });
+        }
+
+        // Listener para o submit do formulário
+        if (formExercicios) {
+            formExercicios.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                // Mostra a mensagem de carregamento na área de resultados
+                areaExercicios.innerHTML = '<div class="feature-card" style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Gerando seus exercícios, aguarde...</div>';
+
+                const dadosFormulario = {
+                    materia: document.getElementById('exercicio-materia').value,
+                    topico: document.getElementById('exercicio-topico').value,
+                    quantidade: document.getElementById('exercicio-quantidade').value || 5,
+                    banca: document.getElementById('exercicio-banca').value,
+                };
+
+                try {
+                    const resp = await fetch('http://127.0.0.1:5000/gerar-exercicios', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(dadosFormulario) });
+                    if (!resp.ok) { 
+                        const erroServidor = await resp.json().catch(() => ({erro_geral: `Erro no servidor: ${resp.statusText}`}));
+                        throw new Error(erroServidor.erro_geral || `Erro no servidor: ${resp.status}`); 
+                    }
+                    
+                    const data = await resp.json();
+                    if (data.exercicios && data.exercicios.length > 0) {
+                        renderizarExercicios(data.exercicios, areaExercicios, dadosFormulario);
+                    } else {
+                        areaExercicios.innerHTML = '<p>Não foi possível gerar os exercícios. Verifique os dados ou tente novamente.</p>';
+                    }
+                } catch (error) {
+                    areaExercicios.innerHTML = `<p style="color:red;">Ocorreu um erro: ${error.message}</p>`;
+                }
+            });
+        }
+    }
+    // Adicione outros blocos 'else if' para outras páginas aqui, se necessário.
 });
