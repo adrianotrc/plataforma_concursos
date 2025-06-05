@@ -5,25 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil - ConcursoIA</title>
     <link rel="stylesheet" href="dashboard-lovable.css"> 
-    <link rel="stylesheet" href="styles.css">   
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .profile-form .form-group input:disabled { background-color: #e9ecef; cursor: not-allowed; color: #6c757d; }
+        /* Estilos para formulários, podem ser movidos para um CSS comum */
+        .profile-form .form-field-group { margin-bottom: 18px; }
+        .profile-form label { display: block; margin-bottom: 6px; font-weight: 500; color: #495057; font-size: 0.95rem; }
+        .profile-form input[type="text"],
+        .profile-form input[type="email"],
+        .profile-form input[type="password"],
+        .profile-form input[type="tel"],
+        .profile-form input[type="date"] {
+            width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ced4da;
+            border-radius: 4px; box-sizing: border-box; font-size: 1rem;
+        }
+        .profile-form input:disabled { background-color: #e9ecef; cursor: not-allowed; }
         .feature-card h4 { font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; color: #343a40; border-bottom: 1px solid #eee; padding-bottom: 10px;}
         hr { margin: 30px 0; border: 0; border-top: 1px solid #e5e7eb;}
-        .settings-list .setting-item { padding: 12px 0;} 
-        .settings-list .setting-info p { font-size: 13px; }
     </style>
 </head>
 <body>
     <div class="dashboard-layout">
         <header class="dashboard-header">
             <div class="header-content">
-                <div class="header-left"><button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button><div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div></div>
-                <div class="header-right">
-                    <a href="meu-perfil.html" class="btn btn-ghost active"> <i class="fas fa-user"></i><span>Meu Perfil</span></a>
-                    <button id="botao-logout" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button>
-                </div>
+                <div class="header-left"><a href="home.html" style="text-decoration:none;color:inherit;"><div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div></a></div>
+                <div class="header-right"><a href="meu-perfil.html" class="btn btn-ghost active"><i class="fas fa-user"></i><span>Meu Perfil</span></a><button id="botao-logout" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button></div>
             </div>
         </header>
         <aside class="sidebar" id="sidebar">
@@ -47,19 +52,19 @@
                         </div>
                         <form id="form-perfil-pessoal" class="profile-form" style="margin-top: 20px;">
                             <div class="form-grid">
-                                <div class="form-group"><label for="perfil-nome">Nome Completo</label><input type="text" id="perfil-nome" placeholder="Seu nome completo"></div>
-                                <div class="form-group"><label for="perfil-email">E-mail (não editável)</label><input type="email" id="perfil-email" placeholder="seu@email.com" disabled></div>
-                                <div class="form-group"><label for="perfil-telefone">Telefone</label><input type="tel" id="perfil-telefone" placeholder="(00) 00000-0000"></div>
-                                <div class="form-group"><label for="perfil-nascimento">Data de Nascimento</label><input type="date" id="perfil-nascimento"></div>
+                                <div class="form-field-group"><label for="perfil-nome">Nome Completo</label><input type="text" id="perfil-nome" placeholder="Seu nome completo"></div>
+                                <div class="form-field-group"><label for="perfil-email">E-mail (não editável)</label><input type="email" id="perfil-email" placeholder="seu@email.com" disabled></div>
+                                <div class="form-field-group"><label for="perfil-telefone">Telefone</label><input type="tel" id="perfil-telefone" placeholder="(00) 00000-0000"></div>
+                                <div class="form-field-group"><label for="perfil-nascimento">Data de Nascimento</label><input type="date" id="perfil-nascimento"></div>
                             </div>
                             <button type="submit" class="btn btn-primary" style="margin-right: 10px;"><i class="fas fa-save"></i> Salvar Informações</button>
                         </form>
                         <hr>
                         <form id="form-alterar-senha" class="profile-form"> 
                              <h4>Alterar Senha</h4>
-                             <div class="form-group"><label for="senha-atual">Senha Atual</label><input type="password" id="senha-atual" placeholder="Sua senha atual" required></div>
-                             <div class="form-group"><label for="nova-senha">Nova Senha (mín. 6 caracteres)</label><input type="password" id="nova-senha" placeholder="Nova senha" required minlength="6"></div>
-                             <div class="form-group"><label for="confirma-nova-senha">Confirmar Nova Senha</label><input type="password" id="confirma-nova-senha" placeholder="Repita a nova senha" required minlength="6"></div>
+                             <div class="form-field-group"><label for="senha-atual">Senha Atual</label><input type="password" id="senha-atual" placeholder="Sua senha atual" required></div>
+                             <div class="form-field-group"><label for="nova-senha">Nova Senha (mín. 6 caracteres)</label><input type="password" id="nova-senha" placeholder="Nova senha" required minlength="6"></div>
+                             <div class="form-field-group"><label for="confirma-nova-senha">Confirmar Nova Senha</label><input type="password" id="confirma-nova-senha" placeholder="Repita a nova senha" required minlength="6"></div>
                              <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Alterar Senha</button>
                         </form>
                     </div>
@@ -67,17 +72,11 @@
                 <div class="features-grid" style="margin-top: 32px;">
                      <div class="feature-card">
                         <div class="feature-header"><div class="feature-icon green"><i class="fas fa-credit-card"></i></div><div class="feature-info"><h3>Minha Assinatura</h3><p>Gerencie seu plano.</p></div></div>
-                        <div id="info-assinatura" style="padding: 15px;">
-                            <p><strong>Plano Atual:</strong> <span id="plano-atual-usuario">Carregando...</span></p>
-                            <p style="font-size:0.9em; color:#6b7280;">A gestão de planos e pagamentos será integrada futuramente.</p>
-                        </div>
+                        <div id="info-assinatura" style="padding: 15px;"><p><strong>Plano Atual:</strong> <span id="plano-atual-usuario">Carregando...</span></p><p style="font-size:0.9em; color:#6b7280;">A gestão de planos será implementada futuramente.</p></div>
                     </div>
                     <div class="feature-card">
                         <div class="feature-header"><div class="feature-icon purple"><i class="fas fa-cog"></i></div><div class="feature-info"><h3>Configurações Gerais</h3><p>Personalize sua experiência.</p></div></div>
-                        <div class="settings-list" style="padding: 15px;">
-                            <div class="setting-item"><div class="setting-info"><h4>Notificações por E-mail</h4><p>Receba lembretes e dicas</p></div><label class="switch"><input type="checkbox" id="notificacoes-email" checked><span class="slider"></span></label></div>
-                            <div class="setting-item"><div class="setting-info"><h4>Modo Escuro</h4><p>Interface com tema escuro</p></div><label class="switch"><input type="checkbox" id="modo-escuro"><span class="slider"></span></label></div>
-                        </div>
+                        <div class="settings-list" style="padding: 15px;"><div class="setting-item"><div class="setting-info"><h4>Notificações por E-mail</h4><p>Receba lembretes e dicas</p></div><label class="switch"><input type="checkbox" id="notificacoes-email" checked><span class="slider"></span></label></div><div class="setting-item"><div class="setting-info"><h4>Modo Escuro</h4><p>Interface com tema escuro</p></div><label class="switch"><input type="checkbox" id="modo-escuro"><span class="slider"></span></label></div></div>
                     </div>
                 </div>
             </div>
