@@ -709,3 +709,125 @@ body {
 .plano-item h3, .plano-item p {
     margin: 0;
 }
+
+/* === ESTILOS PARA A PÁGINA DE EXERCÍCIOS === */
+
+/* Bloco para cada questão */
+.questao-bloco {
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+.enunciado-questao {
+    margin-bottom: 20px;
+    line-height: 1.6;
+    color: #374151;
+}
+
+.opcoes-lista {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.opcao-item label {
+    display: block;
+    padding: 12px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.opcao-item label:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.opcao-item input[type="radio"] {
+    display: none; /* Oculta o botão de rádio padrão */
+}
+
+/* Estilo para a opção selecionada */
+.opcao-item input[type="radio"]:checked + label {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+    font-weight: 500;
+}
+
+/* Feedback após a correção */
+.feedback-container {
+    margin-top: 16px;
+    padding: 16px;
+    border-radius: 8px;
+    border-style: solid;
+    border-width: 1px;
+}
+.feedback-container.correto {
+    background-color: #ecfdf5;
+    border-color: #10b981;
+    color: #047857;
+}
+.feedback-container.incorreto {
+    background-color: #fef2f2;
+    border-color: #ef4444;
+    color: #b91c1c;
+}
+.feedback-container strong {
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* Botão de correção */
+#btn-corrigir-exercicios {
+    display: block;
+    margin: 24px auto;
+}
+
+/* Histórico de exercícios */
+.historico-exercicios-container {
+    margin-top: 32px;
+}
+
+.exercise-history-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background-color: #fff;
+    border-bottom: 1px solid #f3f4f6;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+.exercise-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.exercise-subject {
+    font-weight: 500;
+    color: #1f2937;
+}
+.exercise-details {
+    font-size: 12px;
+    color: #6b7280;
+}
+.exercise-score {
+    font-weight: 600;
+    font-size: 18px;
+}
+.exercise-score.bom { color: #10b981; }
+.exercise-score.medio { color: #f59e0b; }
+.exercise-score.ruim { color: #ef4444; }
+.exercise-time {
+    font-size: 12px;
+    color: #9ca3af;
+    min-width: 80px;
+    text-align: right;
+}

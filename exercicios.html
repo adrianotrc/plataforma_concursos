@@ -9,111 +9,50 @@
 </head>
 <body>
     <div class="dashboard-layout">
-        <header class="dashboard-header">
-            <div class="header-content">
-                <div class="header-left">
-                    <button id="sidebarToggle" class="sidebar-toggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="logo">
-                        <i class="fas fa-book-open"></i>
-                        <span>ConcursoIA</span>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <button class="btn btn-ghost">
-                        <i class="fas fa-user"></i>
-                        <span id="user-name">Usuário</span>
-                    </button>
-                    <button id="btn-sair" class="btn btn-ghost">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Sair</span>
-                    </button>
-                </div>
-            </div>
-        </header>
-        <div id="sidebar" class="sidebar">
-            <nav class="sidebar-nav">
-                <a href="home.html" class="nav-item">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="cronograma.html" class="nav-item">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Cronogramas</span>
-                </a>
-                <a href="exercicios.html" class="nav-item active">
-                    <i class="fas fa-pen"></i>
-                    <span>Exercícios</span>
-                </a>
-                <a href="dicas-estrategicas.html" class="nav-item">
-                    <i class="fas fa-lightbulb"></i>
-                    <span>Dicas Estratégicas</span>
-                </a>
-            </nav>
-        </div>
+        <header class="dashboard-header"><div class="header-content"><div class="header-left"><button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button><div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div></div><div class="header-right"><button class="btn btn-ghost"><i class="fas fa-user"></i><span id="user-name">Carregando...</span></button><button id="btn-sair" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button></div></div></header>
+        <div id="sidebar" class="sidebar"><nav class="sidebar-nav"><a href="home.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a><a href="cronograma.html" class="nav-item"><i class="fas fa-calendar-alt"></i><span>Cronograma</span></a><a href="exercicios.html" class="nav-item active"><i class="fas fa-book-open"></i><span>Exercícios</span></a><a href="dicas-estrategicas.html" class="nav-item"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a><a href="meu-perfil.html" class="nav-item"><i class="fas fa-user-cog"></i><span>Meu Perfil</span></a></nav></div>
         <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
         <main class="main-content">
             <div class="content-wrapper">
-                <section class="w119elcome-section">
-                    <h1>Exercícios</h1>
-                    <p>Pratique e acompanhe seu desempenho.</p>
+                <section class="welcome-section">
+                    <h1>Prática de Exercícios</h1>
+                    <p>Gere questões, resolva e acompanhe seu desempenho para focar nos pontos fracos.</p>
                 </section>
+
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <h3 class="stat-title">Exercícios Realizados</h3>
-                        </div>
-                        <div class="stat-content">
-                            <span id="stat-exercicios" class="stat-number green">0</span>
-                            <span class="stat-subtitle">total</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <h3 class="stat-title">Taxa de Acerto</h3>
-                        </div>
-                        <div class="stat-content">
-                            <span id="stat-acertos" class="stat-number purple">0%</span>
-                            <span class="stat-subtitle">média</span>
-                        </div>
-                    </div>
+                    <div class="stat-card"><div class="stat-header"><h3 class="stat-title">Exercícios Totais</h3></div><div class="stat-content"><span id="stat-exercicios-totais" class="stat-number green">0</span><span class="stat-subtitle">realizados</span></div></div>
+                    <div class="stat-card"><div class="stat-header"><h3 class="stat-title">Taxa de Acerto Geral</h3></div><div class="stat-content"><span id="stat-acertos-geral" class="stat-number purple">0%</span><span class="stat-subtitle">média</span></div></div>
                 </div>
-                <button id="btn-abrir-form-exercicios" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Gerar Exercícios
+
+                <button id="btn-abrir-form-exercicios" class="btn btn-primary" style="margin-top: 16px; margin-bottom: 24px;">
+                    <i class="fas fa-plus"></i> Gerar Novos Exercícios
                 </button>
-                <form id="form-exercicios" class="form-exercicios" style="display: none;">
-                    <h2>Gerar Exercícios</h2>
-                    <div class="form-group">
-                        <label for="exercicio-materia">Matéria</label>
-                        <input type="text" id="exercicio-materia" required>
+                <form id="form-exercicios" class="feature-card" style="display: none; margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 20px; text-align: center;">Gerar Exercícios Sob Demanda</h3>
+                    <div class="form-field-group"><label for="exercicio-materia">Matéria</label><input type="text" id="exercicio-materia" required placeholder="Ex: Direito Constitucional"></div>
+                    <div class="form-field-group"><label for="exercicio-topico">Tópico Específico</label><input type="text" id="exercicio-topico" required placeholder="Ex: Artigo 5º, Direitos e Deveres Individuais e Coletivos"></div>
+                    <div class="form-grid">
+                        <div class="form-field-group"><label for="exercicio-quantidade">Quantidade</label><input type="number" id="exercicio-quantidade" min="1" max="20" value="5"></div>
+                        <div class="form-field-group"><label for="exercicio-banca">Banca (Opcional)</label><input type="text" id="exercicio-banca" placeholder="Ex: Cespe, FGV"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="exercicio-topico">Tópico</label>
-                        <input type="text" id="exercicio-topico" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="exercicio-quantidade">Quantidade</label>
-                        <input type="number" id="exercicio-quantidade" min="1" max="20" value="5">
-                    </div>
-                    <div class="form-group">
-                        <label for="exercicio-banca">Banca</label>
-                        <input type="text" id="exercicio-banca" placeholder="Opcional">
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Gerar</button>
-                        <button id="btn-fechar-form-exercicios" type="button" class="btn btn-ghost">Cancelar</button>
-                    </div>
+                    <div class="form-actions"><button type="submit" class="btn btn-primary">Gerar</button><button id="btn-fechar-form-exercicios" type="button" class="btn btn-ghost">Cancelar</button></div>
                 </form>
-                <div id="exercicios-gerados" class="exercicios-gerados"></div>
-                <div id="historico-exercicios" class="historico-exercicios">
-                    <h2>Histórico de Exercícios</h2>
-                    <p>Em breve, seu histórico de exercícios resolvidos aparecerá aqui.</p>
+
+                <div id="exercicios-gerados"></div>
+
+                <div class="historico-exercicios-container">
+                    <h2 style="margin-bottom: 16px;">Histórico de Sessões</h2>
+                    <div id="historico-exercicios">
+                        <p>Carregando seu histórico de exercícios...</p>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
-    <script src="app.js"></script>
-    <script src="dashboard.js"></script>
+
+    <script type="module" src="main-app.js"></script>
+    <script type="module" src="api.js"></script>
+    <script type="module" src="exercicios-page.js"></script>
 </body>
 </html>

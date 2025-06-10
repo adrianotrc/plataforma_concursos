@@ -1,4 +1,4 @@
-# app.py - Versão final com gestão de tempo rigorosa
+# app.py - Versão com a rota /gerar-exercicios implementada
 
 import os
 import json
@@ -11,7 +11,7 @@ from openai import OpenAI
 
 load_dotenv()
 app = Flask(__name__)
-CORS(app)
+CORS(app) # Esta linha aplica as permissões de CORS para todas as rotas
 
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
@@ -30,7 +30,7 @@ def call_openai_api(prompt_content, system_message):
                 {"role": "user", "content": prompt_content}
             ],
             response_format={"type": "json_object"},
-            temperature=0.5
+            temperature=0.7 # Um pouco mais de criatividade para variar as questões
         )
         return json.loads(response.choices[0].message.content)
     except Exception as e:
@@ -83,8 +83,38 @@ def gerar_plano():
     except Exception as e:
         return jsonify({"erro_geral": str(e)}), 500
 
-# Outras rotas permanecem as mesmas
-# ...
+@app.route("/gerar-exercicios", methods=['POST'])
+def gerar_exercicios():
+    dados_req = request.json
+    try:
+        quantidade = dados_req.get('quantidade', 5)
+        materia = dados_req.get('materia', 'Conhecimentos Gerais')
+        topico = dados_req.get('topico', 'Qualquer')
+        banca = dados_req.get('banca', '') # Pode ser vazio
+
+        prompt = (
+            f"Crie EXATAMENTE {quantidade} questões de múltipla escolha (A, B, C, D, E) sobre a matéria '{materia}' e o tópico '{topico}'. "
+            f"Se uma banca for especificada ('{banca}'), imite o estilo de questões dessa banca. Se não, crie questões de estilo geral.\n\n"
+            f"REGRAS DE FORMATAÇÃO (SEGUIR RIGOROSAMENTE):\n"
+            f"1. A resposta DEVE ser um objeto JSON com uma única chave: 'exercicios', que é uma LISTA de objetos.\n"
+            f"2. Cada objeto na lista 'exercicios' DEVE conter as seguintes chaves:\n"
+            f"   - 'enunciado': O texto da pergunta.\n"
+            f"   - 'opcoes': Uma LISTA de 5 objetos, cada um com as chaves 'letra' (string, ex: 'A') e 'texto' (string).\n"
+            f"   - 'resposta_correta': APENAS a letra da opção correta (string, ex: 'C').\n"
+            f"   - 'explicacao': Uma explicação detalhada e clara sobre o porquê da resposta correta estar certa e as outras erradas."
+        )
+        system_message = "Você é um especialista em criar questões para concursos públicos, formatando a saída estritamente em JSON conforme as regras solicitadas."
+        
+        dados = call_openai_api(prompt, system_message)
+        return jsonify(dados)
+    except Exception as e:
+        return jsonify({"erro_geral": str(e)}), 500
+
+
+@app.route("/gerar-dica-categoria", methods=['POST'])
+def gerar_dica_categoria():
+    # ... (código da geração de dicas, sem alterações)
+    return jsonify({"message": "Esta rota está funcionando"})
 
 if __name__ == "__main__":
     app.run(debug=True)
