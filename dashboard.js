@@ -19,11 +19,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const navItems = document.querySelectorAll('.sidebar-nav .nav-item'); 
     navItems.forEach(item => {
         item.addEventListener('click', function(e) {
+            // Se for um link de placeholder (href="#"), previne a ação e mostra um alerta
             if (this.getAttribute('href') === '#') { 
                 e.preventDefault(); 
                 const navText = this.querySelector('span') ? this.querySelector('span').textContent.trim() : 'Item';
                 alert(`Funcionalidade "${navText}" a ser implementada.`);
             }
+            // Fecha a sidebar se estiver em modo mobile
             if (window.innerWidth <= 768 && sidebar?.classList.contains('open')) {
                 sidebar.classList.remove('open');
                 sidebarOverlay.classList.remove('show');

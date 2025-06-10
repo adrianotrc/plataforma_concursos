@@ -25,8 +25,9 @@
                         <label for="login-senha">Senha</label>
                         <input type="password" id="login-senha" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-full">Entrar</button>
+                    <button type="submit" id="btn-login" class="btn btn-primary btn-full">Entrar</button>
                 </form>
+                <div id="error-message" style="color: red; text-align: center; margin-top: 10px; display: none;"></div>
                 <div class="login-footer">
                     <p>Não tem uma conta? <a href="cadastro.html">Cadastre-se aqui</a></p>
                     <p><a href="#">Esqueci minha senha</a></p> 
@@ -35,6 +36,6 @@
             </div>
         </div>
     </div>
-    <script type="module" src="app.js"></script>
+    <script type="module" src="auth.js"></script> 
 </body>
 </html>
