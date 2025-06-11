@@ -1,10 +1,16 @@
-// main-app.js - Versão CORRIGIDA
+// main-app.js - Versão que carrega dados de exercícios globalmente
 
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const state = { /* ... seu estado aqui ... */ };
+// O estado agora será exportado para que outras páginas possam acessá-lo
+export const state = {
+    user: null,
+    metrics: { /*...*/ },
+    savedPlans: [],
+    sessoesExercicios: [], // Agora o histórico de exercícios fica aqui
+};
 
 // --- FUNÇÕES DE CÁLCULO DE MÉTRICAS ---
 function calcularMetricas(plans, sessions) {
@@ -44,19 +50,25 @@ function updateUserInfo(user) {
 
 async function carregarDadosDoUsuario(userId) {
     try {
+        // Carrega planos de estudo
         const plansSnapshot = await getDocs(collection(db, `users/${userId}/plans`));
         state.savedPlans = plansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        state.exerciseSessions = [{date: '2025-06-01'}, {date: '2025-06-03'}]; // Simulação
+
+        // **NOVO**: Carrega o histórico de exercícios para o estado global
+        const qExercicios = query(collection(db, `users/${userId}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50));
+        const exerciciosSnapshot = await getDocs(qExercicios);
+        state.sessoesExercicios = exerciciosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // **CORREÇÃO IMPORTANTE**: Apenas calcula as métricas se estiver na página do dashboard
+        // Atualiza as métricas do dashboard se estiver na página home
         if (document.getElementById('stat-dias-estudo')) {
-            calcularMetricas(state.savedPlans, state.exerciseSessions);
+            calcularMetricas(state.savedPlans, state.sessoesExercicios);
         }
 
     } catch (error) {
         console.error("Erro ao carregar dados do Firestore:", error);
     }
 }
+
 
 // --- INICIALIZAÇÃO E CONTROLE DE AUTENTICAÇÃO ---
 function initializeApp() {

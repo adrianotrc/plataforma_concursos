@@ -30,7 +30,7 @@ def call_openai_api(prompt_content, system_message):
                 {"role": "user", "content": prompt_content}
             ],
             response_format={"type": "json_object"},
-            temperature=0.7 # Um pouco mais de criatividade para variar as questões
+            temperature=0.5
         )
         return json.loads(response.choices[0].message.content)
     except Exception as e:
@@ -113,8 +113,58 @@ def gerar_exercicios():
 
 @app.route("/gerar-dica-categoria", methods=['POST'])
 def gerar_dica_categoria():
-    # ... (código da geração de dicas, sem alterações)
-    return jsonify({"message": "Esta rota está funcionando"})
+    dados_req = request.json
+    categoria = dados_req.get("categoria", "geral")
+    
+    # Mapeamento de categorias para módulos do livro
+    contexto_guia = {
+        "gestao_de_tempo": "Módulo 5 (Organize seu horário) e Módulo 6 (Elabore seu plano)",
+        "metodos_de_estudo": "Módulo 7 (Estratégias e materiais) e Módulo 9 (Conheça as bancas)",
+        "motivacao": "Módulo 1 (Eu quero realmente estudar?), Módulo 8 (Antecipe as dificuldades) e Módulo 11 (Aprenda com erros e acertos)",
+        "redacao": "Módulo 7, seção 7.12 (Elaboração de redação)"
+    }
+    
+    contexto_especifico = contexto_guia.get(categoria, "tópicos gerais de estudo para concursos")
+
+    try:
+        prompt = (
+            f"Você é um especialista em preparação para concursos. Baseando-se nos conceitos do 'Guia Definitivo de Aprovação em Concursos', especificamente do contexto de '{contexto_especifico}', "
+            f"gere 3 dicas práticas e acionáveis para um concurseiro sobre o tema '{categoria.replace('_', ' ')}'. As dicas devem ser curtas, diretas e úteis.\n\n"
+            f"FORMATO OBRIGATÓRIO: Objeto JSON com uma única chave: 'dicas_geradas', que é uma LISTA contendo exatamente 3 strings."
+        )
+        system_message = "Você é um assistente especialista que gera dicas de estudo para concursos, baseadas em uma metodologia específica e formatando a saída estritamente em JSON."
+        
+        dados = call_openai_api(prompt, system_message)
+        return jsonify(dados)
+    except Exception as e:
+        return jsonify({"erro_geral": str(e)}), 500
+
+@app.route("/gerar-dica-personalizada", methods=['POST'])
+def gerar_dica_personalizada():
+    dados_desempenho = request.json.get("desempenho", [])
+    
+    if not dados_desempenho:
+        return jsonify({"dicas_geradas": ["Não há dados de desempenho suficientes para gerar uma dica personalizada. Continue praticando!"]})
+
+    try:
+        prompt = (
+            f"Você é um coach especialista em concursos. Um aluno apresentou o seguinte histórico de desempenho recente (matéria: % de acerto): {json.dumps(dados_desempenho)}. "
+            f"Com base nesses dados e na metodologia do 'Guia Definitivo de Aprovação em Concursos', siga as seguintes regras ESTRITAS:\n\n"
+            f"1. **IDENTIFIQUE O PONTO FRACO:** Analise os dados e identifique a matéria com a MENOR taxa de acerto.\n"
+            f"2. **APLIQUE A REGRA DE DESEMPENHO:** Com base na taxa de acerto da matéria mais fraca, gere UMA ÚNICA dica acionável seguindo a lógica abaixo:\n"
+            f"   - **SE a taxa de acerto for MENOR QUE 60%:** A recomendação DEVE focar em estudo de base. Sugira ações como: 'rever a teoria principal do tópico', 'assistir a videoaulas sobre o assunto', 'criar um novo mapa mental ou resumo do zero'.\n"
+            f"   - **SE a taxa de acerto estiver ENTRE 60% e 80%:** A recomendação DEVE focar em revisão e reforço. Sugira ações como: 'revisar seus resumos e mapas mentais existentes', 'refazer os exercícios que errou sobre este tópico', 'fazer uma bateria de 10 a 15 novas questões'.\n"
+            f"   - **SE a taxa de acerto for MAIOR QUE 80%:** A recomendação DEVE ser de manutenção e foco em outros pontos. Sugira ações como: 'manter a matéria com exercícios de baixa frequência (1 ou 2 vezes na semana)' e 'usar o tempo extra para focar em sua segunda matéria mais fraca'.\n"
+            f"3. **NÃO INVENTE DETALHES:** A dica deve ser focada na ESTRATÉGIA DE ESTUDO. NÃO invente números de módulo, quantidade de exercícios ou nomes de bancas. Apenas sugira o TIPO de ação a ser tomada.\n\n"
+            f"Exemplo de Saída (para acerto < 60%): 'Seu desempenho em Direito Administrativo está mais baixo. Recomendo um reforço na base: dedique um tempo para rever a teoria principal de 'Licitações' e tente criar um novo mapa mental para organizar os conceitos.'\n\n"
+            f"FORMATO OBRIGATÓRIO: Objeto JSON com a chave 'dicas_geradas', que é uma LISTA contendo UMA ÚNICA string com a dica personalizada."
+        )
+        system_message = "Você é um coach de concursos que gera dicas personalizadas e acionáveis baseadas em dados de desempenho e regras de negócio específicas, formatando a saída estritamente em JSON."
+        
+        dados = call_openai_api(prompt, system_message)
+        return jsonify(dados)
+    except Exception as e:
+        return jsonify({"erro_geral": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

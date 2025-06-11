@@ -4,86 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil - ConcursoIA</title>
-    <link rel="stylesheet" href="dashboard-lovable.css"> 
+    <link rel="stylesheet" href="dashboard-lovable.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        /* Estilos para formulários, podem ser movidos para um CSS comum */
-        .profile-form .form-field-group { margin-bottom: 18px; }
-        .profile-form label { display: block; margin-bottom: 6px; font-weight: 500; color: #495057; font-size: 0.95rem; }
-        .profile-form input[type="text"],
-        .profile-form input[type="email"],
-        .profile-form input[type="password"],
-        .profile-form input[type="tel"],
-        .profile-form input[type="date"] {
-            width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ced4da;
-            border-radius: 4px; box-sizing: border-box; font-size: 1rem;
-        }
-        .profile-form input:disabled { background-color: #e9ecef; cursor: not-allowed; }
-        .feature-card h4 { font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; color: #343a40; border-bottom: 1px solid #eee; padding-bottom: 10px;}
-        hr { margin: 30px 0; border: 0; border-top: 1px solid #e5e7eb;}
-    </style>
 </head>
 <body>
     <div class="dashboard-layout">
         <header class="dashboard-header">
             <div class="header-content">
-                <div class="header-left"><a href="home.html" style="text-decoration:none;color:inherit;"><div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div></a></div>
-                <div class="header-right"><a href="meu-perfil.html" class="btn btn-ghost active"><i class="fas fa-user"></i><span>Meu Perfil</span></a><button id="botao-logout" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button></div>
+                <div class="header-left">
+                    <button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button>
+                    <div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div>
+                </div>
+                <div class="header-right">
+                    <a href="meu-perfil.html" class="btn btn-ghost active"><i class="fas fa-user"></i><span id="user-name">Carregando...</span></a>
+                    <button id="btn-sair" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button>
+                </div>
             </div>
         </header>
-        <aside class="sidebar" id="sidebar">
+        <div id="sidebar" class="sidebar">
             <nav class="sidebar-nav">
                 <a href="home.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
                 <a href="cronograma.html" class="nav-item"><i class="fas fa-calendar-alt"></i><span>Cronograma</span></a>
                 <a href="exercicios.html" class="nav-item"><i class="fas fa-book-open"></i><span>Exercícios</span></a>
-                <a href="#" class="nav-item"><i class="fas fa-file-alt"></i><span>Correção de Textos</span></a>
                 <a href="dicas-estrategicas.html" class="nav-item"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
                 <a href="meu-perfil.html" class="nav-item active"><i class="fas fa-user-cog"></i><span>Meu Perfil</span></a>
             </nav>
-        </aside>
+        </div>
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
         <main class="main-content">
             <div class="content-wrapper">
-                <div class="welcome-section"><h1>Meu Perfil</h1><p>Gerencie suas informações pessoais, preferências e assinatura</p></div>
-                <div class="features-grid"> 
-                    <div class="feature-card" style="grid-column: span 2;"> 
-                        <div class="feature-header">
-                            <div class="feature-icon blue"><i class="fas fa-user-edit"></i></div>
-                            <div class="feature-info"><h3>Informações Pessoais</h3><p>Atualize seus dados cadastrais.</p></div>
-                        </div>
-                        <form id="form-perfil-pessoal" class="profile-form" style="margin-top: 20px;">
-                            <div class="form-grid">
+                <div class="welcome-section"><h1>Meu Perfil</h1><p>Gerencie suas informações, preferências e segurança.</p></div>
+                
+                <div class="profile-grid-layout">
+                    <div class="profile-column">
+                        <div class="feature-card">
+                            <div class="feature-header"><div class="feature-icon blue"><i class="fas fa-user-edit"></i></div><div class="feature-info"><h3>Informações Pessoais</h3><p>Atualize seus dados cadastrais.</p></div></div>
+                            <form id="form-perfil-pessoal" style="margin-top: 20px;">
                                 <div class="form-field-group"><label for="perfil-nome">Nome Completo</label><input type="text" id="perfil-nome" placeholder="Seu nome completo"></div>
-                                <div class="form-field-group"><label for="perfil-email">E-mail (não editável)</label><input type="email" id="perfil-email" placeholder="seu@email.com" disabled></div>
-                                <div class="form-field-group"><label for="perfil-telefone">Telefone</label><input type="tel" id="perfil-telefone" placeholder="(00) 00000-0000"></div>
-                                <div class="form-field-group"><label for="perfil-nascimento">Data de Nascimento</label><input type="date" id="perfil-nascimento"></div>
+                                <div class="form-field-group"><label for="perfil-email">E-mail (não pode ser alterado)</label><input type="email" id="perfil-email" disabled></div>
+                                <div class="form-field-group"><label for="perfil-telefone">Telefone (Opcional)</label><input type="tel" id="perfil-telefone" placeholder="(00) 00000-0000"></div>
+                                <div class="form-field-group"><label for="perfil-endereco">Endereço (Opcional)</label><textarea id="perfil-endereco" rows="2" placeholder="Seu endereço"></textarea></div>
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Informações</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="profile-column">
+                        <div class="feature-card">
+                            <div class="feature-header"><div class="feature-icon purple"><i class="fas fa-key"></i></div><div class="feature-info"><h3>Segurança</h3><p>Altere sua senha de acesso.</p></div></div>
+                            <form id="form-alterar-senha" style="margin-top: 20px;">
+                                <div class="form-field-group"><label for="senha-atual">Senha Atual</label><input type="password" id="senha-atual" required placeholder="Digite sua senha atual"></div>
+                                <div class="form-field-group"><label for="nova-senha">Nova Senha (mínimo 6 caracteres)</label><input type="password" id="nova-senha" required minlength="6" placeholder="Digite a nova senha"></div>
+                                <div class="form-field-group"><label for="confirma-nova-senha">Confirmar Nova Senha</label><input type="password" id="confirma-nova-senha" required minlength="6" placeholder="Repita a nova senha"></div>
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Alterar Senha</button>
+                            </form>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-header"><div class="feature-icon green"><i class="fas fa-cog"></i></div><div class="feature-info"><h3>Configurações Gerais</h3><p>Personalize sua experiência na plataforma.</p></div></div>
+                            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 16px;">
+                                <div class="setting-item"><div class="setting-info"><h4>Modo Escuro</h4><p>Ideal para estudos noturnos.</p></div><label class="switch"><input type="checkbox" id="modo-escuro-toggle"><span class="slider"></span></label></div>
+                                <div class="setting-item"><div class="setting-info"><h4>Notificações por E-mail</h4><p>Receba lembretes e dicas. (Funcionalidade futura)</p></div><label class="switch"><input type="checkbox" id="notificacoes-toggle" disabled><span class="slider"></span></label></div>
                             </div>
-                            <button type="submit" class="btn btn-primary" style="margin-right: 10px;"><i class="fas fa-save"></i> Salvar Informações</button>
-                        </form>
-                        <hr>
-                        <form id="form-alterar-senha" class="profile-form"> 
-                             <h4>Alterar Senha</h4>
-                             <div class="form-field-group"><label for="senha-atual">Senha Atual</label><input type="password" id="senha-atual" placeholder="Sua senha atual" required></div>
-                             <div class="form-field-group"><label for="nova-senha">Nova Senha (mín. 6 caracteres)</label><input type="password" id="nova-senha" placeholder="Nova senha" required minlength="6"></div>
-                             <div class="form-field-group"><label for="confirma-nova-senha">Confirmar Nova Senha</label><input type="password" id="confirma-nova-senha" placeholder="Repita a nova senha" required minlength="6"></div>
-                             <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Alterar Senha</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="features-grid" style="margin-top: 32px;">
-                     <div class="feature-card">
-                        <div class="feature-header"><div class="feature-icon green"><i class="fas fa-credit-card"></i></div><div class="feature-info"><h3>Minha Assinatura</h3><p>Gerencie seu plano.</p></div></div>
-                        <div id="info-assinatura" style="padding: 15px;"><p><strong>Plano Atual:</strong> <span id="plano-atual-usuario">Carregando...</span></p><p style="font-size:0.9em; color:#6b7280;">A gestão de planos será implementada futuramente.</p></div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-header"><div class="feature-icon purple"><i class="fas fa-cog"></i></div><div class="feature-info"><h3>Configurações Gerais</h3><p>Personalize sua experiência.</p></div></div>
-                        <div class="settings-list" style="padding: 15px;"><div class="setting-item"><div class="setting-info"><h4>Notificações por E-mail</h4><p>Receba lembretes e dicas</p></div><label class="switch"><input type="checkbox" id="notificacoes-email" checked><span class="slider"></span></label></div><div class="setting-item"><div class="setting-info"><h4>Modo Escuro</h4><p>Interface com tema escuro</p></div><label class="switch"><input type="checkbox" id="modo-escuro"><span class="slider"></span></label></div></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
     </div>
-    <!-- <script src="dashboard.js"></script>  -->
-    <script type="module" src="app.js"></script> 
+
+    <script type="module" src="main-app.js"></script>
+    <script type="module" src="perfil-page.js"></script>
 </body>
 </html>

@@ -831,3 +831,263 @@ body {
     min-width: 80px;
     text-align: right;
 }
+
+/* === ESTILOS PARA A PÁGINA DE DICAS ESTRATÉGICAS === */
+
+.dicas-categorias-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.dica-card {
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+}
+
+.dica-card .feature-info {
+    flex-grow: 1;
+}
+
+.dicas-geradas {
+    margin-top: 16px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    padding: 0;
+}
+
+.dicas-geradas ul {
+    list-style: none;
+    padding: 16px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dicas-geradas li {
+    padding-left: 1.5em;
+    text-indent: -1.5em;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.dicas-geradas li::before {
+    content: '💡';
+    margin-right: 8px;
+}
+
+/* Histórico de Dicas */
+.historico-dicas-container {
+    margin-top: 32px;
+}
+
+.tip-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background-color: #fff;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.tip-icon {
+    width: 40px;
+    height: 40px;
+    background: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    flex-shrink: 0;
+}
+
+.tip-content {
+    flex-grow: 1;
+}
+
+.tip-title {
+    font-weight: 500;
+    color: #1f2937;
+    margin-bottom: 2px;
+}
+
+.tip-description {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* === ESTILOS PARA O GERADOR DE DICAS UNIFICADO === */
+
+.gerador-dicas-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+    padding: 24px;
+    background-color: #fff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 32px;
+}
+
+.gerador-dicas-container .form-field-group {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
+#dica-gerada-container {
+    margin-top: 24px;
+    background-color: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    border-radius: 8px;
+    padding: 20px;
+    color: #1e3a8a;
+}
+
+#dica-gerada-container ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#dica-gerada-container li {
+    padding-left: 1.5em;
+    text-indent: -1.5em;
+    line-height: 1.6;
+}
+
+#dica-gerada-container li::before {
+    content: '💡';
+    margin-right: 8px;
+}
+
+/* === ESTILOS PARA O MODO ESCURO (DARK MODE) === */
+
+body.dark-mode {
+    background-color: #111827; /* Fundo principal escuro */
+    color: #d1d5db; /* Cor de texto padrão */
+}
+
+body.dark-mode .dashboard-header,
+body.dark-mode .sidebar,
+body.dark-mode .feature-card,
+body.dark-mode .stat-card,
+body.dark-mode .activity-card,
+body.dark-mode .plano-formatado-container,
+body.dark-mode .questao-bloco,
+body.dark-mode .gerador-dicas-container,
+body.dark-mode .tip-item {
+    background-color: #1f2937; /* Fundo dos cards escuro */
+    border-color: #374151; /* Cor das bordas */
+    color: #d1d5db;
+}
+
+body.dark-mode .welcome-section h1,
+body.dark-mode .feature-info h3,
+body.dark-mode .tip-title,
+body.dark-mode strong {
+    color: #f9fafb; /* Textos de destaque mais claros */
+}
+
+body.dark-mode .welcome-section p,
+body.dark-mode .stat-title,
+body.dark-mode .stat-subtitle,
+body.dark-mode .feature-info p,
+body.dark-mode .tip-description,
+body.dark-mode .exercise-details,
+body.dark-mode .exercise-time {
+    color: #9ca3af; /* Textos secundários */
+}
+
+body.dark-mode .btn-ghost {
+    color: #9ca3af;
+}
+
+body.dark-mode .btn-ghost:hover {
+    background-color: #374151;
+    color: #f9fafb;
+}
+
+/* Switch (toggle) do modo escuro */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: #3b82f6; }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* === ESTILOS PARA NOTIFICAÇÃO (TOAST) E MELHORIAS DARK MODE === */
+
+/* Notificação Toast */
+.feedback-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #059669; /* Verde sucesso */
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.5s, bottom 0.5s;
+}
+
+.feedback-toast.show {
+    bottom: 40px;
+    opacity: 1;
+}
+
+/* Melhorias no Dark Mode */
+body.dark-mode .form-field-group label,
+body.dark-mode .setting-info h4,
+body.dark-mode .setting-info p {
+    color: #d1d5db;
+}
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+/* === ESTILOS PARA O LAYOUT DA PÁGINA DE PERFIL === */
+
+.profile-grid-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* Duas colunas: a da esquerda é 2x maior */
+    gap: 24px;
+    align-items: flex-start; /* Alinha os cards no topo */
+}
+
+.profile-column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Ajuste para telas menores */
+@media (max-width: 992px) {
+    .profile-grid-layout {
+        grid-template-columns: 1fr; /* Coluna única em telas menores */
+    }
+}
+
+/* Estilo para notificação de erro */
+.feedback-toast.error {
+    background-color: #dc2626; /* Vermelho erro */
+}

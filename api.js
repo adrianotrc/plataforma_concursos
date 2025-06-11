@@ -57,3 +57,50 @@ export async function gerarExercicios(dadosDoFormulario) {
         throw error;
     }
 }
+
+/**
+ * **NOVA FUNÇÃO**
+ * Função para chamar o endpoint de geração de dicas por categoria.
+ * @param {string} categoria - A categoria da dica (ex: 'gestao_de_tempo').
+ * @returns {Promise<object>} - A resposta da API com as dicas geradas.
+ */
+export async function gerarDicasPorCategoria(categoria) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/gerar-dica-categoria`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ categoria }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro do servidor: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Falha ao gerar dicas:', error);
+        throw error;
+    }
+}
+
+/**
+ * **NOVA FUNÇÃO**
+ * @param {object} dadosDesempenho - Um resumo do desempenho do usuário.
+ * @returns {Promise<object>} - A resposta da API com a dica personalizada.
+ */
+export async function gerarDicaPersonalizada(dadosDesempenho) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/gerar-dica-personalizada`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ desempenho: dadosDesempenho }),
+        });
+        if (!response.ok) throw new Error(`Erro do servidor: ${response.statusText}`);
+        return await response.json();
+    } catch (error) {
+        console.error('Falha ao gerar dica personalizada:', error);
+        throw error;
+    }
+}

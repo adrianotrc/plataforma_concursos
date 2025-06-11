@@ -9,94 +9,45 @@
 </head>
 <body>
     <div class="dashboard-layout">
-        <header class="dashboard-header">
-            <div class="header0110content">
-                <div class="header-left">
-                    <button id="sidebarToggle" class="sidebar-toggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="logo">
-                        <i class="fas fa-book-open"></i>
-                        <span>ConcursoIA</span>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <button class="btn btn-ghost">
-                        <i class="fas fa-user"></i>
-                        <span id="user-name">Usuário</span>
-                    </button>
-                    <button id="btn-sair" class="btn btn-ghost">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Sair</span>
-                    </button>
-                </div>
-            </div>
-        </header>
-        <div id="sidebar" class="sidebar">
-            <nav class="sidebar-nav">
-                <a href="home.html" class="nav-item">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="cronograma.html" class="nav-item">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Cronogramas</span>
-                </a>
-                <a href="exercicios.html" class="nav-item">
-                    <i class="fas fa-pen"></i>
-                    <span>Exercícios</span>
-                </a>
-                <a href="dicas-estrategicas.html" class="nav-item active">
-                    <i class="fas fa-lightbulb"></i>
-                    <span>Dicas Estratégicas</span>
-                </a>
-            </nav>
-        </div>
+        <header class="dashboard-header"><div class="header-content"><div class="header-left"><button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button><div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div></div><div class="header-right"><button class="btn btn-ghost"><i class="fas fa-user"></i><span id="user-name">Carregando...</span></button><button id="btn-sair" class="btn btn-ghost"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button></div></div></header>
+        <div id="sidebar" class="sidebar"><nav class="sidebar-nav"><a href="home.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a><a href="cronograma.html" class="nav-item"><i class="fas fa-calendar-alt"></i><span>Cronograma</span></a><a href="exercicios.html" class="nav-item"><i class="fas fa-book-open"></i><span>Exercícios</span></a><a href="dicas-estrategicas.html" class="nav-item active"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a><a href="meu-perfil.html" class="nav-item"><i class="fas fa-user-cog"></i><span>Meu Perfil</span></a></nav></div>
         <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
         <main class="main-content">
             <div class="content-wrapper">
                 <section class="welcome-section">
                     <h1>Dicas Estratégicas</h1>
-                    <p>Receba dicas personalizadas para cada área do seu estudo.</p>
+                    <p>Receba orientações personalizadas baseadas na metodologia de aprovação.</p>
                 </section>
-                <div class="dicas-categorias">
-                    <div class="dica-categoria">
-                        <h2>Gestão de Tempo</h2>
-                        <button class="btn btn-primary btn-categoria-dica" data-categoria="gestao_de_tempo">
-                            <i class="fas fa-clock"></i> Gerar Dicas
-                        </button>
-                        <div id="tips-gestao_de_tempo" class="dicas-geradas"></div>
+
+                <form id="gerador-dicas-form" class="gerador-dicas-container">
+                    <div class="form-field-group">
+                        <label for="dica-categoria-select">Selecione uma categoria para receber dicas:</label>
+                        <select id="dica-categoria-select" required>
+                            <option value="" disabled selected>Escolha uma área...</option>
+                            <option value="personalizada">✨ Dica Personalizada (do seu Coach IA)</option>
+                            <option value="gestao_de_tempo">Gestão de Tempo</option>
+                            <option value="metodos_de_estudo">Métodos de Estudo</option>
+                            <option value="motivacao">Motivação e Disciplina</option>
+                            <option value="redacao">Técnicas de Redação</option>
+                        </select>
                     </div>
-                    <div class="dica-categoria">
-                        <h2>Métodos de Estudo</h2>
-                        <button class="btn btn-primary btn-categoria-dica" data-categoria="metodos_de_estudo">
-                            <i class="fas fa-book"></i> Gerar Dicas
-                        </button>
-                        <div id="tips-metodos_de_estudo" class="dicas-geradas"></div>
-                    </div>
-                    <div class="dica-categoria">
-                        <h2>Motivação</h2>
-                        <button class="btn btn-primary btn-categoria-dica" data-categoria="motivacao">
-                            <i class="fas fa-heart"></i> Gerar Dicas
-                        </button>
-                        <div id="tips-motivacao" class="dicas-geradas"></div>
-                    </div>
-                    <div class="dica-categoria">
-                        <h2>Redação</h2>
-                        <button class="btn btn-primary btn-categoria-dica" data-categoria="redacao">
-                            <i class="fas fa-pen-fancy"></i> Gerar Dicas
-                        </button>
-                        <div id="tips-redacao" class="dicas-geradas"></div>
-                    </div>
-                </div>
-                <div id="historico-dicas" class="historico-dicas">
-                    <h2>Dicas Visualizadas Recentemente</h2>
-                    <p>Em breve, seu histórico de dicas aparecerá aqui.</p>
+                    <button type="submit" class="btn btn-primary">Gerar Dica</button>
+                </form>
+                
+                <div id="dica-gerada-container" style="display: none;"></div>
+
+                <div class="historico-dicas-container">
+                    <h2 style="margin-bottom: 16px;">Dicas Recentes</h2>
+                    <div id="historico-dicas">
+                        </div>
                 </div>
             </div>
         </main>
     </div>
-    <script src="app.js"></script>
-    <script src="dashboard.js"></script>
+
+    <script type="module" src="main-app.js"></script>
+    <script type="module" src="api.js"></script>
+    <script type="module" src="dicas-page.js"></script>
 </body>
 </html>
