@@ -45,7 +45,7 @@ function updateUserInfo(user) {
     }
 }
 
-async function carregarDadosDoUsuario(userId) {
+export async function carregarDadosDoUsuario(userId) {
     try {
         const collectionsToLoad = {
             savedPlans: query(collection(db, `users/${userId}/plans`), orderBy("criadoEm", "desc"), limit(50)),

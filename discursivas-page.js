@@ -1,10 +1,15 @@
-// discursivas-page.js - Versão final e definitiva
+// discursivas-page.js - Versão definitiva e funcional
 
 import { auth, db } from './firebase-config.js';
-import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { gerarEnunciadoDiscursiva, corrigirDiscursiva } from './api.js';
+// **CORREÇÃO**: Importa o estado e a função de carregamento do main-app
+import { state, carregarDadosDoUsuario } from './main-app.js';
 
 // --- ELEMENTOS DO DOM ---
+const btnAbrirForm = document.getElementById('btn-abrir-form-discursiva');
+const containerGerador = document.getElementById('container-gerador-enunciado');
+const btnCancelarGeracao = document.getElementById('btn-cancelar-geracao');
 const formGerarEnunciado = document.getElementById('form-gerar-enunciado');
 const enunciadoContainer = document.getElementById('enunciado-container');
 const areaResposta = document.getElementById('area-resposta');
@@ -12,11 +17,11 @@ const respostaTextarea = document.getElementById('resposta-discursiva');
 const btnCorrigir = document.getElementById('btn-corrigir-texto');
 const correcaoContainer = document.getElementById('correcao-container');
 const historicoContainer = document.getElementById('historico-discursivas');
+const statTotal = document.getElementById('stat-discursivas-total');
+const statMedia = document.getElementById('stat-discursivas-media');
 
 // --- ESTADO LOCAL ---
-let currentUser = null;
 let sessaoAtual = {};
-let historicoDiscursivas = [];
 
 // --- FUNÇÕES DE RENDERIZAÇÃO ---
 function renderEnunciado(enunciado) {
@@ -30,15 +35,12 @@ function renderEnunciado(enunciado) {
 
 function renderCorrecao(correcao, container) {
     if (!container || !correcao) return;
-
-    // Constrói a lista de critérios de forma segura
-    let analiseHtml = correcao.analise_por_criterio?.map(item => `
+    const analiseHtml = correcao.analise_por_criterio?.map(item => `
         <div class="criterio-analise">
             <h5>${item.criterio} (Nota: ${item.nota_criterio?.toFixed(1) || 'N/A'})</h5>
             <p>${item.comentario || 'Sem comentários para este critério.'}</p>
         </div>
     `).join('') || '<p>Análise detalhada não disponível.</p>';
-
     container.innerHTML = `
         <h4>Análise da IA (Nota Final: ${correcao.nota_atribuida?.toFixed(1) || 'N/A'} / 10.0)</h4>
         <p><strong>Comentário Geral:</strong> ${correcao.comentario_geral || 'Sem comentário geral.'}</p>
@@ -50,15 +52,15 @@ function renderCorrecao(correcao, container) {
 
 function renderHistorico() {
     if (!historicoContainer) return;
-    if (historicoDiscursivas.length === 0) {
+    const historico = state.sessoesDiscursivas || [];
+    if (historico.length === 0) {
         historicoContainer.innerHTML = '<p>Seu histórico de correções aparecerá aqui.</p>';
         return;
     }
-    historicoContainer.innerHTML = historicoDiscursivas.map(item => {
+    historicoContainer.innerHTML = historico.map(item => {
         const materia = item.criterios?.materia || 'Discursiva';
         const nota = item.correcao?.nota_atribuida?.toFixed(1) || 'N/A';
-        const data = item.criadoEm?.toDate().toLocaleDateString('pt-BR') || 'Data indefinida';
-
+        const data = item.criadoEm?.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) || 'Data indefinida';
         return `
             <div class="tip-item">
                 <div class="tip-icon"><i class="fas fa-file-alt"></i></div>
@@ -73,18 +75,31 @@ function renderHistorico() {
 }
 
 function atualizarMetricasDiscursivas() {
-    const total = historicoDiscursivas.length;
-    const somaNotas = historicoDiscursivas.reduce((acc, item) => acc + (item.correcao?.nota_atribuida || 0), 0);
+    if (!statTotal || !statMedia) return;
+    const historico = state.sessoesDiscursivas || [];
+    const total = historico.length;
+    const somaNotas = historico.reduce((acc, item) => acc + (item.correcao?.nota_atribuida || 0), 0);
     const notaMedia = total > 0 ? (somaNotas / total) : 0;
     
-    document.getElementById('stat-discursivas-total').textContent = total;
-    document.getElementById('stat-discursivas-media').textContent = notaMedia.toFixed(1);
+    statTotal.textContent = total;
+    statMedia.textContent = notaMedia.toFixed(1);
 }
 
 // --- LÓGICA DE EVENTOS ---
+btnAbrirForm?.addEventListener('click', () => {
+    containerGerador.style.display = 'block';
+    btnAbrirForm.style.display = 'none';
+});
+btnCancelarGeracao?.addEventListener('click', () => {
+    containerGerador.style.display = 'none';
+    btnAbrirForm.style.display = 'block';
+});
+
 formGerarEnunciado?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = formGerarEnunciado.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
     const criterios = {
         concurso: document.getElementById('discursiva-concurso').value,
         banca: document.getElementById('discursiva-banca').value,
@@ -95,13 +110,9 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
         dificuldade: document.getElementById('discursiva-dificuldade').value,
         foco_correcao: document.getElementById('discursiva-foco').value,
     };
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
-
     try {
         const resultado = await gerarEnunciadoDiscursiva(criterios);
-        sessaoAtual = { criterios, enunciado: resultado.enunciado_gerado, resposta: null, correcao: null };
+        sessaoAtual = { criterios, enunciado: resultado.enunciado_gerado };
         renderEnunciado(sessaoAtual.enunciado);
     } catch (error) {
         alert('Falha ao gerar o enunciado.');
@@ -126,19 +137,19 @@ btnCorrigir?.addEventListener('click', async () => {
     };
     try {
         const resultado = await corrigirDiscursiva(dadosParaCorrecao);
-        sessaoAtual.correcao = resultado;
-        renderCorrecao(sessaoAtual.correcao, correcaoContainer);
-        if (currentUser) {
-            await addDoc(collection(db, `users/${currentUser.uid}/discursivasCorrigidas`), {
+        renderCorrecao(resultado, correcaoContainer);
+        if (state.user) {
+            await addDoc(collection(db, `users/${state.user.uid}/discursivasCorrigidas`), {
                 criterios: sessaoAtual.criterios,
                 enunciado: sessaoAtual.enunciado,
-                resposta: sessaoAtual.resposta,
+                resposta: resposta,
                 correcao: resultado,
                 criadoEm: serverTimestamp(),
             });
-            await carregarHistorico(); // Recarrega os dados do Firestore
-            renderHistorico(); // Re-renderiza a lista de histórico
-            atualizarMetricasDiscursivas(); // Re-calcula e exibe as métricas
+            // **CORREÇÃO**: Chama a função global para recarregar todos os dados
+            await carregarDadosDoUsuario(state.user.uid);
+            renderHistorico();
+            atualizarMetricasDiscursivas();
         }
     } catch (error) {
         alert('Falha ao obter a correção.');
@@ -153,34 +164,26 @@ historicoContainer?.addEventListener('click', (e) => {
     const btnRever = e.target.closest('.btn-rever-correcao');
     if (btnRever) {
         const id = btnRever.dataset.id;
-        const sessaoSelecionada = historicoDiscursivas.find(item => item.id === id);
+        const sessaoSelecionada = state.sessoesDiscursivas.find(item => item.id === id);
         if (sessaoSelecionada) {
             renderEnunciado(sessaoSelecionada.enunciado);
             respostaTextarea.value = sessaoSelecionada.resposta;
             renderCorrecao(sessaoSelecionada.correcao, correcaoContainer);
-            correcaoContainer.scrollIntoView({ behavior: 'smooth' });
         }
     }
 });
 
-// --- LÓGICA DE DADOS E INICIALIZAÇÃO ---
-async function carregarHistorico() {
-    if (!currentUser) return;
-    const q = query(collection(db, `users/${currentUser.uid}/discursivasCorrigidas`), orderBy("criadoEm", "desc"), limit(20));
-    const querySnapshot = await getDocs(q);
-    historicoDiscursivas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+// --- INICIALIZAÇÃO ---
+// A inicialização agora é mais simples, pois depende do main-app.js
+function initDiscursivasPage() {
+    if (!state.user) return; // Sai se o usuário ainda não foi carregado pelo main-app
+    // Usa os dados que o main-app já carregou
+    renderHistorico();
+    atualizarMetricasDiscursivas();
 }
 
-async function initDiscursivasPage() {
-    currentUser = auth.currentUser;
-    if (currentUser) {
-        await carregarHistorico();
-        renderHistorico();
-        atualizarMetricasDiscursivas();
-    }
-}
 document.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged(user => {
-        if (user) { initDiscursivasPage(); }
-    });
+    setTimeout(() => {
+        initDiscursivasPage();
+    }, 500);
 });
