@@ -165,6 +165,50 @@ def gerar_dica_personalizada():
         return jsonify(dados)
     except Exception as e:
         return jsonify({"erro_geral": str(e)}), 500
+    
+# **NOVA ROTA PARA GERAR ENUNCIADO**
+@app.route("/gerar-enunciado-discursiva", methods=['POST'])
+def gerar_enunciado_discursiva():
+    dados_req = request.json
+    try:
+        prompt = (
+            f"Você é um especialista em criar questões para concursos. Com base nos seguintes critérios: {json.dumps(dados_req)}, "
+            f"crie um único e excelente enunciado para uma questão discursiva. O enunciado deve ser claro, objetivo e simular perfeitamente uma questão real da banca especificada (se houver).\n\n"
+            f"FORMATO OBRIGATÓRIO: Objeto JSON com uma única chave: 'enunciado_gerado', que é uma string contendo o enunciado."
+        )
+        system_message = "Você gera enunciados de questões discursivas para concursos, formatando a saída em JSON."
+        dados = call_openai_api(prompt, system_message)
+        return jsonify(dados)
+    except Exception as e:
+        return jsonify({"erro_geral": str(e)}), 500
+
+
+# **ROTA DE CORREÇÃO ATUALIZADA COM PROMPT FINAL E ESTRUTURADO**
+@app.route("/corrigir-discursiva", methods=['POST'])
+def corrigir_discursiva():
+    dados_req = request.json
+    try:
+        prompt = (
+            f"Você é um examinador de concurso rigoroso e justo, especialista em analisar questões discursivas. Analise a seguinte resposta de um aluno.\n"
+            f"### Enunciado da Questão:\n{dados_req.get('enunciado')}\n\n"
+            f"### Resposta do Aluno:\n{dados_req.get('resposta')}\n\n"
+            f"### Foco da Correção Solicitado pelo Aluno:\n{dados_req.get('foco_correcao', 'Avaliação geral')}\n\n"
+            f"REGRAS DA CORREÇÃO:\n"
+            f"1. Atribua uma nota de 0.0 a 10.0, com uma casa decimal.\n"
+            f"2. Forneça um 'comentario_geral' sobre o desempenho, destacando a impressão geral do texto.\n"
+            f"3. Crie uma análise detalhada por critérios, dentro de uma lista chamada 'analise_por_criterio'.\n"
+            f"4. Para cada critério na lista, inclua as chaves 'criterio' (ex: 'Desenvolvimento do Tema'), 'nota_criterio' (a nota para aquele critério específico), e 'comentario' (o feedback detalhado para o critério).\n"
+            f"5. Os critérios a serem analisados OBRIGATORIAMENTE são: 'Apresentação e Estrutura Textual', 'Desenvolvimento do Tema e Argumentação', e 'Domínio da Modalidade Escrita (Gramática)''.\n"
+            f"6. Use tags HTML `<strong>` para destacar termos ou frases importantes nos seus comentários.\n\n"
+            f"ESTRUTURA DE RESPOSTA JSON (SEGUIR RIGOROSAMENTE):\n"
+            f"O JSON deve conter as chaves: 'nota_atribuida' (float), 'comentario_geral' (string), e 'analise_por_criterio' (LISTA de objetos, onde cada objeto tem 'criterio', 'nota_criterio' e 'comentario')."
+        )
+        system_message = "Você é um examinador de concursos que fornece correções estruturadas por critérios, formatando a saída estritamente em JSON."
+        
+        dados = call_openai_api(prompt, system_message)
+        return jsonify(dados)
+    except Exception as e:
+        return jsonify({"erro_geral": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

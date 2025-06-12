@@ -12,19 +12,14 @@
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="header-left">
-                    <button id="sidebarToggle" class="sidebar-toggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="logo">
-                        <i class="fas fa-book-open"></i>
-                        <span>ConcursoIA</span>
-                    </div>
+                    <button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button>
+                    <div class="logo"><i class="fas fa-book-open"></i><span>ConcursoIA</span></div>
                 </div>
                 <div class="header-right">
-                    <button class="btn btn-ghost">
+                    <a href="meu-perfil.html" class="btn btn-ghost">
                         <i class="fas fa-user"></i>
                         <span id="user-name">Carregando...</span>
-                    </button>
+                    </a>
                     <button id="btn-sair" class="btn btn-ghost">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Sair</span>
@@ -33,30 +28,16 @@
             </div>
         </header>
 
-        <div id="sidebar" class="sidebar">
+        <aside id="sidebar" class="sidebar">
             <nav class="sidebar-nav">
-                <a href="home.html" class="nav-item active">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="cronograma.html" class="nav-item">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Cronograma</span>
-                </a>
-                <a href="exercicios.html" class="nav-item">
-                    <i class="fas fa-book-open"></i>
-                    <span>Exercícios</span>
-                </a>
-                <a href="dicas-estrategicas.html" class="nav-item">
-                    <i class="fas fa-bullseye"></i>
-                    <span>Dicas Estratégicas</span>
-                </a>
-                <a href="meu-perfil.html" class="nav-item">
-                    <i class="fas fa-user-cog"></i>
-                    <span>Meu Perfil</span>
-                </a>
+                <a href="home.html" class="nav-item active"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="cronograma.html" class="nav-item"><i class="fas fa-calendar-alt"></i><span>Cronograma</span></a>
+                <a href="exercicios.html" class="nav-item"><i class="fas fa-book-open"></i><span>Exercícios</span></a>
+                <a href="discursivas.html" class="nav-item"><i class="fas fa-file-signature"></i><span>Questões Discursivas</span></a>
+                <a href="dicas-estrategicas.html" class="nav-item"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
+                <a href="meu-perfil.html" class="nav-item"><i class="fas fa-user-cog"></i><span>Meu Perfil</span></a>
             </nav>
-        </div>
+        </aside>
         <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
         <main class="main-content">
@@ -69,80 +50,43 @@
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-header"><h3 class="stat-title">Dias de Estudo</h3></div>
-                        <div class="stat-content">
-                            <span id="stat-dias-estudo" class="stat-number blue">0</span>
-                            <span class="stat-subtitle">dias com atividades</span>
-                        </div>
+                        <div class="stat-content"><span id="stat-dias-estudo" class="stat-number blue">0</span><span class="stat-subtitle">dias com atividades</span></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-header"><h3 class="stat-title">Exercícios Realizados</h3></div>
-                        <div class="stat-content">
-                            <span id="stat-exercicios" class="stat-number green">0</span>
-                            <span class="stat-subtitle">total</span>
-                        </div>
+                        <div class="stat-content"><span id="stat-exercicios" class="stat-number green">0</span><span class="stat-subtitle">total</span></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-header"><h3 class="stat-title">Taxa de Acerto</h3></div>
-                        <div class="stat-content">
-                            <span id="stat-acertos" class="stat-number purple">0%</span>
-                            <span class="stat-subtitle">média</span>
-                        </div>
+                        <div class="stat-content"><span id="stat-acertos" class="stat-number purple">0%</span><span class="stat-subtitle">média</span></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-header"><h3 class="stat-title">Textos Corrigidos</h3></div>
-                        <div class="stat-content">
-                            <span id="stat-redacoes" class="stat-number orange">0</span>
-                            <span class="stat-subtitle">total</span>
-                        </div>
+                        <div class="stat-content"><span id="stat-redacoes" class="stat-number orange">0</span><span class="stat-subtitle">total</span></div>
                     </div>
                 </div>
 
                 <div class="features-grid" style="margin-top: 32px;">
                     <div class="feature-card">
-                        <div class="feature-header">
-                            <div class="feature-icon blue"><i class="fas fa-calendar-alt"></i></div>
-                            <div class="feature-info">
-                                <h3>Cronograma Personalizado</h3>
-                                <p>Crie e gerencie seu plano de estudos com IA.</p>
-                            </div>
-                        </div>
+                        <div class="feature-header"><div class="feature-icon blue"><i class="fas fa-calendar-alt"></i></div><div class="feature-info"><h3>Cronograma Personalizado</h3><p>Crie e gerencie seu plano de estudos com IA.</p></div></div>
                         <a href="cronograma.html" class="btn btn-primary btn-full">Acessar Cronogramas</a>
                     </div>
                     <div class="feature-card">
-                        <div class="feature-header">
-                            <div class="feature-icon green"><i class="fas fa-book-open"></i></div>
-                            <div class="feature-info">
-                                <h3>Exercícios Inteligentes</h3>
-                                <p>Pratique com questões adaptadas ao seu nível.</p>
-                            </div>
-                        </div>
+                        <div class="feature-header"><div class="feature-icon green"><i class="fas fa-book-open"></i></div><div class="feature-info"><h3>Exercícios Inteligentes</h3><p>Pratique com questões adaptadas ao seu nível.</p></div></div>
                         <a href="exercicios.html" class="btn btn-primary btn-full">Praticar Exercícios</a>
                     </div>
                     <div class="feature-card">
-                        <div class="feature-header">
-                            <div class="feature-icon orange"><i class="fas fa-bullseye"></i></div>
-                            <div class="feature-info">
-                                <h3>Dicas Estratégicas</h3>
-                                <p>Receba orientações para otimizar sua aprovação.</p>
-                            </div>
-                        </div>
+                        <div class="feature-header"><div class="feature-icon orange"><i class="fas fa-bullseye"></i></div><div class="feature-info"><h3>Dicas Estratégicas</h3><p>Receba orientações para otimizar sua aprovação.</p></div></div>
                         <a href="dicas-estrategicas.html" class="btn btn-primary btn-full">Ver Dicas</a>
                     </div>
                      <div class="feature-card">
-                        <div class="feature-header">
-                            <div class="feature-icon purple"><i class="fas fa-user-cog"></i></div>
-                            <div class="feature-info">
-                                <h3>Meu Perfil</h3>
-                                <p>Gerencie seus dados e configurações.</p>
-                            </div>
-                        </div>
-                        <a href="meu-perfil.html" class="btn btn-primary btn-full">Acessar Perfil</a>
+                        <div class="feature-header"><div class="feature-icon purple"><i class="fas fa-file-signature"></i></div><div class="feature-info"><h3>Questões Discursivas</h3><p>Pratique e receba correções detalhadas da IA.</p></div></div>
+                        <a href="discursivas.html" class="btn btn-primary btn-full">Praticar Discursivas</a>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-
     <script type="module" src="main-app.js"></script>
 </body>
 </html>

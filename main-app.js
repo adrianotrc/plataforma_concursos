@@ -1,42 +1,39 @@
-// main-app.js - Versão que carrega dados de exercícios globalmente
+// main-app.js - Versão que calcula todas as métricas, incluindo textos corrigidos
 
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// O estado agora será exportado para que outras páginas possam acessá-lo
-export const state = {
-    user: null,
-    metrics: { /*...*/ },
-    savedPlans: [],
-    sessoesExercicios: [], // Agora o histórico de exercícios fica aqui
-};
+export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizados: 0, taxaAcerto: 0, textosCorrigidos: 0, }, savedPlans: [], sessoesExercicios: [], sessoesDiscursivas: [], };
 
-// --- FUNÇÕES DE CÁLCULO DE MÉTRICAS ---
-function calcularMetricas(plans, sessions) {
-    // Lógica de cálculo permanece a mesma...
+
+/**
+ * **FUNÇÃO ATUALIZADA**
+ * Calcula as métricas com base nos dados reais do usuário.
+ */
+function calcularMetricas() {
     const studyDates = new Set();
-    plans.forEach(plan => {
-        if (plan.criadoEm) { // Usando o timestamp
-            const date = plan.criadoEm.toDate().toISOString().split('T')[0];
-            studyDates.add(date);
+    [...state.savedPlans, ...state.sessoesExercicios, ...state.sessoesDiscursivas].forEach(item => {
+        const dateSource = item.criadoEm || item.resumo?.criadoEm;
+        if (dateSource) {
+            studyDates.add(dateSource.toDate().toISOString().split('T')[0]);
         }
     });
     state.metrics.diasEstudo = studyDates.size;
-    state.metrics.exerciciosRealizados = sessions.length * 10;
-    state.metrics.taxaAcerto = 78;
-    state.metrics.textosCorrigidos = 5;
-
+    const totalExercicios = state.sessoesExercicios.reduce((acc, sessao) => acc + sessao.resumo.total, 0);
+    const totalAcertos = state.sessoesExercicios.reduce((acc, sessao) => acc + sessao.resumo.acertos, 0);
+    state.metrics.exerciciosRealizados = totalExercicios;
+    state.metrics.taxaAcerto = totalExercicios > 0 ? (totalAcertos / totalExercicios) * 100 : 0;
+    state.metrics.textosCorrigidos = state.sessoesDiscursivas.length;
     atualizarMetricasDashboard();
 }
 
 function atualizarMetricasDashboard() {
-    // **CORREÇÃO IMPORTANTE**: Só executa se os elementos existirem na página
     const elDiasEstudo = document.getElementById('stat-dias-estudo');
     if (elDiasEstudo) {
         elDiasEstudo.textContent = state.metrics.diasEstudo;
         document.getElementById('stat-exercicios').textContent = state.metrics.exerciciosRealizados;
-        document.getElementById('stat-acertos').textContent = `${state.metrics.taxaAcerto}%`;
+        document.getElementById('stat-acertos').textContent = `${state.metrics.taxaAcerto.toFixed(0)}%`;
         document.getElementById('stat-redacoes').textContent = state.metrics.textosCorrigidos;
     }
 }
@@ -50,23 +47,20 @@ function updateUserInfo(user) {
 
 async function carregarDadosDoUsuario(userId) {
     try {
-        // Carrega planos de estudo
-        const plansSnapshot = await getDocs(collection(db, `users/${userId}/plans`));
-        state.savedPlans = plansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // **NOVO**: Carrega o histórico de exercícios para o estado global
-        const qExercicios = query(collection(db, `users/${userId}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50));
-        const exerciciosSnapshot = await getDocs(qExercicios);
-        state.sessoesExercicios = exerciciosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Atualiza as métricas do dashboard se estiver na página home
+        const collectionsToLoad = {
+            savedPlans: query(collection(db, `users/${userId}/plans`), orderBy("criadoEm", "desc"), limit(50)),
+            sessoesExercicios: query(collection(db, `users/${userId}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50)),
+            sessoesDiscursivas: query(collection(db, `users/${userId}/discursivasCorrigidas`), orderBy("criadoEm", "desc"), limit(50))
+        };
+        const promises = Object.entries(collectionsToLoad).map(async ([key, q]) => {
+            const snapshot = await getDocs(q);
+            state[key] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        });
+        await Promise.all(promises);
         if (document.getElementById('stat-dias-estudo')) {
-            calcularMetricas(state.savedPlans, state.sessoesExercicios);
+            calcularMetricas();
         }
-
-    } catch (error) {
-        console.error("Erro ao carregar dados do Firestore:", error);
-    }
+    } catch (error) { console.error("Erro ao carregar dados do Firestore:", error); }
 }
 
 

@@ -1091,3 +1091,44 @@ body.dark-mode textarea {
 .feedback-toast.error {
     background-color: #dc2626; /* Vermelho erro */
 }
+
+/* === ESTILOS PARA A PÁGINA DE QUESTÕES DISCURSIVAS === */
+
+.discursiva-container {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+#enunciado-container, #correcao-container {
+    background-color: #f9fafb;
+    border: 1px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+#enunciado-container h4, #correcao-container h4 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #111827;
+}
+
+#resposta-discursiva {
+    width: 100%;
+    max-width: 21cm; /* Largura A4 */
+    min-height: 29.7cm; /* Altura A4 */
+    padding: 2.54cm 1.9cm; /* Margens A4 */
+    border: 1px solid #ccc;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    font-size: 12pt;
+    line-height: 1.5;
+    margin: 0 auto; /* Centraliza a "folha" */
+    display: block;
+    resize: none; /* Impede o redimensionamento manual */
+}
+
+#correcao-container pre {
+    white-space: pre-wrap;
+    font-family: inherit;
+}
