@@ -49,6 +49,7 @@ function exibirSessaoDeExercicios(exercicios) {
     });
 
     exerciciosContainer.innerHTML = exerciciosHtml;
+    exerciciosContainer.innerHTML += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial. Revise sempre antes de utilizar.</small>`;
     exerciciosContainer.innerHTML += '<button id="btn-corrigir-exercicios" class="btn btn-primary btn-large">Corrigir Exercícios</button>';
 }
 

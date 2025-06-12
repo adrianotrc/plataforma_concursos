@@ -47,6 +47,7 @@ function renderCorrecao(correcao, container) {
         <hr style="margin: 16px 0;">
         ${analiseHtml}
     `;
+    container.innerHTML += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Análise e nota geradas por inteligência artificial. Utilize como um guia para seus estudos.</small>`;
     container.style.display = 'block';
 }
 

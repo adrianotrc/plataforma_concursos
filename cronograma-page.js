@@ -117,7 +117,7 @@ function exibirPlanoNaTela(plano) {
     } else {
         cronogramaHtml += `<p style="color: red;">O cronograma detalhado não foi encontrado na resposta da IA.</p>`;
     }
-    
+    cronogramaHtml += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial. Revise sempre antes de utilizar.</small>`;
     cronogramaHtml += `<button id="btn-fechar-plano" class="btn btn-ghost" style="margin-top: 16px;"><i class="fas fa-times"></i> Fechar Plano</button></div>`;
     
     containerExibicao.innerHTML = cronogramaHtml;

@@ -1132,3 +1132,26 @@ body.dark-mode textarea {
     white-space: pre-wrap;
     font-family: inherit;
 }
+
+/* Aviso de Conteúdo Gerado por IA */
+.ai-disclaimer {
+    display: block;
+    text-align: center;
+    padding: 12px;
+    margin-top: 20px;
+    background-color: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+body.dark-mode .ai-disclaimer {
+    background-color: #1f2937;
+    border-top-color: #374151;
+    color: #9ca3af;
+}
+
+.ai-disclaimer i {
+    margin-right: 6px;
+}

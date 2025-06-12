@@ -27,6 +27,7 @@ function renderizarDicas(dicas) {
         dicasHtml += `<li>${dica}</li>`;
     });
     dicasHtml += '</ul>';
+    dicaGeradaContainer.innerHTML += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial. Revise sempre antes de utilizar.</small>`;
     dicaGeradaContainer.innerHTML = dicasHtml;
     dicaGeradaContainer.style.display = 'block';
 }
