@@ -810,7 +810,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
     padding: 20px;
 }
 

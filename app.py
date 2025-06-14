@@ -8,16 +8,32 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from openai import OpenAI
+import stripe
+import traceback
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Inicialização do Firebase Admin SDK
+cred = credentials.Certificate("serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 
 load_dotenv()
 app = Flask(__name__)
-CORS(app) # Esta linha aplica as permissões de CORS para todas as rotas
+# Configuração do CORS para permitir requisições do frontend
+CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5500"}}, supports_credentials=True)
 
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
+# Configuração das chaves de API
+openai_api_key = os.getenv("OPENAI_API_KEY")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+
+if not openai_api_key:
     print("ERRO CRÍTICO: A variável de ambiente OPENAI_API_KEY não foi encontrada.")
-    
-client = OpenAI(api_key=api_key)
+if not stripe.api_key:
+    print("ERRO CRÍTICO: A variável de ambiente STRIPE_SECRET_KEY não foi encontrada.")
+
+client = OpenAI(api_key=openai_api_key)
 
 def call_openai_api(prompt_content, system_message):
     if not api_key:
@@ -209,6 +225,71 @@ def corrigir_discursiva():
         return jsonify(dados)
     except Exception as e:
         return jsonify({"erro_geral": str(e)}), 500
+    
+@app.route("/create-checkout-session", methods=['POST'])
+def create_checkout_session():
+    print("\n--- Requisição recebida em /create-checkout-session ---")
+    try:
+        data = request.get_json()
+        plan = data.get('plan')
+        userId = data.get('userId')
+        print(f"Plano recebido: {plan}, ID do Usuário: {userId}")
+
+        # Seus IDs de Preço da Stripe
+        price_ids = {
+            'mensal': 'price_1RZd9fRNnbn9WEbDscWoz0Rl',
+            'anual': 'price_1RZdACRNnbn9WEbD7HCP4AW9',
+        }
+
+        price_id = price_ids.get(plan)
+        if not price_id:
+            return jsonify(error={'message': 'Plano inválido.'}), 400
+        
+        if not userId:
+            return jsonify(error={'message': 'ID do usuário não fornecido.'}), 400
+
+        YOUR_DOMAIN = 'http://127.0.0.1:5500'
+
+        # --- INÍCIO DA PARTE MODIFICADA ---
+        
+        # 1. Prepara os parâmetros básicos da sessão de pagamento
+        session_params = {
+            'payment_method_types': ['card'],
+            'line_items': [{'price': price_id, 'quantity': 1}],
+            'mode': 'subscription',
+            'success_url': YOUR_DOMAIN + '/sucesso.html',
+            'cancel_url': YOUR_DOMAIN + '/cancelado.html',
+            'client_reference_id': userId
+        }
+
+        # 2. Se o plano for 'trial', adiciona o parâmetro do período de teste
+        if plan == 'trial':
+            print("Plano de teste detectado. Adicionando 7 dias de trial à chamada.")
+            session_params['subscription_data'] = {'trial_period_days': 7}
+
+        print("Enviando os seguintes parâmetros para a Stripe:", session_params)
+        
+        # 3. Cria a sessão na Stripe usando todos os parâmetros preparados
+        checkout_session = stripe.checkout.Session.create(**session_params)
+        
+        # --- FIM DA PARTE MODIFICADA ---
+
+        print(f"Sessão de checkout criada com sucesso! ID: {checkout_session.id}")
+        return jsonify({'id': checkout_session.id})
+
+    except Exception as e:
+        print("\n!!! OCORREU UM ERRO DENTRO DA ROTA /create-checkout-session !!!")
+        print("Tipo do erro:", type(e).__name__)
+        print("Mensagem do erro:", str(e))
+        print("--- Traceback completo ---")
+        traceback.print_exc()
+        print("--------------------------")
+        return jsonify(error={"message": "Ocorreu um erro interno no servidor."}), 500
+    
+@app.route("/test-cors", methods=['POST'])
+def test_cors_route():
+    print("A rota /test-cors foi chamada com sucesso!")
+    return jsonify(message="Teste de CORS bem-sucedido!")
 
 if __name__ == "__main__":
     app.run(debug=True)

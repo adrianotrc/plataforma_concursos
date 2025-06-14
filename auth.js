@@ -1,7 +1,7 @@
-// auth.js - Módulo de Autenticação
+// auth.js - Versão com criação de usuário no Firestore
 
-// Importa as funções do Firebase e a configuração
-import { auth } from './firebase-config.js';
+import { auth, db } from './firebase-config.js'; // Importa o db
+import { doc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; // Importa funções do Firestore
 import { 
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword,
@@ -10,44 +10,31 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // --- PÁGINA DE LOGIN ---
+// (A lógica de login permanece a mesma)
 const formLogin = document.getElementById('form-login');
 if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
-        e.preventDefault(); // Impede o recarregamento da página
-
+        e.preventDefault();
         const email = document.getElementById('login-email').value;
         const senha = document.getElementById('login-senha').value;
         const btnLogin = document.getElementById('btn-login');
         const errorMessage = document.getElementById('error-message');
-
-        // Validação básica
-        if (!email || !senha) {
-            errorMessage.textContent = 'Por favor, preencha todos os campos.';
-            errorMessage.style.display = 'block';
-            return;
-        }
-
-        // Desabilita o botão para evitar múltiplos cliques
         btnLogin.disabled = true;
         btnLogin.textContent = 'Entrando...';
         errorMessage.style.display = 'none';
-
         try {
             await signInWithEmailAndPassword(auth, email, senha);
-            // O onAuthStateChanged vai redirecionar
             window.location.href = 'home.html';
         } catch (error) {
             errorMessage.textContent = 'Falha na autenticação. Verifique seu e-mail e senha.';
             errorMessage.style.display = 'block';
-        } finally {
-            // Reabilita o botão
             btnLogin.disabled = false;
             btnLogin.textContent = 'Entrar';
         }
     });
 }
 
-// --- PÁGINA DE CADASTRO ---
+// --- PÁGINA DE CADASTRO (LÓGICA ATUALIZADA) ---
 const formCadastro = document.getElementById('form-cadastro');
 if (formCadastro) {
     formCadastro.addEventListener('submit', async (e) => {
@@ -68,32 +55,44 @@ if (formCadastro) {
         btnCadastro.textContent = 'Criando conta...';
 
         try {
-            await createUserWithEmailAndPassword(auth, email, senha);
-            // O onAuthStateChanged abaixo cuidará do resto
-            window.location.href = 'home.html'; // Redireciona para o dashboard após o sucesso
+            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+            const user = userCredential.user;
+
+            // Calcula a data de expiração do trial (7 dias a partir de agora)
+            const dataExpiracao = new Date();
+            dataExpiracao.setDate(dataExpiracao.getDate() + 7);
+
+            // Cria o documento do usuário no Firestore
+            await setDoc(doc(db, "users", user.uid), {
+                nome: nome,
+                email: email,
+                plano: "trial",
+                criadoEm: serverTimestamp(),
+                trialFim: Timestamp.fromDate(dataExpiracao)
+            });
+
+            // Redireciona para o dashboard. O trial começou!
+            window.location.href = 'home.html';
+
         } catch (error) {
             alert(`Erro ao criar conta: ${error.message}`);
-        } finally {
             btnCadastro.disabled = false;
             btnCadastro.textContent = 'Criar Conta';
         }
     });
 }
 
-
 // --- VERIFICAÇÃO DE ESTADO DE AUTENTICAÇÃO ---
-// Monitora se o usuário está logado ou não
+// (A lógica aqui não precisa mais do 'justRegistered' e pode ser simplificada)
 onAuthStateChanged(auth, (user) => {
     const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html'];
     const paginaAtual = window.location.pathname.split('/').pop();
 
     if (user) {
-        // Se o usuário está logado e tentando acessar login/cadastro, redireciona para o dashboard
         if (paginaAtual === 'login.html' || paginaAtual === 'cadastro.html') {
             window.location.href = 'home.html';
         }
     } else {
-        // Se o usuário NÃO está logado e tenta acessar uma página protegida, redireciona para o login
         if (paginasProtegidas.includes(paginaAtual)) {
             window.location.href = 'login.html';
         }
@@ -101,14 +100,11 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // --- LÓGICA DE LOGOUT ---
-// Esta função será chamada por outras partes do app
 export async function fazerLogout() {
     try {
         await signOut(auth);
-        console.log('Usuário deslogado com sucesso.');
         window.location.href = 'login.html';
     } catch (error) {
         console.error('Erro ao fazer logout:', error);
-        alert('Não foi possível sair. Tente novamente.');
     }
 }

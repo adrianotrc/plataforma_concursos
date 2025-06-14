@@ -102,3 +102,9 @@ celerybeat.pid
 
 # OpenAI
 .env
+
+# Stripe
+stripe-config.js
+
+#Firebase
+serviceAccountKey.json

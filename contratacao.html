@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalizar Assinatura - IAprovas</title>
+    <link rel="stylesheet" href="dashboard-lovable.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo"><i class="fas fa-book-open"></i><span>IAprovas</span></div>
+                </div>
+                <div class="header-right">
+                    <a href="index.html#planos" class="btn btn-ghost">← Voltar aos Planos</a>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content" style="margin-left: 0; display: flex; align-items: center; justify-content: center;">
+            <div class="content-wrapper" style="max-width: 500px; padding-top: 40px;">
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon blue"><i class="fas fa-credit-card"></i></div>
+                        <div class="feature-info">
+                            <h3 id="titulo-plano">Carregando...</h3>
+                            <p>Complete sua assinatura de forma segura com a Stripe.</p>
+                        </div>
+                    </div>
+                    <div id="resumo-plano" style="margin-top: 20px; margin-bottom: 20px; font-size: 16px;">
+                        </div>
+                    <button id="btn-pagar" class="btn btn-primary btn-full" style="padding: 12px; font-size: 16px;">
+                        <i class="fas fa-lock"></i> Ir para o Pagamento
+                    </button>
+                    <small class="ai-disclaimer" style="border: none; padding: 10px 0 0 0;">Você será redirecionado para um ambiente 100% seguro da Stripe.</small>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script type="module" src="stripe-config.js"></script>
+    <script type="module" src="contratacao.js"></script>
+</body>
+</html>
