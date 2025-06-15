@@ -1,20 +1,19 @@
-// firebase-config.js - Versão para Produção
+// firebase-config.js - Versão final para produção
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// Em um ambiente de produção real, estas variáveis seriam injetadas pelo servidor.
-// Como estamos em um deploy estático, vamos criar um objeto de configuração
-// a partir de variáveis que *poderiam* ser injetadas, mas que definiremos aqui
-// para o deploy na Render.
+// Suas credenciais de configuração do Firebase.
+// É seguro manter estas informações no código do frontend.
+// A segurança é garantida pelas Regras do Firestore.
 const firebaseConfig = {
-    apiKey:             "AIzaSyDu-bfPtdZPCfci3NN1knVZYAzG7Twztrg", // Substitua pelo seu valor real
-    authDomain:         "plataforma-concursos-ai.firebaseapp.com", // Substitua pelo seu valor real
-    projectId:          "plataforma-concursos-ai", // Substitua pelo seu valor real
-    storageBucket:      "plataforma-concursos-ai.appspot.com", // Substitua pelo seu valor real
-    messagingSenderId:  "620928521514", // Substitua pelo seu valor real
-    appId:              "1:620928521514:web:4bf7e6addab3485055ba53" // Substitua pelo seu valor real
+    apiKey: "AIzaSyDu-bfPtdZPCfci3NN1knVZYAzG7Twztrg",
+    authDomain: "plataforma-concursos-ai.firebaseapp.com",
+    projectId: "plataforma-concursos-ai",
+    storageBucket: "plataforma-concursos-ai.appspot.com",
+    messagingSenderId: "620928521514",
+    appId: "1:620928521514:web:4bf7e6addab3485055ba53"
 };
 
 // Inicializa os serviços do Firebase
