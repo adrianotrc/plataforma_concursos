@@ -108,3 +108,4 @@ stripe-config.js
 
 #Firebase
 serviceAccountKey.json
+firebase-creds.js

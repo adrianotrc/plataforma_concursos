@@ -5,15 +5,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// Suas credenciais de configuração do Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyDu-bfPtdZPCfci3NN1knVZYAzG7Twztrg", // Mantenha sua chave aqui
-    authDomain: "plataforma-concursos-ai.firebaseapp.com",
-    projectId: "plataforma-concursos-ai",
-    storageBucket: "plataforma-concursos-ai.appspot.com",
-    messagingSenderId: "620928521514",
-    appId: "1:620928521514:web:4bf7e6addab3485055ba53"
-};
+// Importa as credenciais do arquivo de configuração separado
+import { firebaseConfig } from './firebase-creds.js';
 
 // Inicializa os serviços do Firebase
 const app = initializeApp(firebaseConfig);

@@ -291,5 +291,50 @@ def test_cors_route():
     print("A rota /test-cors foi chamada com sucesso!")
     return jsonify(message="Teste de CORS bem-sucedido!")
 
+@app.route('/stripe-webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
+    endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET') # Vamos configurar isso em breve
+    event = None
+
+    print("\n--- Webhook da Stripe recebido! ---")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except ValueError as e:
+        # Payload inválido
+        print("Erro de payload inválido no webhook:", e)
+        return 'Invalid payload', 400
+    except stripe.error.SignatureVerificationError as e:
+        # Assinatura inválida
+        print("Erro de verificação de assinatura no webhook:", e)
+        return 'Invalid signature', 400
+
+    # Handle the event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        print("Sessão de checkout completada:", session['id'])
+        
+        # Pega o ID do nosso usuário que associamos anteriormente
+        user_id = session.get('client_reference_id')
+        
+        if user_id:
+            print(f"Atualizando plano para 'premium' para o usuário: {user_id}")
+            try:
+                user_ref = db.collection('users').document(user_id)
+                user_ref.update({
+                    'plano': 'premium'
+                })
+                print("Usuário atualizado com sucesso no Firestore!")
+            except Exception as e:
+                print(f"!!! Erro ao atualizar usuário no Firestore: {e} !!!")
+        else:
+            print("!!! Alerta: Webhook recebido sem client_reference_id (userId) !!!")
+
+    return 'Success', 200
+
 if __name__ == "__main__":
     app.run(debug=True)
