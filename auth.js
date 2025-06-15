@@ -37,23 +37,42 @@ const formCadastro = document.getElementById('form-cadastro');
 if (formCadastro) {
     formCadastro.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const nome = document.getElementById('cadastro-nome').value;
         const email = document.getElementById('cadastro-email').value;
         const senha = document.getElementById('cadastro-senha').value;
         const confirmaSenha = document.getElementById('cadastro-confirma-senha').value;
         const btnCadastro = formCadastro.querySelector('button[type="submit"]');
+        const errorMessageDiv = document.getElementById('error-message-cadastro');
+
+        // Limpa erros anteriores
+        errorMessageDiv.style.display = 'none';
+        errorMessageDiv.textContent = '';
 
         if (senha !== confirmaSenha) {
-            alert("As senhas não coincidem!");
+            errorMessageDiv.textContent = 'As senhas não coincidem.';
+            errorMessageDiv.style.display = 'block';
             return;
         }
+
         btnCadastro.disabled = true;
         btnCadastro.textContent = 'Criando conta...';
+
         try {
             await createUserWithEmailAndPassword(auth, email, senha);
-            // Após criar a conta, apenas redireciona. O main-app.js cuidará do resto.
+            // O onAuthStateChanged cuidará da criação do documento e do redirecionamento.
             window.location.href = 'home.html';
         } catch (error) {
-            alert(`Erro ao criar conta: ${error.message}`);
+            // "Traduz" o erro do Firebase para uma mensagem amigável
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessageDiv.textContent = 'Este endereço de e-mail já está cadastrado.';
+            } else if (error.code === 'auth/weak-password') {
+                errorMessageDiv.textContent = 'A senha é muito fraca. Use pelo menos 6 caracteres.';
+            } else {
+                errorMessageDiv.textContent = 'Ocorreu um erro ao criar a conta. Tente novamente.';
+            }
+            errorMessageDiv.style.display = 'block';
+            
             btnCadastro.disabled = false;
             btnCadastro.textContent = 'Criar Conta';
         }
