@@ -1,6 +1,6 @@
 // api.js - Versão com todas as funções de API implementadas
 
-const API_BASE_URL = 'http://127.0.0.1:5000';
+const API_BASE_URL = 'https://iaprovas-backend.onrender.com';
 
 // Função auxiliar genérica para chamadas de API
 async function fetchApi(endpoint, options) {

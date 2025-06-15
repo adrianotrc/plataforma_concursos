@@ -21,7 +21,8 @@ db = firestore.client()
 load_dotenv()
 app = Flask(__name__)
 # Configuração do CORS para permitir requisições do frontend
-CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5500"}}, supports_credentials=True)
+frontend_url = "https://iaprovas-frontend.onrender.com"
+CORS(app, resources={r"/*": {"origins": frontend_url}}, supports_credentials=True)
 
 # Configuração das chaves de API
 openai_api_key = os.getenv("OPENAI_API_KEY")
