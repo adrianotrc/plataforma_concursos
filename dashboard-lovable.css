@@ -1155,3 +1155,215 @@ body.dark-mode .ai-disclaimer {
 .ai-disclaimer i {
     margin-right: 6px;
 }
+
+/* === ESTILOS PARA O LAYOUT DA PÁGINA DE PERFIL (ATUALIZADO) === */
+
+.profile-grid-layout {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr; /* Coluna da esquerda um pouco maior */
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.profile-column-left, .profile-column-right {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+#assinatura-info p {
+    margin-bottom: 8px;
+    line-height: 1.5;
+    color: #6b7280;
+}
+body.dark-mode #assinatura-info p {
+    color: #9ca3af;
+}
+
+#assinatura-info strong {
+    color: #374151;
+}
+body.dark-mode #assinatura-info strong {
+    color: #d1d5db;
+}
+
+.btn-outline {
+    background: transparent;
+    color: #1d4ed8;
+    border: 1px solid #1d4ed8;
+}
+
+.btn-outline:hover {
+    background: #dbeafe;
+}
+
+body.dark-mode .btn-outline {
+    color: #60a5fa;
+    border-color: #60a5fa;
+}
+
+body.dark-mode .btn-outline:hover {
+    background: #374151;
+}
+
+
+/* Ajuste para telas menores */
+@media (max-width: 992px) {
+    .profile-grid-layout {
+        grid-template-columns: 1fr; /* Coluna única em telas menores */
+    }
+}
+
+
+/* Estilos para o Modal de Reautenticação */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+.modal-content {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+.modal-content p {
+    margin-bottom: 24px;
+    color: #6b7280;
+}
+.modal-actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+body.dark-mode .modal-content {
+    background: #1f2937;
+    color: #d1d5db;
+}
+body.dark-mode .modal-content p {
+    color: #9ca3af;
+}
+/* === ESTILOS PARA O CRONOGRAMA EM TABELA === */
+
+.plano-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.cronograma-tabela-container {
+    overflow-x: auto; /* Permite rolagem horizontal em telas pequenas */
+}
+
+.cronograma-tabela {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px; /* Largura mínima para evitar quebra excessiva */
+}
+
+.cronograma-tabela th, .cronograma-tabela td {
+    border: 1px solid #e5e7eb;
+    padding: 12px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.cronograma-tabela th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+}
+
+.cronograma-tabela .dia-header {
+    display: flex;
+    flex-direction: column;
+}
+
+.cronograma-tabela .dia-header .data {
+    font-size: 0.8rem;
+    font-weight: normal;
+    color: #6b7280;
+}
+
+.cronograma-tabela td ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cronograma-tabela td li {
+    background-color: #eff6ff;
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 3px solid #3b82f6;
+}
+
+.cronograma-tabela li strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #1e3a8a;
+}
+
+.cronograma-tabela li .topico {
+    font-size: 0.9rem;
+    color: #1c3d5a;
+    margin-bottom: 4px;
+}
+
+.cronograma-tabela li .tipo-e-duracao {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Dark Mode para a Tabela */
+body.dark-mode .cronograma-tabela th, 
+body.dark-mode .cronograma-tabela td {
+    border-color: #374151;
+}
+
+body.dark-mode .cronograma-tabela th {
+    background-color: #1f2937;
+    color: #d1d5db;
+}
+
+body.dark-mode .cronograma-tabela .dia-header .data {
+    color: #9ca3af;
+}
+
+body.dark-mode .cronograma-tabela td li {
+    background-color: #2c3a5e;
+    border-left-color: #60a5fa;
+}
+
+body.dark-mode .cronograma-tabela li strong {
+    color: #dbeafe;
+}
+
+body.dark-mode .cronograma-tabela li .topico {
+    color: #a7c7f5;
+}
+
+body.dark-mode .cronograma-tabela li .tipo-e-duracao {
+    color: #9ca3af;
+}

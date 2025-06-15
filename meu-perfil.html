@@ -49,7 +49,7 @@
                     <i class="fas fa-bullseye"></i>
                     <span>Dicas Estratégicas</span>
                 </a>
-                <a href="meu-perfil.html" class="nav-item">
+                <a href="meu-perfil.html" class="nav-item active">
                     <i class="fas fa-user-cog"></i>
                     <span>Meu Perfil</span>
                 </a>
@@ -62,7 +62,7 @@
                 <div class="welcome-section"><h1>Meu Perfil</h1><p>Gerencie suas informações, preferências e segurança.</p></div>
                 
                 <div class="profile-grid-layout">
-                    <div class="profile-column">
+                    <div class="profile-column-left">
                         <div class="feature-card">
                             <div class="feature-header"><div class="feature-icon blue"><i class="fas fa-user-edit"></i></div><div class="feature-info"><h3>Informações Pessoais</h3><p>Atualize seus dados cadastrais.</p></div></div>
                             <form id="form-perfil-pessoal" style="margin-top: 20px;">
@@ -75,7 +75,17 @@
                         </div>
                     </div>
 
-                    <div class="profile-column">
+                    <div class="profile-column-right">
+                        <div class="feature-card">
+                            <div class="feature-header"><div class="feature-icon orange"><i class="fas fa-credit-card"></i></div><div class="feature-info"><h3>Assinatura</h3><p>Gerencie seu plano e pagamentos.</p></div></div>
+                            <div id="assinatura-info" style="margin-top: 20px;">
+                                <p><strong>Plano Atual:</strong> <span id="plano-atual-nome">Carregando...</span></p>
+                                <p>Acesse seu portal de cliente para alterar o plano, atualizar o método de pagamento ou cancelar sua assinatura.</p>
+                                <a href="#" id="link-gerenciar-assinatura" class="btn btn-outline" style="margin-top: 16px; width: 100%;">
+                                    <i class="fas fa-cog"></i> Gerenciar Assinatura
+                                </a>
+                            </div>
+                        </div>
                         <div class="feature-card">
                             <div class="feature-header"><div class="feature-icon purple"><i class="fas fa-key"></i></div><div class="feature-info"><h3>Segurança</h3><p>Altere sua senha de acesso.</p></div></div>
                             <form id="form-alterar-senha" style="margin-top: 20px;">
@@ -85,18 +95,29 @@
                                 <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Alterar Senha</button>
                             </form>
                         </div>
-                        <div class="feature-card">
-                            <div class="feature-header"><div class="feature-icon green"><i class="fas fa-cog"></i></div><div class="feature-info"><h3>Configurações Gerais</h3><p>Personalize sua experiência na plataforma.</p></div></div>
-                            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 16px;">
-                                <div class="setting-item"><div class="setting-info"><h4>Modo Escuro</h4><p>Ideal para estudos noturnos.</p></div><label class="switch"><input type="checkbox" id="modo-escuro-toggle"><span class="slider"></span></label></div>
-                                <div class="setting-item"><div class="setting-info"><h4>Notificações por E-mail</h4><p>Receba lembretes e dicas. (Funcionalidade futura)</p></div><label class="switch"><input type="checkbox" id="notificacoes-toggle" disabled><span class="slider"></span></label></div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <div id="reauth-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3>Confirme sua identidade</h3>
+            <p>Para sua segurança, por favor, digite sua senha atual novamente para continuar.</p>
+            <form id="reauth-form">
+                <div class.form-field-group">
+                    <label for="reauth-password">Senha Atual</label>
+                    <input type="password" id="reauth-password" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="reauth-cancel" class="btn btn-ghost">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <script type="module" src="main-app.js"></script>
     <script type="module" src="perfil-page.js"></script>
