@@ -1,4 +1,4 @@
-# app.py - Versão com integração Resend para envio de e-mail
+# app.py - Versão com texto puro no e-mail para melhorar entregabilidade
 
 import os
 import json
@@ -12,12 +12,10 @@ import stripe
 import traceback
 import firebase_admin
 from firebase_admin import credentials, firestore
-import resend # Importa a biblioteca do Resend
+import resend
 
-# Carrega variáveis de ambiente do arquivo .env
 load_dotenv()
 
-# Inicialização do Firebase Admin SDK
 try:
     cred = credentials.Certificate("serviceAccountKey.json")
     firebase_admin.initialize_app(cred)
@@ -27,14 +25,12 @@ except Exception as e:
     db = None
 
 app = Flask(__name__)
-# Configuração do CORS para permitir requisições do frontend
 frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
 CORS(app, resources={r"/*": {"origins": frontend_url}}, supports_credentials=True)
 
-# Configuração das chaves de API
 openai_api_key = os.getenv("OPENAI_API_KEY")
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-resend.api_key = os.getenv("RESEND_API_KEY") # Chave do Resend
+resend.api_key = os.getenv("RESEND_API_KEY")
 
 # Verificação das chaves
 if not openai_api_key:
@@ -46,13 +42,11 @@ if not resend.api_key:
 
 client = OpenAI(api_key=openai_api_key)
 
-# --- FUNÇÃO AUXILIAR PARA ENVIO DE E-MAIL COM RESEND ---
-def enviar_email(para_email, nome_usuario, assunto, conteudo_html):
+def enviar_email(para_email, nome_usuario, assunto, conteudo_html, conteudo_texto):
     if not resend.api_key:
         print("ERRO DE E-MAIL: RESEND_API_KEY não configurada. E-mail não enviado.")
         return False
     
-    # IMPORTANTE: Este e-mail DEVE ser de um domínio verificado no Resend.
     email_remetente = "Equipe IAprovas <contato@iaprovas.com.br>" 
 
     params = {
@@ -60,6 +54,7 @@ def enviar_email(para_email, nome_usuario, assunto, conteudo_html):
         "to": [para_email],
         "subject": assunto,
         "html": conteudo_html,
+        "text": conteudo_texto, # Adicionando a versão em texto puro
     }
     
     try:
@@ -70,9 +65,61 @@ def enviar_email(para_email, nome_usuario, assunto, conteudo_html):
         print(f"ERRO ao enviar e-mail para {para_email} via Resend: {e}")
         return False
 
+@app.route("/enviar-email-boas-vindas", methods=['POST'])
+def enviar_email_boas_vindas():
+    dados = request.get_json()
+    email_destinatario = dados.get("email")
+    nome_destinatario = dados.get("nome", "estudante")
 
-# O restante do arquivo (rotas da OpenAI, Stripe, etc.) permanece o mesmo.
-# ... (código existente das outras rotas) ...
+    if not email_destinatario:
+        return jsonify({"erro": "E-mail do destinatário não fornecido."}), 400
+
+    assunto = "Bem-vindo(a) ao IAprovas! Sua jornada para a aprovação começa agora."
+    
+    # Template em HTML
+    conteudo_html = f"""
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h1 style="color: #1d4ed8;">Olá, {nome_destinatario}!</h1>
+        <p>Seja muito bem-vindo(a) à plataforma <strong>IAprovas</strong>!</p>
+        <p>Estamos muito felizes em ter você conosco. Nossa inteligência artificial, baseada em uma metodologia de sucesso, está pronta para criar um plano de estudos personalizado e te ajudar a alcançar a tão sonhada aprovação.</p>
+        <p>Seus próximos passos recomendados:</p>
+        <ol>
+            <li>Acesse a área de <a href="{frontend_url}/cronograma.html">Cronograma</a> para gerar seu primeiro plano de estudos.</li>
+            <li>Explore a seção de <a href="{frontend_url}/exercicios.html">Exercícios</a> para testar seus conhecimentos.</li>
+            <li>Visite a página de <a href="{frontend_url}/dicas-estrategicas.html">Dicas Estratégicas</a> para otimizar sua preparação.</li>
+        </ol>
+        <p>Se tiver qualquer dúvida, basta responder a este e-mail.</p>
+        <p>Bons estudos!</p>
+        <p><strong>Equipe IAprovas</strong></p>
+    </div>
+    """
+
+    # Versão em texto puro correspondente
+    conteudo_texto = f"""
+    Olá, {nome_destinatario}!
+    
+    Seja muito bem-vindo(a) à plataforma IAprovas!
+    
+    Estamos muito felizes em ter você conosco. Nossa inteligência artificial, baseada em uma metodologia de sucesso, está pronta para criar um plano de estudos personalizado e te ajudar a alcançar a tão sonhada aprovação.
+    
+    Seus próximos passos recomendados:
+    1. Acesse a área de Cronograma para gerar seu primeiro plano de estudos: {frontend_url}/cronograma.html
+    2. Explore a seção de Exercícios para testar seus conhecimentos: {frontend_url}/exercicios.html
+    3. Visite a página de Dicas Estratégicas para otimizar sua preparação: {frontend_url}/dicas-estrategicas.html
+    
+    Se tiver qualquer dúvida, basta responder a este e-mail.
+    
+    Bons estudos!
+    Equipe IAprovas
+    """
+    
+    sucesso = enviar_email(email_destinatario, nome_destinatario, assunto, conteudo_html, conteudo_texto)
+
+    if sucesso:
+        return jsonify({"mensagem": "E-mail de boas-vindas enviado com sucesso!"}), 200
+    else:
+        return jsonify({"erro": "Falha ao enviar o e-mail de boas-vindas."}), 500
+
 
 def call_openai_api(prompt_content, system_message):
     if not openai_api_key:
@@ -95,42 +142,6 @@ def call_openai_api(prompt_content, system_message):
 @app.route("/")
 def ola_mundo():
     return "Backend ConcursoIA Funcionando"
-
-# --- ROTA PARA E-MAIL DE BOAS-VINDAS (sem alteração na lógica da rota) ---
-@app.route("/enviar-email-boas-vindas", methods=['POST'])
-def enviar_email_boas_vindas():
-    dados = request.get_json()
-    email_destinatario = dados.get("email")
-    nome_destinatario = dados.get("nome", "estudante")
-
-    if not email_destinatario:
-        return jsonify({"erro": "E-mail do destinatário não fornecido."}), 400
-
-    assunto = "Bem-vindo(a) ao IAprovas! Sua jornada para a aprovação começa agora."
-    
-    conteudo_html = f"""
-    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <h1 style="color: #1d4ed8;">Olá, {nome_destinatario}!</h1>
-        <p>Seja muito bem-vindo(a) à plataforma <strong>IAprovas</strong>!</p>
-        <p>Estamos muito felizes em ter você conosco. Nossa inteligência artificial, baseada em uma metodologia de sucesso, está pronta para criar um plano de estudos personalizado e te ajudar a alcançar a tão sonhada aprovação.</p>
-        <p>Seus próximos passos recomendados:</p>
-        <ol>
-            <li>Acesse a área de <a href="{frontend_url}/cronograma.html">Cronograma</a> para gerar seu primeiro plano de estudos.</li>
-            <li>Explore a seção de <a href="{frontend_url}/exercicios.html">Exercícios</a> para testar seus conhecimentos.</li>
-            <li>Visite a página de <a href="{frontend_url}/dicas-estrategicas.html">Dicas Estratégicas</a> para otimizar sua preparação.</li>
-        </ol>
-        <p>Se tiver qualquer dúvida, basta responder a este e-mail.</p>
-        <p>Bons estudos!</p>
-        <p><strong>Equipe IAprovas</strong></p>
-    </div>
-    """
-    
-    sucesso = enviar_email(email_destinatario, nome_destinatario, assunto, conteudo_html)
-
-    if sucesso:
-        return jsonify({"mensagem": "E-mail de boas-vindas enviado com sucesso!"}), 200
-    else:
-        return jsonify({"erro": "Falha ao enviar o e-mail de boas-vindas."}), 500
 
 
 @app.route("/gerar-plano-estudos", methods=['POST'])
@@ -393,6 +404,7 @@ def stripe_webhook():
             print("!!! Alerta: Webhook recebido sem client_reference_id (userId) !!!")
 
     return 'Success', 200
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=int(os.environ.get("PORT", 5000)))

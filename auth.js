@@ -7,6 +7,7 @@ import {
     onAuthStateChanged,
     signOut
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { enviarEmailBoasVindas} from './api.js';
 
 // --- PÁGINA DE LOGIN ---
 const formLogin = document.getElementById('form-login');
@@ -45,9 +46,7 @@ if (formCadastro) {
         const btnCadastro = formCadastro.querySelector('button[type="submit"]');
         const errorMessageDiv = document.getElementById('error-message-cadastro');
 
-        // Limpa erros anteriores
         errorMessageDiv.style.display = 'none';
-        errorMessageDiv.textContent = '';
 
         if (senha !== confirmaSenha) {
             errorMessageDiv.textContent = 'As senhas não coincidem.';
@@ -56,25 +55,29 @@ if (formCadastro) {
         }
 
         btnCadastro.disabled = true;
-        btnCadastro.textContent = 'Criando conta...';
+        btnCadastro.textContent = 'Carregando...'; // Alterado para corresponder ao seu relato
 
         try {
-            await createUserWithEmailAndPassword(auth, email, senha);
-            // O onAuthStateChanged cuidará da criação do documento e do redirecionamento.
-            window.location.href = 'home.html';
-        } catch (error) {
-            // "Traduz" o erro do Firebase para uma mensagem amigável
-            if (error.code === 'auth/email-already-in-use') {
-                errorMessageDiv.textContent = 'Este endereço de e-mail já está cadastrado.';
-            } else if (error.code === 'auth/weak-password') {
-                errorMessageDiv.textContent = 'A senha é muito fraca. Use pelo menos 6 caracteres.';
-            } else {
-                errorMessageDiv.textContent = 'Ocorreu um erro ao criar a conta. Tente novamente.';
-            }
-            errorMessageDiv.style.display = 'block';
+            console.log("1. Tentando criar usuário no Firebase...");
+            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
             
-            btnCadastro.disabled = false;
-            btnCadastro.textContent = 'Criar Conta';
+            if (userCredential.user) {
+                console.log("2. Usuário criado no Firebase com sucesso. Tentando chamar a API para enviar e-mail...");
+                await enviarEmailBoasVindas(email, nome);
+                console.log("3. Chamada para API de e-mail finalizada.");
+            }
+            
+            window.location.href = 'home.html'; // Desativado para o teste
+
+        } catch (error) {
+            errorMessageDiv.textContent = 'Ocorreu um erro ao criar a conta.';
+            errorMessageDiv.style.display = 'block';
+            console.error("Erro detalhado no cadastro:", error);
+        } finally {
+            // A lógica de reativar o botão foi removida temporariamente para podermos ver o estado final
+            // btnCadastro.disabled = false;
+            // btnCadastro.textContent = 'Criar Conta';
+            console.log("4. Processo de cadastro finalizado no bloco try/catch/finally.");
         }
     });
 }
