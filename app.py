@@ -42,39 +42,51 @@ if not resend.api_key:
 
 client = OpenAI(api_key=openai_api_key)
 
+# --- FUNÇÃO DE ENVIO DE E-MAIL ---
 def enviar_email(para_email, nome_usuario, assunto, conteudo_html, conteudo_texto):
     if not resend.api_key:
-        print("ERRO DE E-MAIL: RESEND_API_KEY não configurada. E-mail não enviado.")
+        print("ERRO: Chave RESEND_API_KEY não configurada no ambiente.")
         return False
     
     email_remetente = "Equipe IAprovas <contato@iaprovas.com.br>" 
-
     params = {
         "from": email_remetente,
         "to": [para_email],
         "subject": assunto,
         "html": conteudo_html,
-        "text": conteudo_texto, # Adicionando a versão em texto puro
+        "text": conteudo_texto,
     }
     
     try:
-        email_sent = resend.Emails.send(params)
-        print(f"E-mail enviado para {para_email} via Resend. Response: {email_sent}")
+        resend.Emails.send(params)
+        print(f"E-mail de boas-vindas enviado com sucesso para {para_email}")
         return True
     except Exception as e:
-        print(f"ERRO ao enviar e-mail para {para_email} via Resend: {e}")
+        print(f"ERRO CRÍTICO ao enviar e-mail pelo Resend: {e}")
+        traceback.print_exc()
         return False
+    
+# --- ROTAS DA APLICAÇÃO ---
 
 @app.route("/enviar-email-boas-vindas", methods=['POST'])
 def enviar_email_boas_vindas():
-    # Teste de depuração: Apenas registra a chamada e retorna sucesso.
-    # Nenhuma chamada externa para o Resend é feita aqui.
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    print("!!! SUCESSO: A ROTA /enviar-email-boas-vindas FOI ATINGIDA NA RENDER !!!")
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    sys.stdout.flush() # Força a escrita do log imediatamente
+    dados = request.get_json()
+    email_destinatario = dados.get("email")
+    nome_destinatario = dados.get("nome", "estudante")
 
-    return jsonify({"mensagem": "Teste de rota bem-sucedido."}), 200
+    if not email_destinatario:
+        return jsonify({"erro": "E-mail do destinatário não fornecido."}), 400
+
+    assunto = "Bem-vindo(a) ao IAprovas! Sua jornada para a aprovação começa agora."
+    conteudo_html = f"""<p>Olá, {nome_destinatario}! Bem-vindo(a) ao IAprovas. Estamos felizes em ter você conosco.</p>"""
+    conteudo_texto = f"Olá, {nome_destinatario}! Bem-vindo(a) ao IAprovas."
+    
+    sucesso = enviar_email(email_destinatario, nome_destinatario, assunto, conteudo_html, conteudo_texto)
+
+    if sucesso:
+        return jsonify({"mensagem": "Solicitação de e-mail de boas-vindas processada."}), 200
+    else:
+        return jsonify({"erro": "Falha interna ao tentar enviar o e-mail."}), 500
 
 
 def call_openai_api(prompt_content, system_message):
