@@ -9,43 +9,36 @@
 </head>
 <body>
     <div class="dashboard-layout">
-        <header class="dashboard-header"><div class="header-content"><div class="header-left"><button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button><div class="logo"><i class="fas fa-book-open"></i><span>IAprovas</span></div></div><div class="header-right">
-            <a href="meu-perfil.html" class="btn btn-ghost">
-                <i class="fas fa-user"></i>
-                <span id="user-name">Carregando...</span>
-            </a>
-            <button id="btn-sair" class="btn btn-ghost">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Sair</span>
-            </button>
-        </div></div></header>
-        <aside class="sidebar" id="sidebar">
-            <nav class="sidebar-nav">
-                <a href="home.html" class="nav-item">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="cronograma.html" class="nav-item">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Cronograma</span>
-                </a>
-                <a href="exercicios.html" class="nav-item">
-                    <i class="fas fa-book-open"></i>
-                    <span>Exercícios</span>
-                </a>
-                <a href="discursivas.html" class="nav-item">
-                    <i class="fas fa-file-signature"></i>
-                    <span>Questões Discursivas</span>
-                </a>
-                <a href="dicas-estrategicas.html" class="nav-item">
-                    <i class="fas fa-bullseye"></i>
-                    <span>Dicas Estratégicas</span>
-                </a>
-                <a href="meu-perfil.html" class="nav-item">
-                    <i class="fas fa-user-cog"></i>
-                    <span>Meu Perfil</span>
-                </a>
-            </nav>
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button>
+                    <div class="logo"><i class="fas fa-book-open"></i><span>IAprovas</span></div>
+                </div>
+                </div>
+        </header>
+        
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-content">
+                <nav class="sidebar-nav">
+                    <a href="home.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                    <a href="cronograma.html" class="nav-item"><i class="fas fa-calendar-alt"></i><span>Cronograma</span></a>
+                    <a href="exercicios.html" class="nav-item active"><i class="fas fa-book-open"></i><span>Exercícios</span></a>
+                    <a href="discursivas.html" class="nav-item"><i class="fas fa-file-signature"></i><span>Questões Discursivas</span></a>
+                    <a href="dicas-estrategicas.html" class="nav-item"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
+                </nav>
+        
+                <div class="sidebar-footer">
+                    <a href="meu-perfil.html" class="nav-item">
+                        <i class="fas fa-user-cog"></i>
+                        <span id="user-name">Carregando...</span>
+                    </a>
+                    <button id="btn-sair" class="nav-item" style="width: 100%; background: none; border: none; cursor: pointer; text-align: left;">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Sair</span>
+                    </button>
+                </div>
+            </div>
         </aside>
         <div id="sidebarOverlay" class="sidebar-overlay"></div>
 

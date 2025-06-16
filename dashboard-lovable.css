@@ -416,9 +416,6 @@ body {
         font-size: 12px;
     }
 
-    .header-right .btn span {
-        display: none;
-    }
 }
 
 @media (max-width: 480px) {
@@ -1366,4 +1363,19 @@ body.dark-mode .cronograma-tabela li .topico {
 
 body.dark-mode .cronograma-tabela li .tipo-e-duracao {
     color: #9ca3af;
+}
+
+/* Estilos para o rodapé da Sidebar com links de perfil e sair */
+.sidebar-footer {
+    margin-top: auto; /* Empurra o rodapé para o final da sidebar */
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+body.dark-mode .sidebar-footer {
+    border-top-color: #374151;
+}
+
+.sidebar-footer .nav-item {
+    padding: 12px 0; /* Ajusta o padding para os itens do rodapé */
 }

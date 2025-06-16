@@ -1,4 +1,4 @@
-# app.py - Versão com a rota /gerar-exercicios implementada
+# app.py - Versão com integração Resend para envio de e-mail
 
 import os
 import json
@@ -12,32 +12,70 @@ import stripe
 import traceback
 import firebase_admin
 from firebase_admin import credentials, firestore
+import resend # Importa a biblioteca do Resend
+
+# Carrega variáveis de ambiente do arquivo .env
+load_dotenv()
 
 # Inicialização do Firebase Admin SDK
-cred = credentials.Certificate("serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+try:
+    cred = credentials.Certificate("serviceAccountKey.json")
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+except Exception as e:
+    print(f"ERRO: Falha ao inicializar o Firebase Admin SDK. Verifique o arquivo 'serviceAccountKey.json'. Erro: {e}")
+    db = None
 
-load_dotenv()
 app = Flask(__name__)
 # Configuração do CORS para permitir requisições do frontend
-frontend_url = "https://iaprovas-frontend.onrender.com"
+frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
 CORS(app, resources={r"/*": {"origins": frontend_url}}, supports_credentials=True)
 
 # Configuração das chaves de API
 openai_api_key = os.getenv("OPENAI_API_KEY")
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+resend.api_key = os.getenv("RESEND_API_KEY") # Chave do Resend
 
-
+# Verificação das chaves
 if not openai_api_key:
-    print("ERRO CRÍTICO: A variável de ambiente OPENAI_API_KEY não foi encontrada.")
+    print("AVISO: A variável de ambiente OPENAI_API_KEY não foi encontrada.")
 if not stripe.api_key:
-    print("ERRO CRÍTICO: A variável de ambiente STRIPE_SECRET_KEY não foi encontrada.")
+    print("AVISO: A variável de ambiente STRIPE_SECRET_KEY não foi encontrada.")
+if not resend.api_key:
+    print("AVISO: A variável de ambiente RESEND_API_KEY não foi encontrada.")
 
 client = OpenAI(api_key=openai_api_key)
 
+# --- FUNÇÃO AUXILIAR PARA ENVIO DE E-MAIL COM RESEND ---
+def enviar_email(para_email, nome_usuario, assunto, conteudo_html):
+    if not resend.api_key:
+        print("ERRO DE E-MAIL: RESEND_API_KEY não configurada. E-mail não enviado.")
+        return False
+    
+    # IMPORTANTE: Este e-mail DEVE ser de um domínio verificado no Resend.
+    email_remetente = "Equipe IAprovas <contato@iaprovas.com.br>" 
+
+    params = {
+        "from": email_remetente,
+        "to": [para_email],
+        "subject": assunto,
+        "html": conteudo_html,
+    }
+    
+    try:
+        email_sent = resend.Emails.send(params)
+        print(f"E-mail enviado para {para_email} via Resend. Response: {email_sent}")
+        return True
+    except Exception as e:
+        print(f"ERRO ao enviar e-mail para {para_email} via Resend: {e}")
+        return False
+
+
+# O restante do arquivo (rotas da OpenAI, Stripe, etc.) permanece o mesmo.
+# ... (código existente das outras rotas) ...
+
 def call_openai_api(prompt_content, system_message):
-    if not api_key:
+    if not openai_api_key:
         raise ValueError("A chave da API da OpenAI não está configurada no servidor.")
     try:
         response = client.chat.completions.create(
@@ -58,6 +96,43 @@ def call_openai_api(prompt_content, system_message):
 def ola_mundo():
     return "Backend ConcursoIA Funcionando"
 
+# --- ROTA PARA E-MAIL DE BOAS-VINDAS (sem alteração na lógica da rota) ---
+@app.route("/enviar-email-boas-vindas", methods=['POST'])
+def enviar_email_boas_vindas():
+    dados = request.get_json()
+    email_destinatario = dados.get("email")
+    nome_destinatario = dados.get("nome", "estudante")
+
+    if not email_destinatario:
+        return jsonify({"erro": "E-mail do destinatário não fornecido."}), 400
+
+    assunto = "Bem-vindo(a) ao IAprovas! Sua jornada para a aprovação começa agora."
+    
+    conteudo_html = f"""
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h1 style="color: #1d4ed8;">Olá, {nome_destinatario}!</h1>
+        <p>Seja muito bem-vindo(a) à plataforma <strong>IAprovas</strong>!</p>
+        <p>Estamos muito felizes em ter você conosco. Nossa inteligência artificial, baseada em uma metodologia de sucesso, está pronta para criar um plano de estudos personalizado e te ajudar a alcançar a tão sonhada aprovação.</p>
+        <p>Seus próximos passos recomendados:</p>
+        <ol>
+            <li>Acesse a área de <a href="{frontend_url}/cronograma.html">Cronograma</a> para gerar seu primeiro plano de estudos.</li>
+            <li>Explore a seção de <a href="{frontend_url}/exercicios.html">Exercícios</a> para testar seus conhecimentos.</li>
+            <li>Visite a página de <a href="{frontend_url}/dicas-estrategicas.html">Dicas Estratégicas</a> para otimizar sua preparação.</li>
+        </ol>
+        <p>Se tiver qualquer dúvida, basta responder a este e-mail.</p>
+        <p>Bons estudos!</p>
+        <p><strong>Equipe IAprovas</strong></p>
+    </div>
+    """
+    
+    sucesso = enviar_email(email_destinatario, nome_destinatario, assunto, conteudo_html)
+
+    if sucesso:
+        return jsonify({"mensagem": "E-mail de boas-vindas enviado com sucesso!"}), 200
+    else:
+        return jsonify({"erro": "Falha ao enviar o e-mail de boas-vindas."}), 500
+
+
 @app.route("/gerar-plano-estudos", methods=['POST'])
 def gerar_plano():
     dados_usuario = request.json
@@ -77,7 +152,6 @@ def gerar_plano():
             numero_de_semanas = 4
 
     try:
-        # **PROMPT DEFINITIVO COM REGRAS DE TEMPO EXPLÍCITAS**
         prompt = (
             f"Você é um especialista em preparação para concursos, baseando-se na metodologia do 'Guia Definitivo de Aprovação em Concursos'. "
             f"Crie um plano de estudos detalhado em JSON para um aluno com as seguintes características: {json.dumps(dados_usuario, indent=2)}.\n\n"
@@ -133,7 +207,6 @@ def gerar_dica_categoria():
     dados_req = request.json
     categoria = dados_req.get("categoria", "geral")
     
-    # Mapeamento de categorias para módulos do livro
     contexto_guia = {
         "gestao_de_tempo": "Módulo 5 (Organize seu horário) e Módulo 6 (Elabore seu plano)",
         "metodos_de_estudo": "Módulo 7 (Estratégias e materiais) e Módulo 9 (Conheça as bancas)",
@@ -183,7 +256,6 @@ def gerar_dica_personalizada():
     except Exception as e:
         return jsonify({"erro_geral": str(e)}), 500
     
-# **NOVA ROTA PARA GERAR ENUNCIADO**
 @app.route("/gerar-enunciado-discursiva", methods=['POST'])
 def gerar_enunciado_discursiva():
     dados_req = request.json
@@ -200,7 +272,6 @@ def gerar_enunciado_discursiva():
         return jsonify({"erro_geral": str(e)}), 500
 
 
-# **ROTA DE CORREÇÃO ATUALIZADA COM PROMPT FINAL E ESTRUTURADO**
 @app.route("/corrigir-discursiva", methods=['POST'])
 def corrigir_discursiva():
     dados_req = request.json
@@ -236,7 +307,6 @@ def create_checkout_session():
         userId = data.get('userId')
         print(f"Plano recebido: {plan}, ID do Usuário: {userId}")
 
-        # Seus IDs de Preço da Stripe
         price_ids = {
             'mensal': 'price_1RZd9fRNnbn9WEbDscWoz0Rl',
             'anual': 'price_1RZdACRNnbn9WEbD7HCP4AW9',
@@ -249,11 +319,8 @@ def create_checkout_session():
         if not userId:
             return jsonify(error={'message': 'ID do usuário não fornecido.'}), 400
 
-        YOUR_DOMAIN = 'http://127.0.0.1:5500'
+        YOUR_DOMAIN = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
 
-        # --- INÍCIO DA PARTE MODIFICADA ---
-        
-        # 1. Prepara os parâmetros básicos da sessão de pagamento
         session_params = {
             'payment_method_types': ['card'],
             'line_items': [{'price': price_id, 'quantity': 1}],
@@ -263,28 +330,19 @@ def create_checkout_session():
             'client_reference_id': userId
         }
 
-        # 2. Se o plano for 'trial', adiciona o parâmetro do período de teste
         if plan == 'trial':
             print("Plano de teste detectado. Adicionando 7 dias de trial à chamada.")
             session_params['subscription_data'] = {'trial_period_days': 7}
 
         print("Enviando os seguintes parâmetros para a Stripe:", session_params)
         
-        # 3. Cria a sessão na Stripe usando todos os parâmetros preparados
         checkout_session = stripe.checkout.Session.create(**session_params)
-        
-        # --- FIM DA PARTE MODIFICADA ---
 
         print(f"Sessão de checkout criada com sucesso! ID: {checkout_session.id}")
         return jsonify({'id': checkout_session.id})
 
     except Exception as e:
-        print("\n!!! OCORREU UM ERRO DENTRO DA ROTA /create-checkout-session !!!")
-        print("Tipo do erro:", type(e).__name__)
-        print("Mensagem do erro:", str(e))
-        print("--- Traceback completo ---")
-        traceback.print_exc()
-        print("--------------------------")
+        print(f"\n!!! OCORREU UM ERRO DENTRO DA ROTA /create-checkout-session !!!\n{traceback.format_exc()}")
         return jsonify(error={"message": "Ocorreu um erro interno no servidor."}), 500
     
 @app.route("/test-cors", methods=['POST'])
@@ -296,7 +354,7 @@ def test_cors_route():
 def stripe_webhook():
     payload = request.data
     sig_header = request.headers.get('Stripe-Signature')
-    endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET') # Vamos configurar isso em breve
+    endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
     event = None
 
     print("\n--- Webhook da Stripe recebido! ---")
@@ -306,30 +364,29 @@ def stripe_webhook():
             payload, sig_header, endpoint_secret
         )
     except ValueError as e:
-        # Payload inválido
         print("Erro de payload inválido no webhook:", e)
         return 'Invalid payload', 400
     except stripe.error.SignatureVerificationError as e:
-        # Assinatura inválida
         print("Erro de verificação de assinatura no webhook:", e)
         return 'Invalid signature', 400
 
-    # Handle the event
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         print("Sessão de checkout completada:", session['id'])
         
-        # Pega o ID do nosso usuário que associamos anteriormente
         user_id = session.get('client_reference_id')
         
         if user_id:
             print(f"Atualizando plano para 'premium' para o usuário: {user_id}")
             try:
-                user_ref = db.collection('users').document(user_id)
-                user_ref.update({
-                    'plano': 'premium'
-                })
-                print("Usuário atualizado com sucesso no Firestore!")
+                if db is not None:
+                    user_ref = db.collection('users').document(user_id)
+                    user_ref.update({
+                        'plano': 'premium'
+                    })
+                    print("Usuário atualizado com sucesso no Firestore!")
+                else:
+                    print("ERRO: Conexão com Firestore não está disponível.")
             except Exception as e:
                 print(f"!!! Erro ao atualizar usuário no Firestore: {e} !!!")
         else:
@@ -338,4 +395,4 @@ def stripe_webhook():
     return 'Success', 200
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=int(os.environ.get("PORT", 5000)))
