@@ -59,7 +59,7 @@ def enviar_email(para_email, nome_usuario, assunto, conteudo_html, conteudo_text
     
     try:
         resend.Emails.send(params)
-        print(f"E-mail de boas-vindas enviado com sucesso para {para_email}")
+        print(f"E-mail enviado com sucesso para {para_email}")
         return True
     except Exception as e:
         print(f"ERRO CRÍTICO ao enviar e-mail pelo Resend: {e}")
@@ -78,8 +78,43 @@ def enviar_email_boas_vindas():
         return jsonify({"erro": "E-mail do destinatário não fornecido."}), 400
 
     assunto = "Bem-vindo(a) ao IAprovas! Sua jornada para a aprovação começa agora."
-    conteudo_html = f"""<p>Olá, {nome_destinatario}! Bem-vindo(a) ao IAprovas. Estamos felizes em ter você conosco.</p>"""
-    conteudo_texto = f"Olá, {nome_destinatario}! Bem-vindo(a) ao IAprovas."
+    
+    # Template em HTML completo e restaurado
+    conteudo_html = f"""
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h1 style="color: #1d4ed8;">Olá, {nome_destinatario}!</h1>
+        <p>Seja muito bem-vindo(a) à plataforma <strong>IAprovas</strong>!</p>
+        <p>Estamos muito felizes em ter você conosco. Nossa inteligência artificial, baseada em uma metodologia de sucesso, está pronta para criar um plano de estudos personalizado e te ajudar a alcançar a tão sonhada aprovação.</p>
+        <p>Seus próximos passos recomendados:</p>
+        <ol>
+            <li>Acesse a área de <a href="{frontend_url}/cronograma.html" style="color: #1d4ed8;">Cronograma</a> para gerar seu primeiro plano de estudos.</li>
+            <li>Explore a seção de <a href="{frontend_url}/exercicios.html" style="color: #1d4ed8;">Exercícios</a> para testar seus conhecimentos.</li>
+            <li>Visite a página de <a href="{frontend_url}/dicas-estrategicas.html" style="color: #1d4ed8;">Dicas Estratégicas</a> para otimizar sua preparação.</li>
+        </ol>
+        <p>Se tiver qualquer dúvida, basta responder a este e-mail.</p>
+        <p>Bons estudos!</p>
+        <p><strong>Equipe IAprovas</strong></p>
+    </div>
+    """
+
+    # Versão em texto puro completa e restaurada
+    conteudo_texto = f"""
+    Olá, {nome_destinatario}!
+    
+    Seja muito bem-vindo(a) à plataforma IAprovas!
+    
+    Estamos muito felizes em ter você conosco. Nossa inteligência artificial, baseada em uma metodologia de sucesso, está pronta para criar um plano de estudos personalizado e te ajudar a alcançar a tão sonhada aprovação.
+    
+    Seus próximos passos recomendados:
+    1. Acesse a área de Cronograma para gerar seu primeiro plano de estudos: {frontend_url}/cronograma.html
+    2. Explore a seção de Exercícios para testar seus conhecimentos: {frontend_url}/exercicios.html
+    3. Visite a página de Dicas Estratégicas para otimizar sua preparação: {frontend_url}/dicas-estrategicas.html
+    
+    Se tiver qualquer dúvida, basta responder a este e-mail.
+    
+    Bons estudos!
+    Equipe IAprovas
+    """
     
     sucesso = enviar_email(email_destinatario, nome_destinatario, assunto, conteudo_html, conteudo_texto)
 
