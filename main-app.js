@@ -108,7 +108,16 @@ function initializeApp() {
 
             const btnSair = document.getElementById('btn-sair');
             if (btnSair) {
-                btnSair.addEventListener('click', () => signOut(auth));
+                btnSair.addEventListener('click', () => {
+                    signOut(auth).then(() => {
+                        // Esta parte só executa após o logout ser concluído com sucesso.
+                        console.log('Usuário deslogado. Redirecionando para a página de login...');
+                        window.location.href = 'login.html';
+                    }).catch((error) => {
+                        // Isso nos ajuda a ver se algum erro acontece no processo de logout.
+                        console.error('Erro ao tentar fazer logout:', error);
+                    });
+                });
             }
         } else {
             const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html'];
