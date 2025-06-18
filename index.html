@@ -65,26 +65,61 @@
 
     <section id="planos" class="pricing">
         <div class="container">
-            <div class="section-header"><h2>Planos que Cabem no seu Bolso</h2><p>Escolha o plano ideal para sua jornada.</p></div>
-            <div class="pricing-grid">
+            <div class="section-header"><h2>Planos que Cabem no seu Bolso</h2><p>Escolha o plano ideal para sua jornada rumo à aprovação.</p></div>
+            
+            <div class="pricing-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 100%;">
                 <div class="pricing-card">
-                    <div class="pricing-header"><h3>Gratuito (7 dias)</h3><div class="price"><span class="amount">R$0</span></div><p>Experimente o essencial</p></div>
-                    <ul class="features-list"><li><i class="fas fa-check"></i> Cronogramas Gerados por IA</li><li><i class="fas fa-check"></i> Exercícios Inteligentes</li><li><i class="fas fa-check"></i> Correção de Textos Discursivos</li><li><i class="fas fa-check"></i> Dicas Inteligentes</li></ul>
-                    <button class="btn btn-outline btn-full" onclick="window.location.href='cadastro.html'">Testar Grátis por 7 Dias</button>
+                    <div class="pricing-header"><h3>Trial Gratuito</h3><div class="price"><span class="amount">R$0</span></div><p>7 dias para testar tudo</p></div>
+                    <ul class="features-list">
+                        <li><i class="fas fa-check"></i> Cronogramas Personalizados</li>
+                        <li><i class="fas fa-check"></i> Exercícios Inteligentes</li>
+                        <li><i class="fas fa-check"></i> Correção de Discursivas</li>
+                        <li><i class="fas fa-check"></i> Dicas Estratégicas</li>
+                    </ul>
+                    <button class="btn btn-outline btn-full" onclick="window.location.href='cadastro.html'">Começar Teste Gratuito</button>
                 </div>
+    
+                <div class="pricing-card">
+                    <div class="pricing-header"><h3>Básico</h3><div class="price"><span class="currency">R$</span><span class="amount">29</span><span class="period">,90/mês</span></div><p>O essencial para organizar</p></div>
+                    <ul class="features-list">
+                        <li><i class="fas fa-check"></i> Cronogramas Gerados por IA</li>
+                        <li><i class="fas fa-check"></i> Dicas Estratégicas</li>
+                        <li><i class="fas fa-check"></i> Acesso ao Guia em PDF</li>
+                        <li><i class="fas fa-check"></i> Acesso a Vídeo Aulas</li>
+                    </ul>
+                    <button class="btn btn-primary btn-full" onclick="window.location.href='contratacao.html?plano=basico'">Assinar Básico</button>
+                </div>
+    
                 <div class="pricing-card popular">
                     <div class="popular-badge"><i class="fas fa-star"></i>Mais Popular</div>
-                    <div class="pricing-header"><h3>Premium Mensal</h3><div class="price"><span class="currency">R$</span><span class="amount">49</span><span class="period">,90/mês</span></div><p>Acesso completo e flexível</p></div>
-                    <ul class="features-list"><li><i class="fas fa-check"></i> Cronogramas Gerados por IA</li><li><i class="fas fa-check"></i> Exercícios Inteligentes</li><li><i class="fas fa-check"></i> Correção de Textos Discursivos</li><li><i class="fas fa-check"></i> Dicas Inteligentes</li></ul>
-                    <button class="btn btn-primary btn-full" onclick="window.location.href='contratacao.html?plano=mensal'">Assinar Mensal</button>
+                    <div class="pricing-header"><h3>Intermediário</h3><div class="price"><span class="currency">R$</span><span class="amount">39</span><span class="period">,90/mês</span></div><p>Organize e pratique</p></div>
+                    <ul class="features-list">
+                        <li><i class="fas fa-check"></i> <strong>Tudo do Básico</strong></li>
+                        <li><i class="fas fa-check"></i> Módulo de Exercícios IA</li>
+                    </ul>
+                    <button class="btn btn-primary btn-full" onclick="window.location.href='contratacao.html?plano=intermediario'">Assinar Intermediário</button>
                 </div>
+    
                 <div class="pricing-card">
-                    <div class="pricing-header"><h3>Premium Anual</h3><div class="price"><span class="currency">R$</span><span class="amount">399</span><span class="period">,90/ano</span></div><p>Melhor custo-benefício</p></div>
-                    <ul class="features-list"><li><i class="fas fa-check"></i> Tudo do Premium Mensal</li><li><i class="fas fa-check"></i> Desconto Anual</li><li><i class="fas fa-check"></i> Suporte Prioritário</li></ul>
-                    <button class="btn btn-outline btn-full" onclick="window.location.href='contratacao.html?plano=anual'">Assinar Anual</button>
+                    <div class="pricing-header"><h3>Premium</h3><div class="price"><span class="currency">R$</span><span class="amount">69</span><span class="period">,90/mês</span></div><p>A preparação completa</p></div>
+                    <ul class="features-list">
+                        <li><i class="fas fa-check"></i> <strong>Tudo do Intermediário</strong></li>
+                        <li><i class="fas fa-check"></i> Correção de Discursivas IA</li>
+                    </ul>
+                    <button class="btn btn-primary btn-full" onclick="window.location.href='contratacao.html?plano=premium'">Assinar Premium</button>
+                </div>
+    
+                 <div class="pricing-card">
+                    <div class="pricing-header"><h3>Premium Anual</h3><div class="price"><span class="currency">R$</span><span class="amount">699</span><span class="period">,90/ano</span></div><p>Melhor Custo-Benefício</p></div>
+                    <ul class="features-list">
+                        <li><i class="fas fa-check"></i> <strong>Todas as funcionalidades</strong></li>
+                        <li><i class="fas fa-check"></i> Desconto de 2 meses</li>
+                        <li><i class="fas fa-check"></i> Suporte Prioritário</li>
+                    </ul>
+                    <button class="btn btn-primary btn-full" onclick="window.location.href='contratacao.html?plano=anual'">Assinar Anual</button>
                 </div>
             </div>
-            <div class="pricing-footer"><p>🔒 Pagamento seguro • ✅ Cancele quando quiser</p></div>
+            <div class="pricing-footer"><p>🔒 Pagamento seguro via Stripe • ✅ Cancele quando quiser</p></div>
         </div>
     </section>
 

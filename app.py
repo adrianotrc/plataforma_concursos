@@ -321,9 +321,12 @@ def create_checkout_session():
         userId = data.get('userId')
         print(f"Plano recebido: {plan}, ID do Usuário: {userId}")
 
+        # ATUALIZE AQUI com os IDs que você copiou da Stripe
         price_ids = {
-            'mensal': 'price_1RZd9fRNnbn9WEbDscWoz0Rl',
-            'anual': 'price_1RZdACRNnbn9WEbD7HCP4AW9',
+            'basico': 'price_1RbNwKI6qNljWf7uteg6oRkd', # COLE AQUI O ID DO PLANO BÁSICO
+            'intermediario': 'price_1RbNwKI6qNljWf7usjgSzXQ3', # COLE AQUI O ID DO PLANO INTERMEDIÁRIO
+            'premium': 'price_1RbNwKI6qNljWf7u9ubuSbsI', # COLE AQUI O ID DO PLANO PREMIUM MENSAL
+            'anual': 'price_1RbNwKI6qNljWf7uWXU6dGod', # COLE AQUI O ID DO PLANO PREMIUM ANUAL
         }
 
         price_id = price_ids.get(plan)
@@ -343,12 +346,6 @@ def create_checkout_session():
             'cancel_url': YOUR_DOMAIN + '/cancelado.html',
             'client_reference_id': userId
         }
-
-        if plan == 'trial':
-            print("Plano de teste detectado. Adicionando 7 dias de trial à chamada.")
-            session_params['subscription_data'] = {'trial_period_days': 7}
-
-        print("Enviando os seguintes parâmetros para a Stripe:", session_params)
         
         checkout_session = stripe.checkout.Session.create(**session_params)
 

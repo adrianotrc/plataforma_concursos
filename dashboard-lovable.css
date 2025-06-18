@@ -1379,3 +1379,38 @@ body.dark-mode .sidebar-footer {
 .sidebar-footer .nav-item {
     padding: 12px 0; /* Ajusta o padding para os itens do rodapé */
 }
+
+/* dashboard-lovable.css */
+
+/* Estilo para itens de navegação desabilitados */
+.nav-item.disabled {
+    color: #9ca3af;
+    pointer-events: none; /* Impede o clique */
+    cursor: not-allowed;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-item.disabled:hover {
+    background: none; /* Remove o efeito de hover */
+}
+
+/* Adiciona um ícone de cadeado e um pseudo-elemento para escurecer */
+.nav-item.disabled::after {
+    content: '\f023'; /* Código do ícone de cadeado do Font Awesome */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+}
+
+body.dark-mode .nav-item.disabled {
+    color: #4b5563;
+}
+
+body.dark-mode .nav-item.disabled::after {
+    color: #4b5563;
+}

@@ -6,6 +6,31 @@ import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc, server
 
 export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizados: 0, taxaAcerto: 0, textosCorrigidos: 0, }, savedPlans: [], sessoesExercicios: [], sessoesDiscursivas: [], userData: null };
 
+// main-app.js
+
+function controlarAcessoFuncionalidades(plano) {
+    const permissoes = {
+        'trial': ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas'],
+        'basico': ['dashboard', 'cronograma', 'dicas'],
+        'intermediario': ['dashboard', 'cronograma', 'dicas', 'exercicios'],
+        'premium': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas'],
+        'anual': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas']
+    };
+
+    const todasFuncionalidades = ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas'];
+    const funcionalidadesPermitidas = permissoes[plano] || [];
+
+    todasFuncionalidades.forEach(func => {
+        const elemento = document.getElementById(`nav-${func}`);
+        if (elemento) {
+            if (funcionalidadesPermitidas.includes(func)) {
+                elemento.classList.remove('disabled');
+            } else {
+                elemento.classList.add('disabled');
+            }
+        }
+    });
+}
 
 function calcularMetricas() {
     const studyDates = new Set();
@@ -101,6 +126,11 @@ function initializeApp() {
             }
             
             state.userData = userDocSnap.data();
+
+            controlarAcessoFuncionalidades(state.userData.plano);
+            
+            updateUserInfo(user, state.userData);
+            verificarAcessoUsuario();
             
             updateUserInfo(user, state.userData);
             verificarAcessoUsuario();
