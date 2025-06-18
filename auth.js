@@ -85,7 +85,7 @@ if (formCadastro) {
                 await enviarEmailBoasVindas(email, nome);
             }
             
-            // **AQUI A MUDANÇA**: Lógica de redirect inteligente no cadastro
+            // **AQUI ESTÁ A CORREÇÃO**: Lógica de redirect inteligente no cadastro
             const params = new URLSearchParams(window.location.search);
             const returnTo = params.get('returnTo');
 
