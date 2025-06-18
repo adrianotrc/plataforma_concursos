@@ -1,7 +1,16 @@
+// api.js - Versão final com URL dinâmica para desenvolvimento e produção
 
-// api.js - Versão final com todas as funções
+// Esta função determina se estamos no ambiente local (desenvolvimento)
+function isLocalEnvironment() {
+    // Endereços comuns para desenvolvimento local
+    const localhosts = ['127.0.0.1', 'localhost'];
+    return localhosts.includes(window.location.hostname);
+}
 
-const API_BASE_URL = 'https://iaprovas-backend.onrender.com';
+// Define a URL base da API dinamicamente
+const API_BASE_URL = isLocalEnvironment() 
+    ? 'http://127.0.0.1:5000' // URL para desenvolvimento local
+    : 'https://iaprovas-backend.onrender.com'; // URL para produção
 
 // Função auxiliar genérica para chamadas de API
 async function fetchApi(endpoint, options) {
@@ -31,8 +40,6 @@ export async function enviarEmailBoasVindas(email, nome) {
     });
 }
 
-
-// ... (outras funções como gerarPlanoDeEstudos, gerarExercicios, etc. devem estar aqui)
 export async function gerarPlanoDeEstudos(dadosDoFormulario) {
     return fetchApi('/gerar-plano-estudos', {
         method: 'POST',
@@ -78,5 +85,13 @@ export async function corrigirDiscursiva(dadosCorrecao) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dadosCorrecao),
+    });
+}
+
+export async function criarSessaoCheckout(plano, userId) {
+    return fetchApi('/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: plano, userId: userId }),
     });
 }
