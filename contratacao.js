@@ -1,64 +1,71 @@
+// contratacao.js - Versão final com os novos planos e chamada de API correta
+
 import { STRIPE_PUBLISHABLE_KEY } from './stripe-config.js';
 import { auth } from './firebase-config.js';
+// Importa nossa função de API centralizada
+import { criarSessaoCheckout } from './api.js'; 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Inicializa a Stripe com a chave pública
     const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
     const btnPagar = document.getElementById('btn-pagar');
+    const tituloPlanoEl = document.getElementById('titulo-plano');
+    const resumoPlanoEl = document.getElementById('resumo-plano');
 
-    // Pega o plano da URL (ex: ?plano=mensal)
+    // Pega o plano da URL (ex: ?plano=basico)
     const urlParams = new URLSearchParams(window.location.search);
-    const plano = urlParams.get('plano');
+    const planoSelecionado = urlParams.get('plano');
 
+    // **CORREÇÃO**: Lista de planos ATUALIZADA
     const planosInfo = {
-        mensal: { nome: 'Plano Mensal', valor: 'R$ 49,90/mês' },
-        anual: { nome: 'Plano Anual', valor: 'R$ 399,90/ano' }
+        'basico': { nome: 'Plano Básico', valor: 'R$ 29,90/mês' },
+        'intermediario': { nome: 'Plano Intermediário', valor: 'R$ 39,90/mês' },
+        'premium': { nome: 'Plano Premium', valor: 'R$ 69,90/mês' },
+        'anual': { nome: 'Plano Premium Anual', valor: 'R$ 699,90/ano' }
     };
 
-    const info = planosInfo[plano];
-    if (info) {
-        document.getElementById('titulo-plano').textContent = `Finalizar Assinatura: ${info.nome}`;
-        document.getElementById('resumo-plano').innerHTML = `<p><strong>Plano:</strong> ${info.nome}</p><p><strong>Valor:</strong> ${info.valor}</p>`;
+    const infoPlano = planosInfo[planoSelecionado];
+
+    // Atualiza a interface com as informações do plano correto
+    if (infoPlano) {
+        tituloPlanoEl.textContent = `Finalizar Assinatura: ${infoPlano.nome}`;
+        resumoPlanoEl.innerHTML = `<p><strong>Plano:</strong> ${infoPlano.nome}</p><p><strong>Valor:</strong> ${infoPlano.valor}</p>`;
     } else {
-        document.getElementById('titulo-plano').textContent = 'Plano Inválido';
+        tituloPlanoEl.textContent = 'Plano Inválido';
+        resumoPlanoEl.innerHTML = `<p>Por favor, selecione um plano válido na página inicial.</p>`;
         btnPagar.disabled = true;
     }
 
+    // Evento de clique no botão de pagar
     btnPagar.addEventListener('click', async () => {
         btnPagar.disabled = true;
         btnPagar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aguarde...';
     
-        const user = auth.currentUser; // <-- 1. Pega o usuário atualmente logado
+        const user = auth.currentUser;
     
-        if (!user) { // <-- 2. Verifica se alguém está logado
+        if (!user) {
             alert("Você precisa estar logado para fazer uma assinatura. Por favor, faça o login e tente novamente.");
-            window.location.href = 'login.html'; // Redireciona para o login
-            return; // Interrompe a função aqui
+            window.location.href = 'login.html';
+            return;
         }
     
         try {
-            const response = await fetch('http://127.0.0.1:5000/create-checkout-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                // 3. Envia tanto o plano QUANTO o ID do usuário para o backend
-                body: JSON.stringify({ plan: plano, userId: user.uid }),
-            });
-    
-            const session = await response.json();
+            // **CORREÇÃO**: Usa nossa função de API centralizada
+            const session = await criarSessaoCheckout(planoSelecionado, user.uid);
             
-            if (response.ok && session.id) {
+            if (session && session.id) {
                 // Redireciona o cliente para a página de checkout da Stripe
                 await stripe.redirectToCheckout({ sessionId: session.id });
             } else {
-                // Mostra uma mensagem de erro mais específica se o servidor a enviar
-                const errorInfo = session.error ? session.error.message : 'Tente novamente.';
-                alert(`Não foi possível iniciar o checkout: ${errorInfo}`);
+                alert(`Não foi possível iniciar o checkout. Tente novamente.`);
                 btnPagar.disabled = false;
-                btnPagar.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+                btnPagar.innerHTML = '<i class="fas fa-lock"></i> Ir para o Pagamento';
             }
         } catch (error) {
-            console.error('Erro:', error);
+            console.error('Erro ao criar sessão de checkout:', error);
             alert('Ocorreu um erro de comunicação. Verifique o console para mais detalhes.');
             btnPagar.disabled = false;
-            btnPagar.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+            btnPagar.innerHTML = '<i class="fas fa-lock"></i> Ir para o Pagamento';
         }
-    })});
+    });
+});
