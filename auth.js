@@ -1,4 +1,4 @@
-// auth.js - Versão focada apenas em Autenticação
+// auth.js - Versão com redirect inteligente para login e cadastro
 
 import { auth } from './firebase-config.js';
 import { 
@@ -12,18 +12,39 @@ import { enviarEmailBoasVindas} from './api.js';
 // --- PÁGINA DE LOGIN ---
 const formLogin = document.getElementById('form-login');
 if (formLogin) {
+    // Adiciona "memória" ao link de cadastro na página de login
+    const params = new URLSearchParams(window.location.search);
+    const returnTo = params.get('returnTo');
+    if (returnTo) {
+        const linkCadastro = formLogin.nextElementSibling.querySelector('a');
+        if (linkCadastro) {
+            linkCadastro.href = `cadastro.html?returnTo=${returnTo}`;
+        }
+    }
+
     formLogin.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('login-email').value;
         const senha = document.getElementById('login-senha').value;
         const btnLogin = document.getElementById('btn-login');
         const errorMessage = document.getElementById('error-message');
+        
         btnLogin.disabled = true;
         btnLogin.textContent = 'Entrando...';
         errorMessage.style.display = 'none';
+
         try {
             await signInWithEmailAndPassword(auth, email, senha);
-            window.location.href = 'home.html';
+            
+            const postLoginParams = new URLSearchParams(window.location.search);
+            const postLoginReturnTo = postLoginParams.get('returnTo');
+
+            if (postLoginReturnTo) {
+                window.location.href = postLoginReturnTo;
+            } else {
+                window.location.href = 'home.html';
+            }
+
         } catch (error) {
             errorMessage.textContent = 'Falha na autenticação. Verifique seu e-mail e senha.';
             errorMessage.style.display = 'block';
@@ -55,29 +76,33 @@ if (formCadastro) {
         }
 
         btnCadastro.disabled = true;
-        btnCadastro.textContent = 'Carregando...'; // Alterado para corresponder ao seu relato
+        btnCadastro.textContent = 'Criando conta...';
 
         try {
-            console.log("1. Tentando criar usuário no Firebase...");
             const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
             
             if (userCredential.user) {
-                console.log("2. Usuário criado no Firebase com sucesso. Tentando chamar a API para enviar e-mail...");
                 await enviarEmailBoasVindas(email, nome);
-                console.log("3. Chamada para API de e-mail finalizada.");
             }
             
-            window.location.href = 'home.html'; // Desativado para o teste
+            // **AQUI A MUDANÇA**: Lógica de redirect inteligente no cadastro
+            const params = new URLSearchParams(window.location.search);
+            const returnTo = params.get('returnTo');
+
+            if (returnTo) {
+                // Se veio de uma página específica (ex: pagamento), volta pra lá
+                window.location.href = returnTo;
+            } else {
+                // Senão, vai para o dashboard padrão
+                window.location.href = 'home.html';
+            }
 
         } catch (error) {
-            errorMessageDiv.textContent = 'Ocorreu um erro ao criar a conta.';
+            errorMessageDiv.textContent = 'Ocorreu um erro. Este e-mail pode já estar em uso.';
             errorMessageDiv.style.display = 'block';
             console.error("Erro detalhado no cadastro:", error);
-        } finally {
-            // A lógica de reativar o botão foi removida temporariamente para podermos ver o estado final
-            // btnCadastro.disabled = false;
-            // btnCadastro.textContent = 'Criar Conta';
-            console.log("4. Processo de cadastro finalizado no bloco try/catch/finally.");
+            btnCadastro.disabled = false;
+            btnCadastro.textContent = 'Criar Conta';
         }
     });
 }

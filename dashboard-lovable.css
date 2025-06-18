@@ -1414,3 +1414,56 @@ body.dark-mode .nav-item.disabled {
 body.dark-mode .nav-item.disabled::after {
     color: #4b5563;
 }
+
+/* Estilos para o Modal de Login/Cadastro */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 450px;
+    text-align: center;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 1.5rem;
+}
+.modal-content p {
+    margin-bottom: 24px;
+    color: #6b7280;
+}
+.modal-actions {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+body.dark-mode .modal-content {
+    background: #1f2937;
+    color: #d1d5db;
+}
+body.dark-mode .modal-content p {
+    color: #9ca3af;
+}

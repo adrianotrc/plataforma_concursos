@@ -1,22 +1,23 @@
-// contratacao.js - Versão final com os novos planos e chamada de API correta
+// contratacao.js - Versão com modal de decisão
 
 import { STRIPE_PUBLISHABLE_KEY } from './stripe-config.js';
 import { auth } from './firebase-config.js';
-// Importa nossa função de API centralizada
-import { criarSessaoCheckout } from './api.js'; 
+import { criarSessaoCheckout } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicializa a Stripe com a chave pública
     const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
     const btnPagar = document.getElementById('btn-pagar');
     const tituloPlanoEl = document.getElementById('titulo-plano');
     const resumoPlanoEl = document.getElementById('resumo-plano');
+    
+    // Elementos do novo Modal
+    const authModal = document.getElementById('auth-decision-modal');
+    const btnGoToLogin = document.getElementById('btn-go-to-login');
+    const btnGoToSignup = document.getElementById('btn-go-to-signup');
 
-    // Pega o plano da URL (ex: ?plano=basico)
     const urlParams = new URLSearchParams(window.location.search);
     const planoSelecionado = urlParams.get('plano');
 
-    // **CORREÇÃO**: Lista de planos ATUALIZADA
     const planosInfo = {
         'basico': { nome: 'Plano Básico', valor: 'R$ 29,90/mês' },
         'intermediario': { nome: 'Plano Intermediário', valor: 'R$ 39,90/mês' },
@@ -26,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const infoPlano = planosInfo[planoSelecionado];
 
-    // Atualiza a interface com as informações do plano correto
     if (infoPlano) {
         tituloPlanoEl.textContent = `Finalizar Assinatura: ${infoPlano.nome}`;
         resumoPlanoEl.innerHTML = `<p><strong>Plano:</strong> ${infoPlano.nome}</p><p><strong>Valor:</strong> ${infoPlano.valor}</p>`;
@@ -36,25 +36,34 @@ document.addEventListener('DOMContentLoaded', () => {
         btnPagar.disabled = true;
     }
 
-    // Evento de clique no botão de pagar
+    // Função para construir a URL de retorno
+    const getReturnUrl = () => `?returnTo=${encodeURIComponent(window.location.href)}`;
+
+    // Eventos dos botões do modal
+    btnGoToLogin.addEventListener('click', () => {
+        window.location.href = `login.html${getReturnUrl()}`;
+    });
+
+    btnGoToSignup.addEventListener('click', () => {
+        window.location.href = `cadastro.html${getReturnUrl()}`;
+    });
+
     btnPagar.addEventListener('click', async () => {
-        btnPagar.disabled = true;
-        btnPagar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aguarde...';
-    
         const user = auth.currentUser;
     
         if (!user) {
-            alert("Você precisa estar logado para fazer uma assinatura. Por favor, faça o login e tente novamente.");
-            window.location.href = 'login.html';
+            // **AQUI A MUDANÇA**: Mostra o modal em vez de redirecionar direto
+            authModal.classList.add('show');
             return;
         }
+
+        btnPagar.disabled = true;
+        btnPagar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aguarde...';
     
         try {
-            // **CORREÇÃO**: Usa nossa função de API centralizada
             const session = await criarSessaoCheckout(planoSelecionado, user.uid);
             
             if (session && session.id) {
-                // Redireciona o cliente para a página de checkout da Stripe
                 await stripe.redirectToCheckout({ sessionId: session.id });
             } else {
                 alert(`Não foi possível iniciar o checkout. Tente novamente.`);
@@ -63,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Erro ao criar sessão de checkout:', error);
-            alert('Ocorreu um erro de comunicação. Verifique o console para mais detalhes.');
+            alert('Ocorreu um erro de comunicação.');
             btnPagar.disabled = false;
             btnPagar.innerHTML = '<i class="fas fa-lock"></i> Ir para o Pagamento';
         }

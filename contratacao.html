@@ -42,7 +42,20 @@
         </main>
     </div>
     
+    <div id="auth-decision-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="feature-icon blue" style="margin: 0 auto 16px;"><i class="fas fa-user-lock"></i></div>
+            <h3>Continue para o Pagamento</h3>
+            <p>Para prosseguir, você precisa de uma conta. Você já é cadastrado ou é um novo usuário?</p>
+            <div class="modal-actions">
+                <button id="btn-go-to-login" class="btn btn-primary btn-full">Já tenho conta (Fazer Login)</button>
+                <button id="btn-go-to-signup" class="btn btn-outline btn-full">Sou novo (Criar Conta)</button>
+            </div>
+        </div>
+    </div>
+    
     <script type="module" src="stripe-config.js"></script>
     <script type="module" src="contratacao.js"></script>
+    
 </body>
 </html>
