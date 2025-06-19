@@ -17,12 +17,11 @@ const materiasInput = document.getElementById('materias-input');
 
 // --- ESTADO LOCAL ---
 let currentUser = null;
-let unsubHistorico = null; // Listener do Firestore
-let planoAbertoAtual = null; // Guarda o plano atualmente exibido na tela
+let unsubHistorico = null;
+let planoAbertoAtual = null;
 
 // --- FUNÇÕES DE UI ---
 
-// Função para exibir notificações customizadas (Toast)
 function showToast(message, type = 'success', duration = 5000) {
     const toast = document.createElement('div');
     toast.className = `feedback-toast ${type}`;
@@ -35,7 +34,6 @@ function showToast(message, type = 'success', duration = 5000) {
     }, duration);
 }
 
-// Renderiza a lista de planos de estudo no histórico
 function renderizarHistorico(planos) {
     if (!containerHistorico) return;
     if (!planos || planos.length === 0) {
@@ -46,27 +44,34 @@ function renderizarHistorico(planos) {
     containerHistorico.innerHTML = planosOrdenados.map(plano => {
         const dataFormatada = plano.criadoEm?.toDate()?.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) || 'Processando...';
         const isProcessing = plano.status === 'processing';
+        const hasFailed = plano.status === 'failed';
         
         let subtexto = `Gerado em: ${dataFormatada}`;
         if (plano.data_inicio && plano.data_termino) {
              subtexto += ` | Período: ${plano.data_inicio} a ${plano.data_termino}`;
         }
 
+        let statusIcon = '';
+        if (isProcessing) {
+            statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
+        } else if (hasFailed) {
+            statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
+        }
+
         return `
-            <div class="plano-item" data-id="${plano.jobId || plano.id}">
+            <div class="plano-item">
                 <div>
-                    <h3>${plano.concurso_foco || 'Plano de Estudos'} ${isProcessing ? '<i class="fas fa-spinner fa-spin"></i>' : ''}</h3>
+                    <h3>${plano.concurso_foco || 'Plano de Estudos'} ${statusIcon}</h3>
                     <p>${subtexto}</p>
                 </div>
-                <button class="btn btn-primary btn-abrir-plano" data-id="${plano.jobId || plano.id}" ${isProcessing ? 'disabled' : ''}>
-                    ${isProcessing ? 'Gerando...' : 'Abrir'}
+                <button class="btn btn-primary btn-abrir-plano" data-id="${plano.jobId || plano.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>
+                    ${isProcessing ? 'Gerando...' : (hasFailed ? 'Falhou' : 'Abrir')}
                 </button>
             </div>
         `;
     }).join('');
 }
 
-// Exibe o conteúdo detalhado de um plano de estudos na tela
 function exibirPlanoNaTela(plano) {
     if (!containerExibicao || !plano) return;
     
@@ -76,7 +81,7 @@ function exibirPlanoNaTela(plano) {
         containerExibicao.innerHTML = `
             <div class="plano-formatado-container">
                  <div class="card-placeholder">
-                    <p>O cronograma detalhado não foi encontrado neste plano. Pode ter ocorrido um erro durante a geração.</p>
+                    <p>O cronograma detalhado não foi encontrado. Pode ter ocorrido um erro durante a geração. Tente criar um novo plano.</p>
                  </div>
             </div>`;
         containerExibicao.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -84,7 +89,7 @@ function exibirPlanoNaTela(plano) {
     }
 
     const formatarData = (data) => data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00') : new Date();
+    const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00Z') : new Date();
     
     const diasDaSemanaOrdenados = ["Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"];
     
@@ -138,7 +143,6 @@ function exibirPlanoNaTela(plano) {
     containerExibicao.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// Exporta o plano exibido para um arquivo Excel
 function exportarPlanoParaExcel() {
     if (!planoAbertoAtual || !planoAbertoAtual.cronograma_semanal_detalhado) {
         showToast("Nenhum plano detalhado para exportar. Por favor, abra um cronograma primeiro.", "error");
@@ -219,6 +223,7 @@ function adicionarMateria() {
     }
 }
 
+// --- EVENT LISTENERS ---
 formCronograma?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === materiasInput) { e.preventDefault(); adicionarMateria(); } });
 materiasInput?.addEventListener('keyup', (e) => { if (e.key === ',') adicionarMateria(); });
 diasSemanaCheckboxes.forEach(checkbox => { checkbox.addEventListener('change', (e) => { const inputMinutos = e.target.closest('.dia-horario-item').querySelector('input[type="number"]'); if (inputMinutos) { inputMinutos.disabled = !e.target.checked; if (!e.target.checked) inputMinutos.value = ''; } }); });
@@ -291,28 +296,6 @@ formCronograma?.addEventListener('submit', async (e) => {
     }
 });
 
-// --- LÓGICA DE DADOS E INICIALIZAÇÃO ---
-function ouvirHistoricoDePlanos() {
-    if (unsubHistorico) unsubHistorico(); 
-
-    const q = query(collection(db, `users/${currentUser.uid}/plans`), orderBy("criadoEm", "desc"));
-    
-    unsubHistorico = onSnapshot(q, (querySnapshot) => {
-        const planos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderizarHistorico(planos);
-    }, (error) => {
-        console.error("Erro ao ouvir histórico de planos:", error);
-    });
-}
-
-function initCronogramaPage() {
-    currentUser = auth.currentUser;
-    if (currentUser) {
-        ouvirHistoricoDePlanos();
-    }
-}
-
-// --- EVENT LISTENERS GERAIS ---
 document.body.addEventListener('click', async (e) => {
     if (e.target.matches('.btn-abrir-plano') && !e.target.disabled) {
         const planoId = e.target.dataset.id;
@@ -335,6 +318,27 @@ document.body.addEventListener('click', async (e) => {
 btnAbrirForm?.addEventListener('click', () => { containerForm.style.display = 'block'; });
 btnFecharForm?.addEventListener('click', () => { containerForm.style.display = 'none'; });
 
+// --- LÓGICA DE DADOS E INICIALIZAÇÃO ---
+function ouvirHistoricoDePlanos() {
+    if (unsubHistorico) {
+        unsubHistorico();
+    }
+    const q = query(collection(db, `users/${currentUser.uid}/plans`), orderBy("criadoEm", "desc"));
+    unsubHistorico = onSnapshot(q, (querySnapshot) => {
+        const planos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderizarHistorico(planos);
+    }, (error) => {
+        console.error("Erro ao ouvir histórico de planos:", error);
+    });
+}
+
+function initCronogramaPage() {
+    currentUser = auth.currentUser;
+    if (currentUser) {
+        ouvirHistoricoDePlanos();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
         if (user) {
@@ -343,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (unsubHistorico) {
                 unsubHistorico();
             }
+            currentUser = null;
         }
     });
 });

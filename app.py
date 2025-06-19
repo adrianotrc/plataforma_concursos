@@ -42,6 +42,7 @@ client = OpenAI(api_key=openai_api_key)
 # --- Função de Trabalho em Segundo Plano ---
 def processar_plano_em_background(user_id, job_id, dados_usuario):
     print(f"BACKGROUND JOB INICIADO: {job_id} para usuário {user_id}")
+    job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
     try:
         numero_de_semanas = 4
         data_inicio_str = dados_usuario.get('data_inicio')
@@ -56,32 +57,41 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             except ValueError:
                 numero_de_semanas = 4
 
+        # --- PROMPT REFORÇADO E MAIS DETALHADO ---
         prompt = (
-            "Gere um plano de estudos em JSON para um concurseiro. "
-            f"Dados do aluno: {json.dumps(dados_usuario)}\n\n"
-            "REGRAS PRINCIPAIS:\n"
-            f"1. DURAÇÃO: O plano deve ter exatamente {numero_de_semanas} semanas.\n"
-            f"2. TEMPO DE SESSÃO: Cada atividade deve durar {dados_usuario.get('duracao_sessao_minutos')} minutos. A soma das atividades de um dia NÃO PODE exceder a disponibilidade diária.\n"
-            "3. TÉCNICAS: Varie o 'tipo_de_estudo' entre 'Estudo de Teoria (PDF/Livro)', 'Resolução de Exercícios', e 'Revisão Ativa (Flashcards/Mapas)'.\n"
-            "ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA: { \"plano_de_estudos\": { ... } }"
+            "Você é um especialista em criar planos de estudo para concursos. "
+            "Crie um plano detalhado em JSON baseado nos seguintes dados e regras. "
+            f"Dados do Aluno: {json.dumps(dados_usuario)}\n\n"
+            "REGRAS ESTRUTURAIS OBRIGATÓRIAS:\n"
+            "1. A resposta DEVE ser um objeto JSON contendo uma única chave principal: 'plano_de_estudos'.\n"
+            "2. O objeto 'plano_de_estudos' DEVE conter as chaves: 'concurso_foco', 'resumo_estrategico', 'mensagem_inicial', e 'cronograma_semanal_detalhado'.\n"
+            "3. 'cronograma_semanal_detalhado' DEVE ser uma LISTA de objetos, um para cada semana.\n"
+            "4. Cada objeto de semana DEVE ter 'semana_numero' e 'dias_de_estudo' (uma lista).\n"
+            "5. Cada objeto de dia DEVE ter 'dia_semana' e 'atividades' (uma lista).\n"
+            "6. Cada objeto de atividade DEVE ter 'horario_sugerido', 'duracao_minutos', 'materia', 'topico_sugerido', e 'tipo_de_estudo'.\n\n"
+            "REGRAS DE CONTEÚDO:\n"
+            f"- O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
+            f"- A duração de cada atividade ('duracao_minutos') deve ser de {dados_usuario.get('duracao_sessao_minutos')} minutos.\n"
+            "- A soma dos minutos das atividades de um dia NÃO PODE exceder a disponibilidade informada para aquele dia.\n"
+            "- Varie o 'tipo_de_estudo' entre 'Estudo de Teoria', 'Resolução de Exercícios', e 'Revisão Ativa'."
         )
-        system_message = "Você é um assistente especialista que cria planos de estudo JSON detalhados e estratégicos para concurseiros."
+        system_message = "Você é um assistente que gera planos de estudo em formato JSON, seguindo rigorosamente a estrutura e as regras de conteúdo solicitadas."
 
         resultado_ia = call_openai_api(prompt, system_message)
 
-        plano_final = resultado_ia.get('plano_de_estudos', {})
-        # Adiciona o status de concluído
+        # Validação da resposta da IA
+        if 'plano_de_estudos' not in resultado_ia or 'cronograma_semanal_detalhado' not in resultado_ia['plano_de_estudos']:
+            raise ValueError("A resposta da IA não continha a estrutura de cronograma esperada.")
+
+        plano_final = resultado_ia['plano_de_estudos']
         plano_final['status'] = 'completed'
 
-        # **CORREÇÃO CRÍTICA:** Usa update() para mesclar o resultado com os dados existentes
-        job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
         job_ref.update(plano_final)
         print(f"BACKGROUND JOB CONCLUÍDO: {job_id}")
 
     except Exception as e:
         print(f"!!! ERRO NO BACKGROUND JOB {job_id}: {e} !!!")
         traceback.print_exc()
-        job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
         job_ref.update({'status': 'failed', 'error': str(e)})
 
 # --- Rota para Iniciar a Geração do Plano ---
