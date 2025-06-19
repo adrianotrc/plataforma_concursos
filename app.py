@@ -1,4 +1,4 @@
-# app.py - Versão com texto puro no e-mail para melhorar entregabilidade
+# app.py - Versão com correção de CORS e melhoria no log de erros
 
 import os
 import json
@@ -9,11 +9,10 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from openai import OpenAI
 import stripe
-import traceback
+import traceback # Importa o módulo traceback
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth as firebase_auth
 import resend
-from firebase_admin import auth as firebase_auth # Importa o módulo de autenticação
 
 load_dotenv()
 
@@ -26,14 +25,22 @@ except Exception as e:
     db = None
 
 app = Flask(__name__)
-frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
-CORS(app, resources={r"/*": {"origins": frontend_url}}, supports_credentials=True)
+
+# --- CORREÇÃO DE CORS ---
+# Define a lista de origens permitidas de forma explícita
+allowed_origins = [
+    "http://127.0.0.1:5500",         # Para desenvolvimento local
+    "http://localhost:5500",          # Alternativa local
+    "https://iaprovas.com.br",        # Domínio de produção principal
+    "https://www.iaprovas.com.br"     # Domínio de produção com www
+]
+CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=True)
+# --- FIM DA CORREÇÃO DE CORS ---
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 resend.api_key = os.getenv("RESEND_API_KEY")
 
-# Verificação das chaves
 if not openai_api_key:
     print("AVISO: A variável de ambiente OPENAI_API_KEY não foi encontrada.")
 if not stripe.api_key:
@@ -187,7 +194,12 @@ def gerar_plano():
         dados = call_openai_api(prompt, system_message)
         return jsonify(dados)
     except Exception as e:
+        # --- MELHORIA NO LOG DE ERRO ---
+        print(f"!!! ERRO em /gerar-plano-estudos: {e} !!!")
+        traceback.print_exc()
+        # --- FIM DA MELHORIA ---
         return jsonify({"erro_geral": str(e)}), 500
+    
 
 @app.route("/gerar-exercicios", methods=['POST'])
 def gerar_exercicios():
