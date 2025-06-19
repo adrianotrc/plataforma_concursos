@@ -1,12 +1,10 @@
-// main-app.js - Versão com criação de documento de usuário e verificação de trial
+// main-app.js - Versão COMPLETA E CORRIGIDA com dispatch de evento
 
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizados: 0, taxaAcerto: 0, textosCorrigidos: 0, }, savedPlans: [], sessoesExercicios: [], sessoesDiscursivas: [], userData: null };
-
-// main-app.js
 
 function controlarAcessoFuncionalidades(plano) {
     const permissoes = {
@@ -34,15 +32,16 @@ function controlarAcessoFuncionalidades(plano) {
 
 function calcularMetricas() {
     const studyDates = new Set();
+    // Adiciona verificação para toDate, prevenindo erros se o dado não for um Timestamp
     [...state.savedPlans, ...state.sessoesExercicios, ...state.sessoesDiscursivas].forEach(item => {
         const dateSource = item.criadoEm || item.resumo?.criadoEm;
-        if (dateSource) {
+        if (dateSource && typeof dateSource.toDate === 'function') {
             studyDates.add(dateSource.toDate().toISOString().split('T')[0]);
         }
     });
     state.metrics.diasEstudo = studyDates.size;
-    const totalExercicios = state.sessoesExercicios.reduce((acc, sessao) => acc + sessao.resumo.total, 0);
-    const totalAcertos = state.sessoesExercicios.reduce((acc, sessao) => acc + sessao.resumo.acertos, 0);
+    const totalExercicios = state.sessoesExercicios.reduce((acc, sessao) => acc + (sessao.resumo?.total || 0), 0);
+    const totalAcertos = state.sessoesExercicios.reduce((acc, sessao) => acc + (sessao.resumo?.acertos || 0), 0);
     state.metrics.exerciciosRealizados = totalExercicios;
     state.metrics.taxaAcerto = totalExercicios > 0 ? (totalAcertos / totalExercicios) * 100 : 0;
     state.metrics.textosCorrigidos = state.sessoesDiscursivas.length;
@@ -68,6 +67,10 @@ function updateUserInfo(user, userData) {
 
 export async function carregarDadosDoUsuario(userId) {
     try {
+        const userDocRef = doc(db, "users", userId);
+        const userDocSnap = await getDoc(userDocRef);
+        state.userData = userDocSnap.data();
+
         const collectionsToLoad = {
             savedPlans: query(collection(db, `users/${userId}/plans`), orderBy("criadoEm", "desc"), limit(50)),
             sessoesExercicios: query(collection(db, `users/${userId}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50)),
@@ -88,7 +91,7 @@ export async function carregarDadosDoUsuario(userId) {
 function verificarAcessoUsuario() {
     if (!state.userData) return;
     const plano = state.userData.plano;
-    if (plano === 'premium') return;
+    if (plano === 'premium' || plano === 'anual' || plano === 'intermediario' || plano === 'basico') return;
     if (plano === 'trial' && state.userData.trialFim) {
         const dataFimTrial = state.userData.trialFim.toDate();
         if (new Date() > dataFimTrial) {
@@ -103,52 +106,44 @@ function initializeApp() {
         if (user) {
             state.user = user;
 
-            // Tenta buscar o documento principal do usuário
             const userDocRef = doc(db, "users", user.uid);
             let userDocSnap = await getDoc(userDocRef);
 
-            // Se o documento NÃO EXISTE, cria ele com o trial padrão
             if (!userDocSnap.exists()) {
                 console.log("Novo usuário ou documento não encontrado. Criando perfil de trial...");
                 const dataExpiracao = new Date();
                 dataExpiracao.setDate(dataExpiracao.getDate() + 7);
-                
                 const novoUserData = {
                     email: user.email,
-                    nome: user.email.split('@')[0], // Usa o início do email como nome padrão
+                    nome: user.email.split('@')[0],
                     plano: "trial",
                     criadoEm: serverTimestamp(),
                     trialFim: Timestamp.fromDate(dataExpiracao)
                 };
-
                 await setDoc(userDocRef, novoUserData);
-                userDocSnap = await getDoc(userDocRef); // Re-busca o documento recém-criado
+                userDocSnap = await getDoc(userDocRef);
             }
-            
             state.userData = userDocSnap.data();
-
-            controlarAcessoFuncionalidades(state.userData.plano);
             
-            updateUserInfo(user, state.userData);
-            verificarAcessoUsuario();
-            
-            updateUserInfo(user, state.userData);
-            verificarAcessoUsuario();
             await carregarDadosDoUsuario(user.uid);
+            updateUserInfo(user, state.userData);
+            controlarAcessoFuncionalidades(state.userData.plano);
+            verificarAcessoUsuario();
 
             const btnSair = document.getElementById('btn-sair');
             if (btnSair) {
                 btnSair.addEventListener('click', () => {
                     signOut(auth).then(() => {
-                        // Esta parte só executa após o logout ser concluído com sucesso.
-                        console.log('Usuário deslogado. Redirecionando para a página de login...');
                         window.location.href = 'login.html';
                     }).catch((error) => {
-                        // Isso nos ajuda a ver se algum erro acontece no processo de logout.
                         console.error('Erro ao tentar fazer logout:', error);
                     });
                 });
             }
+            
+            // AQUI A MUDANÇA: Avisa que os dados estão prontos.
+            document.dispatchEvent(new Event('userDataReady'));
+
         } else {
             const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html'];
             const paginaAtual = window.location.pathname.split('/').pop();
