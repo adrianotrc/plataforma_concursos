@@ -1,4 +1,4 @@
-// cronograma-page.js - Versão FINAL, completa e corrigida
+// cronograma-page.js - Versão FINAL E CORRIGIDA
 
 import { auth, db } from './firebase-config.js';
 import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -17,7 +17,7 @@ const materiasInput = document.getElementById('materias-input');
 
 // --- ESTADO LOCAL ---
 let currentUser = null;
-let unsubHistorico = null;
+let unsubHistorico = null; // Função para desligar o listener do Firestore
 let planoAbertoAtual = null;
 
 // --- FUNÇÕES DE UI ---
@@ -137,7 +137,6 @@ function exportarPlanoParaExcel() {
     const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00Z') : new Date();
     let dataCorrente = new Date(dataInicioPlano);
     dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay());
-
     const diasDaSemanaOrdenados = ["Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"];
 
     plano.cronograma_semanal_detalhado.forEach(semana => {
@@ -205,7 +204,7 @@ function adicionarMateria() {
     }
 }
 
-// --- EVENT LISTENERS ---
+// --- LÓGICA DE EVENTOS ---
 formCronograma?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === materiasInput) { e.preventDefault(); adicionarMateria(); } });
 materiasInput?.addEventListener('keyup', (e) => { if (e.key === ',') adicionarMateria(); });
 diasSemanaCheckboxes.forEach(checkbox => { checkbox.addEventListener('change', (e) => { const inputMinutos = e.target.closest('.dia-horario-item').querySelector('input[type="number"]'); if (inputMinutos) { inputMinutos.disabled = !e.target.checked; if (!e.target.checked) inputMinutos.value = ''; } }); });
