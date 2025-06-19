@@ -1,13 +1,13 @@
-// perfil-page.js - Versão FINAL E CORRIGIDA, com UI e funcionalidade de exclusão
+// perfil-page.js - Versão COMPLETA E CORRIGIDA
 
 import { auth, db } from './firebase-config.js';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { state } from './main-app.js';
 import { criarSessaoPortal, deletarContaUsuario } from './api.js';
 
 // --- LÓGICA DE FEEDBACK (TOAST) ---
-function showToast(message, type = 'success', duration = 4000) {
+function showToast(message, type = 'success', duration = 3000) {
     const toast = document.createElement('div');
     toast.className = `feedback-toast ${type}`;
     toast.textContent = message;
@@ -19,43 +19,50 @@ function showToast(message, type = 'success', duration = 4000) {
     }, duration);
 }
 
-// --- FUNÇÃO QUE PREENCHE OS DADOS QUANDO ESTIVEREM PRONTOS ---
-function preencherDadosDoPerfil() {
-    if (!state.user || !state.userData) return;
-
-    document.getElementById('perfil-email').value = state.user.email;
-    document.getElementById('perfil-nome').value = state.userData.nome || '';
-    
-    const plano = state.userData.plano || 'Nenhum';
-    document.getElementById('plano-atual-nome').textContent = plano.charAt(0).toUpperCase() + plano.slice(1);
-
-    const btnGerenciar = document.getElementById('btn-gerenciar-assinatura');
-    if (plano === 'trial') {
-        btnGerenciar.innerHTML = '<i class="fas fa-star"></i> Fazer Upgrade de Plano';
+// --- FUNÇÃO ÚNICA DE INICIALIZAÇÃO DA PÁGINA ---
+// Esta função é o coração da página e só roda quando os dados do usuário estão prontos.
+function inicializarPaginaCompleta() {
+    // 1. VERIFICA SE OS DADOS ESSENCIAIS EXISTEM
+    if (!state.user || !state.userData) {
+        console.error("ERRO GRAVE: Tentando inicializar a página de perfil sem dados de usuário.");
+        showToast("Não foi possível carregar seus dados. Tente recarregar a página.", "error");
+        return;
     }
-}
 
-// --- FUNÇÃO QUE CONFIGURA OS BOTÕES E AÇÕES DA PÁGINA ---
-function configurarAcoesDaPagina() {
-    // Ações dos formulários
+    // 2. MAPEIA TODOS OS ELEMENTOS INTERATIVOS
     const formPerfil = document.getElementById('form-perfil-pessoal');
     const formSenha = document.getElementById('form-alterar-senha');
+    const btnGerenciarAssinatura = document.getElementById('btn-gerenciar-assinatura');
+    const toggleModoEscuro = document.getElementById('modo-escuro-toggle');
+
+    // Modais e seus componentes
     const reauthModal = document.getElementById('reauth-modal');
     const reauthForm = document.getElementById('reauth-form');
     const reauthCancelBtn = document.getElementById('reauth-cancel');
     const reauthPasswordInput = document.getElementById('reauth-password');
     
-    // Ações de assinatura
-    const btnGerenciarAssinatura = document.getElementById('btn-gerenciar-assinatura');
-
-    // Ações de exclusão
     const btnIniciarExclusao = document.getElementById('btn-iniciar-exclusao');
     const deleteModal = document.getElementById('delete-confirm-modal');
     const deleteCancelBtn = document.getElementById('delete-cancel-btn');
     const deleteConfirmInput = document.getElementById('delete-confirm-input');
     const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+    
+    // 3. PREENCHE OS DADOS VISUAIS
+    document.getElementById('perfil-email').value = state.user.email;
+    document.getElementById('perfil-nome').value = state.userData.nome || '';
+    document.getElementById('perfil-telefone').value = state.userData.telefone || '';
+    document.getElementById('perfil-endereco').value = state.userData.endereco || '';
+    
+    const plano = state.userData.plano || 'Nenhum';
+    document.getElementById('plano-atual-nome').textContent = plano.charAt(0).toUpperCase() + plano.slice(1);
 
-    // Listener do formulário de perfil
+    if (plano === 'trial') {
+        btnGerenciarAssinatura.innerHTML = '<i class="fas fa-star"></i> Fazer Upgrade de Plano';
+    }
+
+    // 4. CONFIGURA TODOS OS EVENTOS (LISTENERS)
+
+    // Formulário de Perfil
     formPerfil?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = formPerfil.querySelector('button[type="submit"]');
@@ -66,8 +73,9 @@ function configurarAcoesDaPagina() {
             await setDoc(userDocRef, {
                 nome: document.getElementById('perfil-nome').value,
                 telefone: document.getElementById('perfil-telefone').value,
+                endereco: document.getElementById('perfil-endereco').value,
             }, { merge: true });
-            document.getElementById('user-name').textContent = document.getElementById('perfil-nome').value;
+            document.getElementById('user-name').textContent = document.getElementById('perfil-nome').value || state.user.email;
             showToast('Perfil atualizado com sucesso!');
         } catch (error) {
             showToast('Falha ao atualizar o perfil.', 'error');
@@ -77,7 +85,7 @@ function configurarAcoesDaPagina() {
         }
     });
 
-    // Listener do formulário de senha
+    // Formulário de Senha
     formSenha?.addEventListener('submit', (e) => {
         e.preventDefault();
         if (document.getElementById('nova-senha').value !== document.getElementById('confirma-nova-senha').value) {
@@ -87,6 +95,7 @@ function configurarAcoesDaPagina() {
         reauthPasswordInput.focus();
     });
 
+    // Modal de Reautenticação de Senha
     reauthForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const senhaAtual = reauthPasswordInput.value;
@@ -111,26 +120,22 @@ function configurarAcoesDaPagina() {
             btnReauth.textContent = 'Confirmar';
         }
     });
-    
     reauthCancelBtn?.addEventListener('click', () => { reauthModal.style.display = 'none'; });
 
-    // Listener do botão de gerenciar assinatura
+    // Botão de Gerenciar Assinatura
     btnGerenciarAssinatura?.addEventListener('click', async () => {
-        if (!state.userData) return;
         const { plano, stripeCustomerId } = state.userData;
-
         if (plano === 'trial') {
             window.location.href = 'index.html#planos';
             return;
         }
-
         if (stripeCustomerId) {
             btnGerenciarAssinatura.disabled = true;
             btnGerenciarAssinatura.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abrindo portal...';
             try {
                 const response = await criarSessaoPortal(state.user.uid);
                 if (response.url) window.location.href = response.url;
-                else throw new Error(response.error?.message || 'URL do portal não recebida.');
+                else throw new Error('URL do portal não recebida.');
             } catch (error) {
                 showToast(`Erro ao abrir o portal: ${error.message}`, 'error');
                 btnGerenciarAssinatura.disabled = false;
@@ -141,7 +146,7 @@ function configurarAcoesDaPagina() {
         }
     });
 
-    // Listeners da funcionalidade de exclusão
+    // Botão de Excluir Conta
     btnIniciarExclusao?.addEventListener('click', () => {
         deleteModal.style.display = 'flex';
     });
@@ -160,28 +165,39 @@ function configurarAcoesDaPagina() {
         deleteConfirmBtn.disabled = true;
         deleteConfirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
         try {
-            const response = await deletarContaUsuario(state.user.uid);
-            if (response.success) {
-                showToast('Conta excluída. Você será desconectado.', 'success', 5000);
-                setTimeout(() => {
-                    signOut(auth).finally(() => { window.location.href = 'index.html'; });
-                }, 4000);
-            } else {
-                throw new Error(response.error?.message || 'Erro desconhecido');
-            }
+            await deletarContaUsuario(state.user.uid);
+            showToast('Conta excluída com sucesso. Você será desconectado.', 'success', 5000);
+            setTimeout(() => {
+                signOut(auth).finally(() => { window.location.href = 'index.html'; });
+            }, 4000);
         } catch (error) {
             showToast(`Falha ao excluir a conta: ${error.message}`, 'error');
             deleteConfirmBtn.disabled = false;
             deleteConfirmBtn.textContent = 'Eu entendo, excluir minha conta';
         }
     });
+
+    // Modo Escuro
+    const aplicarPreferenciaModoEscuro = () => {
+        const modoEscuroSalvo = localStorage.getItem('modoEscuro');
+        if (modoEscuroSalvo === 'true') {
+            if (toggleModoEscuro) toggleModoEscuro.checked = true;
+            document.body.classList.add('dark-mode');
+        }
+    };
+    aplicarPreferenciaModoEscuro();
+
+    toggleModoEscuro?.addEventListener('change', async (e) => {
+        const ativado = e.target.checked;
+        document.body.classList.toggle('dark-mode', ativado);
+        localStorage.setItem('modoEscuro', ativado);
+        if (state.user) {
+            const userDocRef = doc(db, 'users', state.user.uid);
+            await setDoc(userDocRef, { preferencias: { modoEscuro: ativado } }, { merge: true });
+        }
+    });
 }
 
-// --- INICIALIZAÇÃO ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Ouve o evento do main-app.js para preencher os dados
-    document.addEventListener('userDataReady', preencherDadosDoPerfil);
-    
-    // Configura todas as ações e botões da página imediatamente
-    configurarAcoesDaPagina();
-});
+// --- PONTO DE ENTRADA ---
+// Ouve o evento do main-app.js e só então executa a inicialização completa da página.
+document.addEventListener('userDataReady', inicializarPagina);
