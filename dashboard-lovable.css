@@ -1525,3 +1525,70 @@ body.dark-mode .danger-action p {
 .btn-danger:hover:not(:disabled) {
     background: #dc2626;
 }
+
+/* ============================================= */
+/* === MELHORIAS DE UI PARA PÁGINA DE PERFIL === */
+/* ============================================= */
+
+/* Padronização de todos os campos de formulário no perfil */
+.profile-grid-layout .form-field-group input[type="text"],
+.profile-grid-layout .form-field-group input[type="email"],
+.profile-grid-layout .form-field-group input[type="tel"],
+.profile-grid-layout .form-field-group input[type="password"],
+.profile-grid-layout .form-field-group textarea {
+    background-color: #f9fafb;
+    border: 1px solid #d1d5db;
+    padding: 12px 16px; /* Aumenta a altura */
+    font-size: 16px;   /* Padroniza o tamanho da fonte */
+    color: #1f2937;
+}
+
+body.dark-mode .profile-grid-layout .form-field-group input,
+body.dark-mode .profile-grid-layout .form-field-group textarea {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+/* Estilos para a Seção de Exclusão de Conta */
+.delete-section {
+    grid-column: 1 / -1; /* Ocupa a largura total do grid */
+    border-top: 1px solid #e5e7eb;
+    margin-top: 16px;
+    padding-top: 32px;
+}
+
+body.dark-mode .delete-section {
+    border-top-color: #374151;
+}
+
+.delete-section h3 {
+    font-size: 1.25rem;
+    color: #b91c1c; /* Tom de vermelho escuro para o título */
+    margin-bottom: 8px;
+}
+
+body.dark-mode .delete-section h3 {
+    color: #fca5a5;
+}
+
+.delete-section p {
+    color: #4b5563;
+    margin-bottom: 16px;
+}
+
+body.dark-mode .delete-section p {
+    color: #9ca3af;
+}
+
+.btn-danger {
+    background-color: #dc2626;
+    color: white;
+}
+.btn-danger:hover:not(:disabled) {
+    background-color: #b91c1c;
+}
+.btn-danger:disabled {
+    background-color: #f87171;
+    cursor: not-allowed;
+}
