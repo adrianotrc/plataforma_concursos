@@ -1415,21 +1415,14 @@ body.dark-mode .nav-item.disabled::after {
     color: #4b5563;
 }
 
-/* Estilos para o Modal de Login/Cadastro */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
+/* Estilos para o Modal de Login/Cadastro (contratacao.html) */
+#auth-decision-modal {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
 }
 
-.modal-overlay.show {
+#auth-decision-modal.show {
     opacity: 1;
     pointer-events: auto;
 }

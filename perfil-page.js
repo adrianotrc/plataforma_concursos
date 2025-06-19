@@ -199,3 +199,5 @@ function inicializarPaginaCompleta() {
 // --- PONTO DE ENTRADA ---
 // Ouve o evento do main-app.js e só então executa a inicialização completa da página.
 document.addEventListener('userDataReady', inicializarPaginaCompleta);
+
+//Teste
