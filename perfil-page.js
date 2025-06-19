@@ -51,7 +51,6 @@ function inicializarPaginaCompleta() {
     document.getElementById('perfil-email').value = state.user.email;
     document.getElementById('perfil-nome').value = state.userData.nome || '';
     document.getElementById('perfil-telefone').value = state.userData.telefone || '';
-    document.getElementById('perfil-endereco').value = state.userData.endereco || '';
     
     const plano = state.userData.plano || 'Nenhum';
     document.getElementById('plano-atual-nome').textContent = plano.charAt(0).toUpperCase() + plano.slice(1);
@@ -73,7 +72,6 @@ function inicializarPaginaCompleta() {
             await setDoc(userDocRef, {
                 nome: document.getElementById('perfil-nome').value,
                 telefone: document.getElementById('perfil-telefone').value,
-                endereco: document.getElementById('perfil-endereco').value,
             }, { merge: true });
             document.getElementById('user-name').textContent = document.getElementById('perfil-nome').value || state.user.email;
             showToast('Perfil atualizado com sucesso!');
@@ -200,4 +198,4 @@ function inicializarPaginaCompleta() {
 
 // --- PONTO DE ENTRADA ---
 // Ouve o evento do main-app.js e só então executa a inicialização completa da página.
-document.addEventListener('userDataReady', inicializarPagina);
+document.addEventListener('userDataReady', inicializarPaginaCompleta);
