@@ -1,7 +1,7 @@
-// cronograma-page.js - Versão com formatação do Excel corrigida
+// cronograma-page.js - Versão com correções para 'unsubHistorico' e 'userId'
 
 import { auth, db } from './firebase-config.js';
-import { collection, getDocs, addDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { gerarPlanoDeEstudos } from './api.js';
 
 // --- ELEMENTOS DO DOM ---
@@ -15,10 +15,11 @@ const diasSemanaCheckboxes = document.querySelectorAll('.dias-semana-grid input[
 const materiasContainer = document.getElementById('materias-container');
 const materiasInput = document.getElementById('materias-input');
 
-// --- ESTADO LOCAL ---
-let savedPlans = [];
+// --- ESTADO LOCAL (CORREÇÃO 1: 'unsubHistorico' declarado aqui) ---
 let currentUser = null;
-let planoAbertoAtual = null; // Armazena o plano que está sendo exibido
+let unsubHistorico = null; // Para desligar o listener do Firestore
+let planoAbertoAtual = null; 
+
 
 // --- FUNÇÕES DE RENDERIZAÇÃO (UI) ---
 
@@ -46,14 +47,14 @@ function renderizarHistorico(planos) {
     }).join('');
 }
 
+
 function exibirPlanoNaTela(plano) {
     if (!containerExibicao) return;
-    planoAbertoAtual = plano; // Salva o plano atual para ser usado na exportação
+    planoAbertoAtual = plano; 
 
     const formatarData = (data) => data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00') : new Date();
     
-    // Mapeia os dias da semana para garantir a ordem correta na tabela
     const diasDaSemanaOrdenados = ["Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"];
     
     let cronogramaHtml = `
@@ -72,7 +73,7 @@ function exibirPlanoNaTela(plano) {
     const semanas = plano.cronograma_semanal_detalhado;
     if (Array.isArray(semanas)) {
         let dataCorrente = new Date(dataInicioPlano);
-        dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay()); // Ajusta para o domingo da semana inicial
+        dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay());
 
         semanas.forEach(semana => {
             const diasDaSemanaApi = (semana.dias_de_estudo || []).reduce((acc, dia) => {
@@ -81,50 +82,24 @@ function exibirPlanoNaTela(plano) {
                 return acc;
             }, {});
 
-            cronogramaHtml += `
-                <div class="semana-bloco">
-                    <h3>Semana ${semana.semana_numero || ''}</h3>
-                    <div class="cronograma-tabela-container">
-                        <table class="cronograma-tabela">
-                            <thead>
-                                <tr>
-            `;
+            cronogramaHtml += `<div class="semana-bloco"><h3>Semana ${semana.semana_numero || ''}</h3><div class="cronograma-tabela-container"><table class="cronograma-tabela"><thead><tr>`;
             diasDaSemanaOrdenados.forEach((dia, index) => {
                 const dataDoDia = new Date(dataCorrente);
                 dataDoDia.setDate(dataCorrente.getDate() + index);
-                const diaAbreviado = dia.substring(0, 3);
-                cronogramaHtml += `<th><div class="dia-header">${diaAbreviado}<span class="data">${formatarData(dataDoDia)}</span></div></th>`;
+                cronogramaHtml += `<th><div class="dia-header">${dia.substring(0, 3)}<span class="data">${formatarData(dataDoDia)}</span></div></th>`;
             });
-            cronogramaHtml += `
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-            `;
+            cronogramaHtml += `</tr></thead><tbody><tr>`;
             diasDaSemanaOrdenados.forEach(dia => {
                 const atividades = diasDaSemanaApi[dia] || [];
                 cronogramaHtml += '<td><ul>';
                 if (atividades.length > 0) {
                     atividades.forEach(atividade => {
-                        cronogramaHtml += `
-                            <li>
-                                <strong>${atividade.materia || ''}</strong>
-                                <p class="topico">${atividade.topico_sugerido || ''}</p>
-                                <p class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</p>
-                            </li>
-                        `;
+                        cronogramaHtml += `<li><strong>${atividade.materia || ''}</strong><p class="topico">${atividade.topico_sugerido || ''}</p><p class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</p></li>`;
                     });
                 }
                 cronogramaHtml += '</ul></td>';
             });
-
-            cronogramaHtml += `
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
+            cronogramaHtml += `</tr></tbody></table></div></div>`;
             dataCorrente.setDate(dataCorrente.getDate() + 7);
         });
     }
@@ -203,7 +178,7 @@ function exportarPlanoParaExcel(plano) {
 }
 
 
-// --- LÓGICA DO FORMULÁRIO ---
+// --- LÓGICA DO FORMULÁRIO (ASSÍNCRONA) ---
 
 function adicionarMateria() {
     const textoMateria = materiasInput.value.trim().replace(/,/g, '');
@@ -278,6 +253,7 @@ formCronograma?.addEventListener('submit', async (e) => {
     }
     
     const dadosParaApi = {
+        userId: currentUser.uid, // CORREÇÃO 2: Adiciona o userId aqui
         concurso_objetivo: document.getElementById('concurso-objetivo').value,
         fase_concurso: document.getElementById('fase-concurso').value,
         materias: materias,
@@ -290,15 +266,13 @@ formCronograma?.addEventListener('submit', async (e) => {
     };
 
     btnGerar.disabled = true;
-    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando, isso pode levar um momento...';
-    containerForm.style.display = 'none'; // Esconde o formulário
+    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando solicitação...';
+    containerForm.style.display = 'none';
 
     try {
-        // Envia a solicitação e o backend responde imediatamente
         const respostaInicial = await gerarPlanoDeEstudos(dadosParaApi);
         if (respostaInicial.status === 'processing' && respostaInicial.jobId) {
             alert("Sua solicitação foi recebida! Estamos gerando seu plano. Ele aparecerá no histórico em alguns instantes.");
-            // O listener do Firestore (onSnapshot) já cuidará de atualizar a lista automaticamente.
         } else {
             throw new Error('Falha ao iniciar a geração do plano.');
         }
@@ -309,7 +283,6 @@ formCronograma?.addEventListener('submit', async (e) => {
     } finally {
         btnGerar.disabled = false;
         btnGerar.textContent = 'Gerar Cronograma';
-        // Limpa o formulário
         formCronograma.reset();
         materiasContainer.querySelectorAll('.materia-tag').forEach(tag => tag.remove());
         diasSemanaCheckboxes.forEach(cb => {
@@ -321,7 +294,7 @@ formCronograma?.addEventListener('submit', async (e) => {
 
 // --- LÓGICA DE DADOS (COM LISTENER EM TEMPO REAL) ---
 function ouvirHistoricoDePlanos() {
-    if (unsubHistorico) unsubHistorico(); // Cancela o listener anterior se existir
+    if (unsubHistorico) unsubHistorico(); 
 
     const q = query(collection(db, `users/${currentUser.uid}/plans`), orderBy("criadoEm", "desc"));
     
@@ -335,25 +308,10 @@ function ouvirHistoricoDePlanos() {
 
 
 // --- INICIALIZAÇÃO E EVENTOS ---
-async function initCronogramaPage() {
+function initCronogramaPage() {
     currentUser = auth.currentUser;
     if (currentUser) {
         ouvirHistoricoDePlanos();
-    }
-}
-
-
-// --- INICIALIZAÇÃO E EVENTOS GERAIS ---
-async function carregarPlanosDoFirestore() {
-    try {
-        const q = query(collection(db, `users/${currentUser.uid}/plans`), orderBy("criadoEm", "desc"));
-        const querySnapshot = await getDocs(q);
-        savedPlans = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-    } catch (error) {
-        console.error("Erro ao carregar cronogramas do Firestore:", error);
     }
 }
 
