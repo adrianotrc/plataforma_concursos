@@ -95,3 +95,11 @@ export async function criarSessaoCheckout(plano, userId) {
         body: JSON.stringify({ plan: plano, userId: userId }),
     });
 }
+
+export async function criarSessaoPortal(userId) {
+    return fetchApi('/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+    });
+}

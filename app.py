@@ -386,14 +386,17 @@ def stripe_webhook():
         print("Sessão de checkout completada:", session['id'])
         
         user_id = session.get('client_reference_id')
+        stripe_customer_id = session.get('customer') # Pega o ID do cliente Stripe
         
-        if user_id:
-            print(f"Atualizando plano para 'premium' para o usuário: {user_id}")
+        if user_id and stripe_customer_id:
+            print(f"Atualizando plano para o usuário: {user_id} com Stripe Customer ID: {stripe_customer_id}")
             try:
                 if db is not None:
                     user_ref = db.collection('users').document(user_id)
+                    # ATUALIZAÇÃO: Salva tanto o plano quanto o ID do cliente
                     user_ref.update({
-                        'plano': 'premium'
+                        'plano': 'premium', # ou o plano específico
+                        'stripeCustomerId': stripe_customer_id
                     })
                     print("Usuário atualizado com sucesso no Firestore!")
                 else:
@@ -401,10 +404,40 @@ def stripe_webhook():
             except Exception as e:
                 print(f"!!! Erro ao atualizar usuário no Firestore: {e} !!!")
         else:
-            print("!!! Alerta: Webhook recebido sem client_reference_id (userId) !!!")
+            print("!!! Alerta: Webhook recebido sem client_reference_id ou customer_id !!!")
 
     return 'Success', 200
 
+@app.route('/create-portal-session', methods=['POST'])
+def create_portal_session():
+    data = request.get_json()
+    user_id = data.get('userId')
+
+    if not user_id:
+        return jsonify(error={'message': 'ID do usuário não fornecido.'}), 400
+
+    try:
+        # Busca o usuário no Firestore para pegar o stripeCustomerId
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+            return jsonify(error={'message': 'Usuário não encontrado.'}), 404
+
+        stripe_customer_id = user_doc.to_dict().get('stripeCustomerId')
+        if not stripe_customer_id:
+            return jsonify(error={'message': 'ID de cliente Stripe não encontrado para este usuário.'}), 400
+        
+        YOUR_DOMAIN = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+
+        portal_session = stripe.billing_portal.Session.create(
+            customer=stripe_customer_id,
+            return_url=YOUR_DOMAIN + '/meu-perfil.html',
+        )
+        return jsonify({'url': portal_session.url})
+
+    except Exception as e:
+        print(f"Erro ao criar sessão do portal: {e}")
+        return jsonify(error={'message': 'Falha ao criar sessão do portal.'}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=int(os.environ.get("PORT", 5000)))

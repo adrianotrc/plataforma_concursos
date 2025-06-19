@@ -4,6 +4,7 @@ import { auth, db } from './firebase-config.js';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { state } from './main-app.js';
+import { criarSessaoPortal } from './api.js'; // Importa a nova função
 
 // --- ELEMENTOS DO DOM ---
 const formPerfil = document.getElementById('form-perfil-pessoal');
@@ -37,7 +38,8 @@ function showToast(message, type = 'success', duration = 3000) {
     }, duration);
 }
 
-// --- LÓGICA DE CARREGAMENTO DE DADOS ---
+// --- LÓGICA DE CARREGAMENTO E EVENTOS ---
+
 async function carregarDadosPerfil() {
     if (!state.user || !state.userData) return;
     
@@ -45,20 +47,43 @@ async function carregarDadosPerfil() {
     
     const dados = state.userData;
     inputNome.value = dados.nome || '';
-    inputTelefone.value = dados.telefone || '';
-    inputEndereco.value = dados.endereco || '';
+    // ... outros campos ...
 
-    // Lógica da Assinatura
-    if (spanPlanoAtual && linkGerenciarAssinatura) {
+    if (spanPlanoAtual) {
         const plano = dados.plano || 'Nenhum';
         spanPlanoAtual.textContent = plano.charAt(0).toUpperCase() + plano.slice(1);
-
-        // ATENÇÃO: Substitua pela URL real do seu portal de cliente Stripe
-        const stripeCustomerPortalUrl = 'https://billing.stripe.com/p/login/SEU_LOGIN_ID'; 
-        linkGerenciarAssinatura.href = stripeCustomerPortalUrl;
-        linkGerenciarAssinatura.target = '_blank'; // Abrir em nova aba
+        
+        // Esconde o botão se o usuário não tiver um plano com ID de cliente
+        if (!dados.stripeCustomerId) {
+            btnGerenciarAssinatura.style.display = 'none';
+        }
     }
 }
+
+// **NOVA LÓGICA PARA O BOTÃO**
+btnGerenciarAssinatura?.addEventListener('click', async () => {
+    if (!state.user?.uid) {
+        showToast('Usuário não encontrado. Por favor, faça login novamente.', 'error');
+        return;
+    }
+
+    btnGerenciarAssinatura.disabled = true;
+    btnGerenciarAssinatura.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abrindo portal...';
+
+    try {
+        const response = await criarSessaoPortal(state.user.uid);
+        if (response.url) {
+            // Redireciona o usuário para o portal seguro da Stripe
+            window.location.href = response.url;
+        } else {
+            throw new Error(response.error?.message || 'URL do portal não recebida.');
+        }
+    } catch (error) {
+        showToast(`Erro ao abrir o portal: ${error.message}`, 'error');
+        btnGerenciarAssinatura.disabled = false;
+        btnGerenciarAssinatura.innerHTML = '<i class="fas fa-cog"></i> Gerenciar Assinatura';
+    }
+});
 
 // --- LÓGICA DOS FORMULÁRIOS ---
 
