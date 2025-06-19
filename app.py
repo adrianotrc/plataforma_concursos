@@ -13,6 +13,7 @@ import traceback
 import firebase_admin
 from firebase_admin import credentials, firestore
 import resend
+from firebase_admin import auth as firebase_auth # Importa o módulo de autenticação
 
 load_dotenv()
 
@@ -439,9 +440,6 @@ def create_portal_session():
         print(f"Erro ao criar sessão do portal: {e}")
         return jsonify(error={'message': 'Falha ao criar sessão do portal.'}), 500
 
-# Adicione no final de app.py
-
-from firebase_admin import auth as firebase_auth # Importa o módulo de autenticação
 
 @app.route('/delete-user-account', methods=['POST'])
 def delete_user_account():

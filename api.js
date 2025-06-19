@@ -104,8 +104,6 @@ export async function criarSessaoPortal(userId) {
     });
 }
 
-// Adicione no final de api.js
-
 export async function deletarContaUsuario(userId) {
     return fetchApi('/delete-user-account', {
         method: 'POST',
