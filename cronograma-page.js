@@ -46,11 +46,17 @@ function renderizarHistorico(planos) {
     containerHistorico.innerHTML = planosOrdenados.map(plano => {
         const dataFormatada = plano.criadoEm?.toDate()?.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) || 'Processando...';
         const isProcessing = plano.status === 'processing';
+        
+        let subtexto = `Gerado em: ${dataFormatada}`;
+        if (plano.data_inicio && plano.data_termino) {
+             subtexto += ` | Período: ${plano.data_inicio} a ${plano.data_termino}`;
+        }
+
         return `
             <div class="plano-item" data-id="${plano.jobId || plano.id}">
                 <div>
                     <h3>${plano.concurso_foco || 'Plano de Estudos'} ${isProcessing ? '<i class="fas fa-spinner fa-spin"></i>' : ''}</h3>
-                    <p>Gerado em: ${dataFormatada}</p>
+                    <p>${subtexto}</p>
                 </div>
                 <button class="btn btn-primary btn-abrir-plano" data-id="${plano.jobId || plano.id}" ${isProcessing ? 'disabled' : ''}>
                     ${isProcessing ? 'Gerando...' : 'Abrir'}
@@ -64,7 +70,18 @@ function renderizarHistorico(planos) {
 function exibirPlanoNaTela(plano) {
     if (!containerExibicao || !plano) return;
     
-    planoAbertoAtual = plano; // Define o plano atual para ser usado na exportação
+    planoAbertoAtual = plano;
+
+    if (!plano.cronograma_semanal_detalhado) {
+        containerExibicao.innerHTML = `
+            <div class="plano-formatado-container">
+                 <div class="card-placeholder">
+                    <p>O cronograma detalhado não foi encontrado neste plano. Pode ter ocorrido um erro durante a geração.</p>
+                 </div>
+            </div>`;
+        containerExibicao.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+    }
 
     const formatarData = (data) => data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00') : new Date();
@@ -85,40 +102,36 @@ function exibirPlanoNaTela(plano) {
     `;
 
     const semanas = plano.cronograma_semanal_detalhado;
-    if (Array.isArray(semanas)) {
-        let dataCorrente = new Date(dataInicioPlano);
-        dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay());
+    let dataCorrente = new Date(dataInicioPlano);
+    dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay());
 
-        semanas.forEach(semana => {
-            const diasDaSemanaApi = (semana.dias_de_estudo || []).reduce((acc, dia) => {
-                const diaSemanaCorrigido = dia.dia_semana.endsWith(" Feira") ? dia.dia_semana.split(" ")[0] : dia.dia_semana;
-                acc[diaSemanaCorrigido] = dia.atividades || [];
-                return acc;
-            }, {});
+    semanas.forEach(semana => {
+        const diasDaSemanaApi = (semana.dias_de_estudo || []).reduce((acc, dia) => {
+            const diaSemanaCorrigido = dia.dia_semana.endsWith(" Feira") ? dia.dia_semana.split(" ")[0] : dia.dia_semana;
+            acc[diaSemanaCorrigido] = dia.atividades || [];
+            return acc;
+        }, {});
 
-            cronogramaHtml += `<div class="semana-bloco"><h3>Semana ${semana.semana_numero || ''}</h3><div class="cronograma-tabela-container"><table class="cronograma-tabela"><thead><tr>`;
-            diasDaSemanaOrdenados.forEach((dia, index) => {
-                const dataDoDia = new Date(dataCorrente);
-                dataDoDia.setDate(dataCorrente.getDate() + index);
-                cronogramaHtml += `<th><div class="dia-header">${dia.substring(0, 3)}<span class="data">${formatarData(dataDoDia)}</span></div></th>`;
-            });
-            cronogramaHtml += `</tr></thead><tbody><tr>`;
-            diasDaSemanaOrdenados.forEach(dia => {
-                const atividades = diasDaSemanaApi[dia] || [];
-                cronogramaHtml += '<td><ul>';
-                if (atividades.length > 0) {
-                    atividades.forEach(atividade => {
-                        cronogramaHtml += `<li><strong>${atividade.materia || ''}</strong><p class="topico">${atividade.topico_sugerido || ''}</p><p class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</p></li>`;
-                    });
-                }
-                cronogramaHtml += '</ul></td>';
-            });
-            cronogramaHtml += `</tr></tbody></table></div></div>`;
-            dataCorrente.setDate(dataCorrente.getDate() + 7);
+        cronogramaHtml += `<div class="semana-bloco"><h3>Semana ${semana.semana_numero || ''}</h3><div class="cronograma-tabela-container"><table class="cronograma-tabela"><thead><tr>`;
+        diasDaSemanaOrdenados.forEach((dia, index) => {
+            const dataDoDia = new Date(dataCorrente);
+            dataDoDia.setDate(dataCorrente.getDate() + index);
+            cronogramaHtml += `<th><div class="dia-header">${dia.substring(0, 3)}<span class="data">${formatarData(dataDoDia)}</span></div></th>`;
         });
-    } else {
-         cronogramaHtml += `<div class="card-placeholder"><p>O cronograma detalhado não foi encontrado neste plano.</p></div>`;
-    }
+        cronogramaHtml += `</tr></thead><tbody><tr>`;
+        diasDaSemanaOrdenados.forEach(dia => {
+            const atividades = diasDaSemanaApi[dia] || [];
+            cronogramaHtml += '<td><ul>';
+            if (atividades.length > 0) {
+                atividades.forEach(atividade => {
+                    cronogramaHtml += `<li><strong>${atividade.materia || ''}</strong><p class="topico">${atividade.topico_sugerido || ''}</p><p class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</p></li>`;
+                });
+            }
+            cronogramaHtml += '</ul></td>';
+        });
+        cronogramaHtml += `</tr></tbody></table></div></div>`;
+        dataCorrente.setDate(dataCorrente.getDate() + 7);
+    });
 
     cronogramaHtml += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial.</small></div>`;
     containerExibicao.innerHTML = cronogramaHtml;
@@ -212,13 +225,17 @@ diasSemanaCheckboxes.forEach(checkbox => { checkbox.addEventListener('change', (
 
 formCronograma?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!currentUser) {
+        showToast("Você precisa estar logado para gerar um cronograma.", "error");
+        return;
+    }
     if (materiasInput.value.trim()) adicionarMateria();
     
     const btnGerar = formCronograma.querySelector('button[type="submit"]');
 
     const materias = [...document.querySelectorAll('.materia-tag')].map(tag => tag.textContent.replace('×', '').trim());
     if (materias.length === 0) {
-        alert("Por favor, adicione pelo menos uma matéria."); return;
+        showToast("Por favor, adicione pelo menos uma matéria.", "error"); return;
     }
     const disponibilidade = {};
     document.querySelectorAll('.dias-semana-grid .dia-horario-item').forEach(item => {
@@ -232,7 +249,7 @@ formCronograma?.addEventListener('submit', async (e) => {
         }
     });
     if (Object.keys(disponibilidade).length === 0) {
-        alert("Por favor, selecione pelo menos um dia da semana e informe os minutos de estudo."); return;
+        showToast("Por favor, selecione pelo menos um dia da semana e informe os minutos de estudo.", "error"); return;
     }
     
     const dadosParaApi = {
@@ -274,7 +291,7 @@ formCronograma?.addEventListener('submit', async (e) => {
     }
 });
 
-// --- LÓGICA DE DADOS (COM LISTENER EM TEMPO REAL) ---
+// --- LÓGICA DE DADOS E INICIALIZAÇÃO ---
 function ouvirHistoricoDePlanos() {
     if (unsubHistorico) unsubHistorico(); 
 
@@ -288,7 +305,6 @@ function ouvirHistoricoDePlanos() {
     });
 }
 
-// --- INICIALIZAÇÃO E EVENTOS ---
 function initCronogramaPage() {
     currentUser = auth.currentUser;
     if (currentUser) {
@@ -296,6 +312,7 @@ function initCronogramaPage() {
     }
 }
 
+// --- EVENT LISTENERS GERAIS ---
 document.body.addEventListener('click', async (e) => {
     if (e.target.matches('.btn-abrir-plano') && !e.target.disabled) {
         const planoId = e.target.dataset.id;

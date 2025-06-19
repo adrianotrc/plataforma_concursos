@@ -1,4 +1,4 @@
-# app.py - Versão com correção de CORS e melhoria no log de erros
+# app.py - Versão com correção definitiva para a geração de cronogramas
 
 import os
 import json
@@ -9,54 +9,41 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from openai import OpenAI
 import stripe
-import traceback # Importa o módulo traceback
+import traceback
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
-import resend
-import threading # Importa threading para tarefas em segundo plano
+import threading
 
 load_dotenv()
 
+# --- Configuração do Firebase ---
 try:
-    cred = credentials.Certificate("serviceAccountKey.json")
-    firebase_admin.initialize_app(cred)
+    if not firebase_admin._apps:
+        cred = credentials.Certificate("serviceAccountKey.json")
+        firebase_admin.initialize_app(cred)
     db = firestore.client()
 except Exception as e:
-    print(f"ERRO: Falha ao inicializar o Firebase Admin SDK. Verifique o arquivo 'serviceAccountKey.json'. Erro: {e}")
+    print(f"ERRO: Falha ao inicializar o Firebase Admin SDK: {e}")
     db = None
 
 app = Flask(__name__)
 
-# --- CORREÇÃO DE CORS ---
-# Define a lista de origens permitidas de forma explícita
+# --- Configuração de CORS ---
 allowed_origins = [
-    "http://127.0.0.1:5500",         # Para desenvolvimento local
-    "http://localhost:5500",          # Alternativa local
-    "https://iaprovas.com.br",        # Domínio de produção principal
-    "https://www.iaprovas.com.br"     # Domínio de produção com www
+    "http://127.0.0.1:5500", "http://localhost:5500",
+    "https://iaprovas.com.br", "https://www.iaprovas.com.br"
 ]
 CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=True)
-# --- FIM DA CORREÇÃO DE CORS ---
 
+# --- Configuração das APIs ---
 openai_api_key = os.getenv("OPENAI_API_KEY")
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-resend.api_key = os.getenv("RESEND_API_KEY")
-
-if not openai_api_key:
-    print("AVISO: A variável de ambiente OPENAI_API_KEY não foi encontrada.")
-if not stripe.api_key:
-    print("AVISO: A variável de ambiente STRIPE_SECRET_KEY não foi encontrada.")
-if not resend.api_key:
-    print("AVISO: A variável de ambiente RESEND_API_KEY não foi encontrada.")
-
 client = OpenAI(api_key=openai_api_key)
 
-# --- NOVA FUNÇÃO PARA TRABALHO EM SEGUNDO PLANO ---
+# --- Função de Trabalho em Segundo Plano ---
 def processar_plano_em_background(user_id, job_id, dados_usuario):
     print(f"BACKGROUND JOB INICIADO: {job_id} para usuário {user_id}")
     try:
         numero_de_semanas = 4
-        # ... (cálculo do número de semanas permanece o mesmo)
         data_inicio_str = dados_usuario.get('data_inicio')
         data_termino_str = dados_usuario.get('data_termino')
         if data_inicio_str and data_termino_str:
@@ -79,25 +66,53 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             "ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA: { \"plano_de_estudos\": { ... } }"
         )
         system_message = "Você é um assistente especialista que cria planos de estudo JSON detalhados e estratégicos para concurseiros."
-        
+
         resultado_ia = call_openai_api(prompt, system_message)
-        
-        plano_final = {
-            **resultado_ia.get('plano_de_estudos', {}),
-            'criadoEm': firestore.SERVER_TIMESTAMP,
-            'jobId': job_id,
-        }
-        
-        # Salva o resultado final no documento principal de planos
-        db.collection('users').document(user_id).collection('plans').document(job_id).set(plano_final)
+
+        plano_final = resultado_ia.get('plano_de_estudos', {})
+        # Adiciona o status de concluído
+        plano_final['status'] = 'completed'
+
+        # **CORREÇÃO CRÍTICA:** Usa update() para mesclar o resultado com os dados existentes
+        job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
+        job_ref.update(plano_final)
         print(f"BACKGROUND JOB CONCLUÍDO: {job_id}")
 
     except Exception as e:
         print(f"!!! ERRO NO BACKGROUND JOB {job_id}: {e} !!!")
         traceback.print_exc()
-        # Marca o job como falho no Firestore
         job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
-        job_ref.set({'status': 'failed', 'error': str(e), 'jobId': job_id})
+        job_ref.update({'status': 'failed', 'error': str(e)})
+
+# --- Rota para Iniciar a Geração do Plano ---
+@app.route("/gerar-plano-estudos", methods=['POST'])
+def gerar_plano_iniciar_job():
+    dados_usuario = request.json
+    user_id = dados_usuario.get("userId")
+
+    if not user_id:
+        return jsonify({"erro_geral": "ID do usuário não fornecido."}), 400
+
+    job_ref = db.collection('users').document(user_id).collection('plans').document()
+    job_id = job_ref.id
+
+    # Salva o placeholder com os dados iniciais
+    placeholder_data = {
+        'status': 'processing',
+        'criadoEm': firestore.SERVER_TIMESTAMP,
+        'concurso_foco': dados_usuario.get('concurso_objetivo', 'Plano de Estudos'),
+        'data_inicio': dados_usuario.get('data_inicio'),
+        'data_termino': dados_usuario.get('data_termino'),
+        'jobId': job_id
+    }
+    job_ref.set(placeholder_data)
+
+    # Inicia a tarefa em segundo plano
+    thread = threading.Thread(target=processar_plano_em_background, args=(user_id, job_id, dados_usuario))
+    thread.start()
+
+    return jsonify({"status": "processing", "jobId": job_id}), 202
+
 
 # --- FUNÇÃO DE ENVIO DE E-MAIL ---
 def enviar_email(para_email, nome_usuario, assunto, conteudo_html, conteudo_texto):
@@ -192,7 +207,8 @@ def call_openai_api(prompt_content, system_message):
                 {"role": "user", "content": prompt_content}
             ],
             response_format={"type": "json_object"},
-            temperature=0.5
+            temperature=0.5,
+            timeout=120.0 # Aumenta o timeout da chamada específica
         )
         return json.loads(response.choices[0].message.content)
     except Exception as e:
@@ -202,29 +218,6 @@ def call_openai_api(prompt_content, system_message):
 @app.route("/")
 def ola_mundo():
     return "Backend ConcursoIA Funcionando"
-
-@app.route("/gerar-plano-estudos", methods=['POST'])
-def gerar_plano_iniciar_job():
-    dados_usuario = request.json
-    user_id = dados_usuario.get("userId")
-
-    if not user_id:
-        return jsonify({"erro_geral": "ID do usuário não fornecido."}), 400
-
-    job_ref = db.collection('users').document(user_id).collection('plans').document()
-    job_id = job_ref.id
-
-    job_ref.set({
-        'status': 'processing',
-        'criadoEm': firestore.SERVER_TIMESTAMP,
-        'concurso_foco': dados_usuario.get('concurso_objetivo', 'Plano de Estudos'),
-        'jobId': job_id
-    })
-
-    thread = threading.Thread(target=processar_plano_em_background, args=(user_id, job_id, dados_usuario))
-    thread.start()
-
-    return jsonify({"status": "processing", "jobId": job_id}), 202
 
 
 @app.route("/verificar-plano/<user_id>/<job_id>", methods=['GET'])
