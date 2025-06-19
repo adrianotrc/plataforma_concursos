@@ -22,22 +22,25 @@ let planoAbertoAtual = null; // Armazena o plano que está sendo exibido
 
 // --- FUNÇÕES DE RENDERIZAÇÃO (UI) ---
 
-function renderizarHistorico() {
+function renderizarHistorico(planos) {
     if (!containerHistorico) return;
-    if (!savedPlans || savedPlans.length === 0) {
+    if (!planos || planos.length === 0) {
         containerHistorico.innerHTML = '<div class="card-placeholder"><p>Nenhum cronograma gerado ainda.</p></div>';
         return;
     }
-    const planosOrdenados = savedPlans.sort((a, b) => (b.criadoEm?.toDate() || 0) - (a.criadoEm?.toDate() || 0));
+    const planosOrdenados = planos.sort((a, b) => (b.criadoEm?.toDate() || 0) - (a.criadoEm?.toDate() || 0));
     containerHistorico.innerHTML = planosOrdenados.map(plano => {
-        const dataFormatada = plano.criadoEm?.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) || 'Data indisponível';
+        const dataFormatada = plano.criadoEm?.toDate()?.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) || 'Processando...';
+        const isProcessing = plano.status === 'processing';
         return `
-            <div class="plano-item" data-id="${plano.id}">
+            <div class="plano-item" data-id="${plano.jobId || plano.id}">
                 <div>
-                    <h3>Plano para ${plano.concurso_foco || 'Concurso'}</h3>
+                    <h3>${plano.concurso_foco || 'Plano de Estudos'} ${isProcessing ? '<i class="fas fa-spinner fa-spin"></i>' : ''}</h3>
                     <p>Gerado em: ${dataFormatada}</p>
                 </div>
-                <button class="btn btn-primary btn-abrir-plano" data-id="${plano.id}">Abrir</button>
+                <button class="btn btn-primary btn-abrir-plano" data-id="${plano.jobId || plano.id}" ${isProcessing ? 'disabled' : ''}>
+                    ${isProcessing ? 'Gerando...' : 'Abrir'}
+                </button>
             </div>
         `;
     }).join('');
@@ -288,40 +291,57 @@ formCronograma?.addEventListener('submit', async (e) => {
 
     btnGerar.disabled = true;
     btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando, isso pode levar um momento...';
+    containerForm.style.display = 'none'; // Esconde o formulário
 
     try {
-        const novoPlanoGerado = await gerarPlanoDeEstudos(dadosParaApi);
-        const planoParaSalvar = {
-            ...novoPlanoGerado.plano_de_estudos,
-            criadoEm: serverTimestamp(),
-            data_inicio: dadosParaApi.data_inicio,
-            data_termino: dadosParaApi.data_termino
-        };
-        
-        const docRef = await addDoc(collection(db, `users/${currentUser.uid}/plans`), planoParaSalvar);
-        planoParaSalvar.id = docRef.id;
-        
-        savedPlans.push(planoParaSalvar);
-        
-        exibirPlanoNaTela(planoParaSalvar);
-        renderizarHistorico();
-        containerForm.style.display = 'none';
-        
+        // Envia a solicitação e o backend responde imediatamente
+        const respostaInicial = await gerarPlanoDeEstudos(dadosParaApi);
+        if (respostaInicial.status === 'processing' && respostaInicial.jobId) {
+            alert("Sua solicitação foi recebida! Estamos gerando seu plano. Ele aparecerá no histórico em alguns instantes.");
+            // O listener do Firestore (onSnapshot) já cuidará de atualizar a lista automaticamente.
+        } else {
+            throw new Error('Falha ao iniciar a geração do plano.');
+        }
+
+    } catch (error) {
+        alert('Ocorreu um erro ao solicitar seu cronograma. Tente novamente.');
+        console.error(error);
+    } finally {
+        btnGerar.disabled = false;
+        btnGerar.textContent = 'Gerar Cronograma';
+        // Limpa o formulário
         formCronograma.reset();
         materiasContainer.querySelectorAll('.materia-tag').forEach(tag => tag.remove());
         diasSemanaCheckboxes.forEach(cb => {
             const input = cb.closest('.dia-horario-item').querySelector('input[type="number"]');
             if (input) input.disabled = true;
         });
-
-    } catch (error) {
-        alert('Ocorreu um erro ao gerar seu cronograma. Verifique o console para mais detalhes.');
-        console.error(error);
-    } finally {
-        btnGerar.disabled = false;
-        btnGerar.textContent = 'Gerar Cronograma';
     }
 });
+
+// --- LÓGICA DE DADOS (COM LISTENER EM TEMPO REAL) ---
+function ouvirHistoricoDePlanos() {
+    if (unsubHistorico) unsubHistorico(); // Cancela o listener anterior se existir
+
+    const q = query(collection(db, `users/${currentUser.uid}/plans`), orderBy("criadoEm", "desc"));
+    
+    unsubHistorico = onSnapshot(q, (querySnapshot) => {
+        const planos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderizarHistorico(planos);
+    }, (error) => {
+        console.error("Erro ao ouvir histórico de planos:", error);
+    });
+}
+
+
+// --- INICIALIZAÇÃO E EVENTOS ---
+async function initCronogramaPage() {
+    currentUser = auth.currentUser;
+    if (currentUser) {
+        ouvirHistoricoDePlanos();
+    }
+}
+
 
 // --- INICIALIZAÇÃO E EVENTOS GERAIS ---
 async function carregarPlanosDoFirestore() {
@@ -345,11 +365,17 @@ async function initCronogramaPage() {
     }
 }
 
-document.body.addEventListener('click', (e) => {
-    if (e.target.matches('.btn-abrir-plano')) {
+document.body.addEventListener('click', async (e) => {
+    if (e.target.matches('.btn-abrir-plano') && !e.target.disabled) {
         const planoId = e.target.dataset.id;
-        const planoSelecionado = savedPlans.find(p => p.id === planoId);
-        if (planoSelecionado) exibirPlanoNaTela(planoSelecionado);
+        const user = auth.currentUser;
+        if (planoId && user) {
+            const docRef = doc(db, 'users', user.uid, 'plans', planoId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                exibirPlanoNaTela(docSnap.data());
+            }
+        }
     }
     if (e.target.matches('#btn-exportar-excel, #btn-exportar-excel *')) {
         exportarPlanoParaExcel(planoAbertoAtual);
@@ -363,6 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
         if (user) {
             initCronogramaPage();
+        } else {
+            if (unsubHistorico) unsubHistorico();
         }
     });
 });

@@ -50,6 +50,54 @@ if not resend.api_key:
 
 client = OpenAI(api_key=openai_api_key)
 
+# --- NOVA FUNÇÃO PARA TRABALHO EM SEGUNDO PLANO ---
+def processar_plano_em_background(user_id, job_id, dados_usuario):
+    print(f"BACKGROUND JOB INICIADO: {job_id} para usuário {user_id}")
+    try:
+        numero_de_semanas = 4
+        # ... (cálculo do número de semanas permanece o mesmo)
+        data_inicio_str = dados_usuario.get('data_inicio')
+        data_termino_str = dados_usuario.get('data_termino')
+        if data_inicio_str and data_termino_str:
+            try:
+                data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+                data_termino = datetime.strptime(data_termino_str, '%Y-%m-%d')
+                if data_termino > data_inicio:
+                    diferenca_dias = (data_termino - data_inicio).days
+                    numero_de_semanas = math.ceil((diferenca_dias + 1) / 7)
+            except ValueError:
+                numero_de_semanas = 4
+
+        prompt = (
+            "Gere um plano de estudos em JSON para um concurseiro. "
+            f"Dados do aluno: {json.dumps(dados_usuario)}\n\n"
+            "REGRAS PRINCIPAIS:\n"
+            f"1. DURAÇÃO: O plano deve ter exatamente {numero_de_semanas} semanas.\n"
+            f"2. TEMPO DE SESSÃO: Cada atividade deve durar {dados_usuario.get('duracao_sessao_minutos')} minutos. A soma das atividades de um dia NÃO PODE exceder a disponibilidade diária.\n"
+            "3. TÉCNICAS: Varie o 'tipo_de_estudo' entre 'Estudo de Teoria (PDF/Livro)', 'Resolução de Exercícios', e 'Revisão Ativa (Flashcards/Mapas)'.\n"
+            "ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA: { \"plano_de_estudos\": { ... } }"
+        )
+        system_message = "Você é um assistente especialista que cria planos de estudo JSON detalhados e estratégicos para concurseiros."
+        
+        resultado_ia = call_openai_api(prompt, system_message)
+        
+        plano_final = {
+            **resultado_ia.get('plano_de_estudos', {}),
+            'criadoEm': firestore.SERVER_TIMESTAMP,
+            'jobId': job_id,
+        }
+        
+        # Salva o resultado final no documento principal de planos
+        db.collection('users').document(user_id).collection('plans').document(job_id).set(plano_final)
+        print(f"BACKGROUND JOB CONCLUÍDO: {job_id}")
+
+    except Exception as e:
+        print(f"!!! ERRO NO BACKGROUND JOB {job_id}: {e} !!!")
+        traceback.print_exc()
+        # Marca o job como falho no Firestore
+        job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
+        job_ref.set({'status': 'failed', 'error': str(e), 'jobId': job_id})
+
 # --- FUNÇÃO DE ENVIO DE E-MAIL ---
 def enviar_email(para_email, nome_usuario, assunto, conteudo_html, conteudo_texto):
     if not resend.api_key:
@@ -156,56 +204,53 @@ def ola_mundo():
 
 
 @app.route("/gerar-plano-estudos", methods=['POST'])
-def gerar_plano():
+def gerar_plano_iniciar_job():
     dados_usuario = request.json
-    
-    numero_de_semanas = 4
-    data_inicio_str = dados_usuario.get('data_inicio')
-    data_termino_str = dados_usuario.get('data_termino')
+    user_id = dados_usuario.get("userId")
 
-    if data_inicio_str and data_termino_str:
-        try:
-            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
-            data_termino = datetime.strptime(data_termino_str, '%Y-%m-%d')
-            if data_termino > data_inicio:
-                diferenca_dias = (data_termino - data_inicio).days
-                numero_de_semanas = math.ceil((diferenca_dias + 1) / 7)
-        except ValueError:
-            numero_de_semanas = 4
+    if not user_id:
+        return jsonify({"erro_geral": "ID do usuário não fornecido."}), 400
 
+    # Cria uma referência para um novo documento de plano com um ID único
+    job_ref = db.collection('users').document(user_id).collection('plans').document()
+    job_id = job_ref.id
+
+    # Salva um placeholder indicando que o plano está sendo gerado
+    job_ref.set({
+        'status': 'processing',
+        'criadoEm': firestore.SERVER_TIMESTAMP,
+        'concurso_foco': dados_usuario.get('concurso_objetivo', 'Plano de Estudos'),
+        'jobId': job_id
+    })
+
+    # Inicia a tarefa demorada em uma thread separada
+    thread = threading.Thread(target=processar_plano_em_background, args=(user_id, job_id, dados_usuario))
+    thread.start()
+
+    # Retorna imediatamente para o frontend
+    return jsonify({"status": "processing", "jobId": job_id}), 202
+
+# --- NOVA ROTA ---
+@app.route("/verificar-plano/<user_id>/<job_id>", methods=['GET'])
+def verificar_plano_status(user_id, job_id):
     try:
-        # --- PROMPT OTIMIZADO ---
-        prompt = (
-            "Gere um plano de estudos em JSON para um concurseiro. "
-            "Baseie-se na metodologia do 'Guia Definitivo de Aprovação em Concursos' e nos dados do aluno. "
-            f"Dados do aluno: {json.dumps(dados_usuario)}\n\n"
-            "REGRAS PRINCIPAIS:\n"
-            f"1. DURAÇÃO: O plano deve ter exatamente {numero_de_semanas} semanas.\n"
-            f"2. TEMPO DE SESSÃO: Cada atividade deve durar {dados_usuario.get('duracao_sessao_minutos')} minutos. "
-            "A soma das atividades de um dia NÃO PODE exceder a disponibilidade diária do aluno.\n"
-            "3. TÉCNICAS: Varie o 'tipo_de_estudo' entre 'Estudo de Teoria (PDF/Livro)', 'Resolução de Exercícios', e 'Revisão Ativa (Flashcards/Mapas)', seguindo uma lógica de aprendizado.\n"
-            "4. FASES: Adapte a intensidade do plano à 'fase_concurso' informada pelo aluno.\n\n"
-            "ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA:\n"
-            "{ \"plano_de_estudos\": { "
-            "\"concurso_foco\": \"...\", "
-            "\"resumo_estrategico\": \"...\", "
-            "\"mensagem_inicial\": \"...\", "
-            "\"cronograma_semanal_detalhado\": [ "
-            "{ \"semana_numero\": 1, \"dias_de_estudo\": [ "
-            "{ \"dia_semana\": \"Segunda\", \"atividades\": [ "
-            "{ \"horario_sugerido\": \"HH:MM\", \"duracao_minutos\": int, \"materia\": \"...\", \"topico_sugerido\": \"...\", \"tipo_de_estudo\": \"...\" } "
-            "] } ] } ] } }"
-        )
-        # --- FIM DO PROMPT OTIMIZADO ---
+        doc_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
+        doc = doc_ref.get()
+
+        if not doc.exists:
+            return jsonify({"status": "not_found"}), 404
+
+        data = doc.to_dict()
         
-        system_message = "Você é um assistente especialista que cria planos de estudo JSON detalhados e estratégicos para concurseiros, seguindo rigorosamente a metodologia e a estrutura de saída solicitadas."
-        
-        dados = call_openai_api(prompt, system_message)
-        return jsonify(dados)
+        # Se o plano já estiver completo (não tem mais o status 'processing')
+        if data.get('status') != 'processing':
+            return jsonify({"status": "completed", "plano": data})
+        else:
+            return jsonify({"status": "processing"})
+
     except Exception as e:
-        print(f"!!! ERRO em /gerar-plano-estudos: {e} !!!")
-        traceback.print_exc()
-        return jsonify({"erro_geral": str(e)}), 500
+        print(f"Erro ao verificar status do job {job_id}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
     
 
 @app.route("/gerar-exercicios", methods=['POST'])
