@@ -111,3 +111,9 @@ export async function deletarContaUsuario(userId) {
         body: JSON.stringify({ userId }),
     });
 }
+
+export async function verificarStatusPlano(userId, jobId) {
+    return fetchApi(`/verificar-plano/<span class="math-inline">\{userId\}/</span>{jobId}`, {
+        method: 'GET',
+    });
+}

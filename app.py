@@ -13,6 +13,7 @@ import traceback # Importa o módulo traceback
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
 import resend
+import threading # Importa threading para tarefas em segundo plano
 
 load_dotenv()
 
@@ -202,7 +203,6 @@ def call_openai_api(prompt_content, system_message):
 def ola_mundo():
     return "Backend ConcursoIA Funcionando"
 
-
 @app.route("/gerar-plano-estudos", methods=['POST'])
 def gerar_plano_iniciar_job():
     dados_usuario = request.json
@@ -211,11 +211,9 @@ def gerar_plano_iniciar_job():
     if not user_id:
         return jsonify({"erro_geral": "ID do usuário não fornecido."}), 400
 
-    # Cria uma referência para um novo documento de plano com um ID único
     job_ref = db.collection('users').document(user_id).collection('plans').document()
     job_id = job_ref.id
 
-    # Salva um placeholder indicando que o plano está sendo gerado
     job_ref.set({
         'status': 'processing',
         'criadoEm': firestore.SERVER_TIMESTAMP,
@@ -223,14 +221,12 @@ def gerar_plano_iniciar_job():
         'jobId': job_id
     })
 
-    # Inicia a tarefa demorada em uma thread separada
     thread = threading.Thread(target=processar_plano_em_background, args=(user_id, job_id, dados_usuario))
     thread.start()
 
-    # Retorna imediatamente para o frontend
     return jsonify({"status": "processing", "jobId": job_id}), 202
 
-# --- NOVA ROTA ---
+
 @app.route("/verificar-plano/<user_id>/<job_id>", methods=['GET'])
 def verificar_plano_status(user_id, job_id):
     try:
@@ -241,8 +237,7 @@ def verificar_plano_status(user_id, job_id):
             return jsonify({"status": "not_found"}), 404
 
         data = doc.to_dict()
-        
-        # Se o plano já estiver completo (não tem mais o status 'processing')
+
         if data.get('status') != 'processing':
             return jsonify({"status": "completed", "plano": data})
         else:
@@ -250,8 +245,7 @@ def verificar_plano_status(user_id, job_id):
 
     except Exception as e:
         print(f"Erro ao verificar status do job {job_id}: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
-    
+        return jsonify({"status": "error", "message": str(e)}), 500    
 
 @app.route("/gerar-exercicios", methods=['POST'])
 def gerar_exercicios():

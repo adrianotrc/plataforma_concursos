@@ -357,14 +357,6 @@ async function carregarPlanosDoFirestore() {
     }
 }
 
-async function initCronogramaPage() {
-    currentUser = auth.currentUser;
-    if (currentUser) {
-        await carregarPlanosDoFirestore();
-        renderizarHistorico();
-    }
-}
-
 document.body.addEventListener('click', async (e) => {
     if (e.target.matches('.btn-abrir-plano') && !e.target.disabled) {
         const planoId = e.target.dataset.id;
