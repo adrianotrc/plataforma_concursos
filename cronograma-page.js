@@ -74,7 +74,6 @@ function renderizarHistorico(planos) {
 
 function exibirPlanoNaTela(plano) {
     if (!containerExibicao || !plano) return;
-    
     planoAbertoAtual = plano;
 
     if (!plano.cronograma_semanal_detalhado) {
@@ -90,22 +89,8 @@ function exibirPlanoNaTela(plano) {
 
     const formatarData = (data) => data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00Z') : new Date();
-    
     const diasDaSemanaOrdenados = ["Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"];
-    
-    let cronogramaHtml = `
-        <div class="plano-formatado-container">
-            <div class="plano-header">
-                <div class="feature-info">
-                    <h3>Plano de Estudos: ${plano.concurso_foco || ''}</h3>
-                    <p style="white-space: pre-wrap;">${plano.resumo_estrategico || 'Sem resumo estratégico.'}</p>
-                </div>
-                <button id="btn-exportar-excel" class="btn btn-primary">
-                    <i class="fas fa-file-excel"></i> Exportar para Excel
-                </button>
-            </div>
-    `;
-
+    let cronogramaHtml = `<div class="plano-formatado-container"><div class="plano-header"><div class="feature-info"><h3>Plano de Estudos: ${plano.concurso_foco || ''}</h3><p style="white-space: pre-wrap;">${plano.resumo_estrategico || 'Sem resumo estratégico.'}</p></div><button id="btn-exportar-excel" class="btn btn-primary"><i class="fas fa-file-excel"></i> Exportar para Excel</button></div>`;
     const semanas = plano.cronograma_semanal_detalhado;
     let dataCorrente = new Date(dataInicioPlano);
     dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay());
@@ -116,7 +101,6 @@ function exibirPlanoNaTela(plano) {
             acc[diaSemanaCorrigido] = dia.atividades || [];
             return acc;
         }, {});
-
         cronogramaHtml += `<div class="semana-bloco"><h3>Semana ${semana.semana_numero || ''}</h3><div class="cronograma-tabela-container"><table class="cronograma-tabela"><thead><tr>`;
         diasDaSemanaOrdenados.forEach((dia, index) => {
             const dataDoDia = new Date(dataCorrente);
@@ -137,7 +121,6 @@ function exibirPlanoNaTela(plano) {
         cronogramaHtml += `</tr></tbody></table></div></div>`;
         dataCorrente.setDate(dataCorrente.getDate() + 7);
     });
-
     cronogramaHtml += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial.</small></div>`;
     containerExibicao.innerHTML = cronogramaHtml;
     containerExibicao.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -151,7 +134,7 @@ function exportarPlanoParaExcel() {
 
     const plano = planoAbertoAtual;
     const wb = XLSX.utils.book_new();
-    const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00') : new Date();
+    const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00Z') : new Date();
     let dataCorrente = new Date(dataInicioPlano);
     dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay());
 
@@ -161,7 +144,7 @@ function exportarPlanoParaExcel() {
         const dadosPlanilha = [];
         const atividadesPorDia = (semana.dias_de_estudo || []).reduce((acc, dia) => {
             const diaSemanaCorrigido = dia.dia_semana.endsWith(" Feira") ? dia.dia_semana.split(" ")[0] : dia.dia_semana;
-            acc[diaSemanaCorrigido] = (dia.atividades || []).map(atv => 
+            acc[diaSemanaCorrigido] = (dia.atividades || []).map(atv =>
                 `${atv.materia || ''}\n${atv.topico_sugerido || ''}\n${atv.tipo_de_estudo || ''} (${atv.duracao_minutos} min)`
             );
             return acc;
@@ -206,7 +189,6 @@ function exportarPlanoParaExcel() {
     XLSX.writeFile(wb, `Plano_de_Estudos_${(plano.concurso_foco || 'IAprovas').replace(/ /g, '_')}.xlsx`);
 }
 
-// --- LÓGICA DO FORMULÁRIO ---
 function adicionarMateria() {
     const textoMateria = materiasInput.value.trim().replace(/,/g, '');
     if (textoMateria) {
@@ -237,11 +219,8 @@ formCronograma?.addEventListener('submit', async (e) => {
     if (materiasInput.value.trim()) adicionarMateria();
     
     const btnGerar = formCronograma.querySelector('button[type="submit"]');
-
     const materias = [...document.querySelectorAll('.materia-tag')].map(tag => tag.textContent.replace('×', '').trim());
-    if (materias.length === 0) {
-        showToast("Por favor, adicione pelo menos uma matéria.", "error"); return;
-    }
+    if (materias.length === 0) { showToast("Por favor, adicione pelo menos uma matéria.", "error"); return; }
     const disponibilidade = {};
     document.querySelectorAll('.dias-semana-grid .dia-horario-item').forEach(item => {
         const checkbox = item.querySelector('input[type="checkbox"]');
@@ -253,9 +232,7 @@ formCronograma?.addEventListener('submit', async (e) => {
             }
         }
     });
-    if (Object.keys(disponibilidade).length === 0) {
-        showToast("Por favor, selecione pelo menos um dia da semana e informe os minutos de estudo.", "error"); return;
-    }
+    if (Object.keys(disponibilidade).length === 0) { showToast("Por favor, selecione pelo menos um dia da semana e informe os minutos de estudo.", "error"); return; }
     
     const dadosParaApi = {
         userId: currentUser.uid,
@@ -318,7 +295,7 @@ document.body.addEventListener('click', async (e) => {
 btnAbrirForm?.addEventListener('click', () => { containerForm.style.display = 'block'; });
 btnFecharForm?.addEventListener('click', () => { containerForm.style.display = 'none'; });
 
-// --- LÓGICA DE DADOS E INICIALIZAÇÃO ---
+// --- LÓGICA DE INICIALIZAÇÃO ---
 function ouvirHistoricoDePlanos() {
     if (unsubHistorico) {
         unsubHistorico();
