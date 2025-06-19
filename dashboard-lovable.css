@@ -1467,3 +1467,61 @@ body.dark-mode .modal-content {
 body.dark-mode .modal-content p {
     color: #9ca3af;
 }
+
+/* Estilos para a Zona de Perigo */
+.profile-column-full {
+    grid-column: 1 / -1; /* Ocupa todas as colunas do grid */
+}
+
+.danger-zone {
+    border-color: #fecaca; /* Borda vermelha clara */
+    background-color: #fef2f2; /* Fundo vermelho bem claro */
+}
+
+body.dark-mode .danger-zone {
+    border-color: #450a0a;
+    background-color: #2b0505;
+}
+
+.danger-zone .feature-icon.red { background: #ef4444; }
+
+.danger-action {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #fecaca;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+body.dark-mode .danger-action {
+    border-top-color: #450a0a;
+}
+
+.danger-action h4 {
+    font-weight: 600;
+    color: #b91c1c;
+}
+
+body.dark-mode .danger-action h4 {
+    color: #fca5a5;
+}
+
+.danger-action p {
+    font-size: 14px;
+    color: #991b1b;
+}
+
+body.dark-mode .danger-action p {
+    color: #f87171;
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #dc2626;
+}

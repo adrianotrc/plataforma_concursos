@@ -439,5 +439,42 @@ def create_portal_session():
         print(f"Erro ao criar sessão do portal: {e}")
         return jsonify(error={'message': 'Falha ao criar sessão do portal.'}), 500
 
+# Adicione no final de app.py
+
+from firebase_admin import auth as firebase_auth # Importa o módulo de autenticação
+
+@app.route('/delete-user-account', methods=['POST'])
+def delete_user_account():
+    data = request.get_json()
+    user_id = data.get('userId')
+
+    if not user_id:
+        return jsonify(error={'message': 'ID do usuário não fornecido.'}), 400
+
+    print(f"--- Recebida solicitação para excluir conta do usuário: {user_id} ---")
+
+    try:
+        # Passo 1: Excluir o usuário do Firebase Authentication
+        firebase_auth.delete_user(user_id)
+        print(f"Usuário {user_id} excluído com sucesso do Firebase Authentication.")
+
+        # Passo 2: Excluir o documento do usuário no Firestore
+        if db:
+            user_ref = db.collection('users').document(user_id)
+            user_ref.delete()
+            print(f"Documento do usuário {user_id} excluído com sucesso do Firestore.")
+        
+        # Opcional: Futuramente, poderíamos adicionar a exclusão de subcoleções aqui.
+
+        return jsonify(success=True, message="Conta excluída com sucesso.")
+
+    except firebase_auth.UserNotFoundError:
+        print(f"Erro: Usuário {user_id} não encontrado no Firebase Authentication.")
+        return jsonify(error={'message': 'Usuário não encontrado.'}), 404
+    except Exception as e:
+        print(f"!!! Erro crítico ao excluir a conta {user_id}: {e} !!!")
+        traceback.print_exc()
+        return jsonify(error={'message': 'Ocorreu um erro interno ao tentar excluir a conta.'}), 500
+
 if __name__ == "__main__":
     app.run(debug=True, port=int(os.environ.get("PORT", 5000)))

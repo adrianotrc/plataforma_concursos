@@ -81,6 +81,24 @@
                             </form>
                         </div>
                     </div>
+                    <div class="profile-column-full">
+                        <div class="feature-card danger-zone">
+                            <div class="feature-header">
+                                <div class="feature-icon red"><i class="fas fa-trash-alt"></i></div>
+                                <div class="feature-info">
+                                    <h3>Zona de Perigo</h3>
+                                    <p>Ações irreversíveis. Tenha muito cuidado.</p>
+                                </div>
+                            </div>
+                            <div class="danger-action">
+                                <div>
+                                    <h4>Excluir esta conta</h4>
+                                    <p>Após a exclusão, todos os seus dados, incluindo cronogramas e histórico, serão permanentemente removidos. Esta ação não pode ser desfeita.</p>
+                                </div>
+                                <button id="btn-iniciar-exclusao" class="btn btn-danger">Excluir minha conta</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -102,7 +120,19 @@
             </form>
         </div>
     </div>
-
+    <div id="delete-confirm-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3>Você tem certeza?</h3>
+            <p>Esta ação é <strong>permanente</strong> e irá apagar todos os seus dados. Para confirmar, digite "excluir" no campo abaixo.</p>
+            <div class="form-field-group">
+                <input type="text" id="delete-confirm-input" placeholder='Digite "excluir" para confirmar'>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="delete-cancel-btn" class="btn btn-ghost">Cancelar</button>
+                <button type="button" id="delete-confirm-btn" class="btn btn-danger" disabled>Eu entendo, excluir minha conta</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="main-app.js"></script>
     <script type="module" src="perfil-page.js"></script>

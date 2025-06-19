@@ -103,3 +103,13 @@ export async function criarSessaoPortal(userId) {
         body: JSON.stringify({ userId }),
     });
 }
+
+// Adicione no final de api.js
+
+export async function deletarContaUsuario(userId) {
+    return fetchApi('/delete-user-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+    });
+}
