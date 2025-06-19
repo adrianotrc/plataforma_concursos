@@ -1,11 +1,12 @@
 // auth.js - Versão com redirect explícito e garantido após cadastro
 
-import { auth } from './firebase-config.js';
-import { 
-    signInWithEmailAndPassword, 
+import { auth, db } from './firebase-config.js';
+import {
+    signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { doc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { enviarEmailBoasVindas } from './api.js';
 
 // --- PÁGINA DE LOGIN ---
@@ -27,14 +28,14 @@ if (formLogin) {
         const senha = document.getElementById('login-senha').value;
         const btnLogin = document.getElementById('btn-login');
         const errorMessage = document.getElementById('error-message');
-        
+
         btnLogin.disabled = true;
         btnLogin.textContent = 'Entrando...';
         errorMessage.style.display = 'none';
 
         try {
             await signInWithEmailAndPassword(auth, email, senha);
-            
+
             // Lógica de redirect inteligente para o LOGIN
             const postLoginParams = new URLSearchParams(window.location.search);
             const postLoginReturnTo = postLoginParams.get('returnTo');
@@ -79,12 +80,30 @@ if (formCadastro) {
 
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-            
-            if (userCredential.user) {
-                await enviarEmailBoasVindas(email, nome);
+            const user = userCredential.user;
+
+            if (user) {
+                // Cria o perfil do usuário no Firestore
+                const userDocRef = doc(db, "users", user.uid);
+                const dataExpiracao = new Date();
+                dataExpiracao.setDate(dataExpiracao.getDate() + 7);
+                const novoUserData = {
+                    email: user.email,
+                    nome: nome,
+                    plano: "trial",
+                    criadoEm: serverTimestamp(),
+                    trialFim: Timestamp.fromDate(dataExpiracao)
+                };
+                await setDoc(userDocRef, novoUserData);
+
+                // *** CORREÇÃO APLICADA AQUI ***
+                // O `await` foi removido da linha abaixo.
+                // Isso faz com que o e-mail seja enviado em segundo plano,
+                // sem travar a navegação do usuário.
+                enviarEmailBoasVindas(email, nome);
             }
-            
-            // **AQUI A CORREÇÃO**: Redirecionamento explícito e garantido
+
+            // Redirecionamento explícito e garantido
             const params = new URLSearchParams(window.location.search);
             const returnTo = params.get('returnTo');
 
@@ -104,13 +123,15 @@ if (formCadastro) {
     });
 }
 
+
 // --- VIGIA GERAL DE AUTENTICAÇÃO ---
 onAuthStateChanged(auth, (user) => {
-    const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html'];
+    const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html', 'discursivas.html'];
     const paginaAtual = window.location.pathname.split('/').pop();
 
     if (!user && paginasProtegidas.includes(paginaAtual)) {
-        // Se o usuário não está logado e tenta acessar uma página protegida, manda para o login.
-        window.location.href = 'login.html';
+        // Guarda a página que o usuário tentou acessar para redirecioná-lo após o login
+        const returnUrl = `login.html?returnTo=${encodeURIComponent(paginaAtual)}`;
+        window.location.href = returnUrl;
     }
 });
