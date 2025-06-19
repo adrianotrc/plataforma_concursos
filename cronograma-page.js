@@ -1,7 +1,7 @@
-// cronograma-page.js - Versão com correções para 'unsubHistorico' e 'userId'
+// cronograma-page.js - Versão FINAL, completa e corrigida
 
 import { auth, db } from './firebase-config.js';
-import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { gerarPlanoDeEstudos } from './api.js';
 
 // --- ELEMENTOS DO DOM ---
@@ -15,14 +15,27 @@ const diasSemanaCheckboxes = document.querySelectorAll('.dias-semana-grid input[
 const materiasContainer = document.getElementById('materias-container');
 const materiasInput = document.getElementById('materias-input');
 
-// --- ESTADO LOCAL (CORREÇÃO 1: 'unsubHistorico' declarado aqui) ---
+// --- ESTADO LOCAL ---
 let currentUser = null;
-let unsubHistorico = null; // Para desligar o listener do Firestore
-let planoAbertoAtual = null; 
+let unsubHistorico = null; // Listener do Firestore
+let planoAbertoAtual = null; // Guarda o plano atualmente exibido na tela
 
+// --- FUNÇÕES DE UI ---
 
-// --- FUNÇÕES DE RENDERIZAÇÃO (UI) ---
+// Função para exibir notificações customizadas (Toast)
+function showToast(message, type = 'success', duration = 5000) {
+    const toast = document.createElement('div');
+    toast.className = `feedback-toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => document.body.removeChild(toast), 500);
+    }, duration);
+}
 
+// Renderiza a lista de planos de estudo no histórico
 function renderizarHistorico(planos) {
     if (!containerHistorico) return;
     if (!planos || planos.length === 0) {
@@ -47,10 +60,11 @@ function renderizarHistorico(planos) {
     }).join('');
 }
 
-
+// Exibe o conteúdo detalhado de um plano de estudos na tela
 function exibirPlanoNaTela(plano) {
-    if (!containerExibicao) return;
-    planoAbertoAtual = plano; 
+    if (!containerExibicao || !plano) return;
+    
+    planoAbertoAtual = plano; // Define o plano atual para ser usado na exportação
 
     const formatarData = (data) => data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00') : new Date();
@@ -102,6 +116,8 @@ function exibirPlanoNaTela(plano) {
             cronogramaHtml += `</tr></tbody></table></div></div>`;
             dataCorrente.setDate(dataCorrente.getDate() + 7);
         });
+    } else {
+         cronogramaHtml += `<div class="card-placeholder"><p>O cronograma detalhado não foi encontrado neste plano.</p></div>`;
     }
 
     cronogramaHtml += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial.</small></div>`;
@@ -109,13 +125,14 @@ function exibirPlanoNaTela(plano) {
     containerExibicao.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-
-function exportarPlanoParaExcel(plano) {
-    if (!plano) {
-        alert("Nenhum plano para exportar.");
+// Exporta o plano exibido para um arquivo Excel
+function exportarPlanoParaExcel() {
+    if (!planoAbertoAtual || !planoAbertoAtual.cronograma_semanal_detalhado) {
+        showToast("Nenhum plano detalhado para exportar. Por favor, abra um cronograma primeiro.", "error");
         return;
     }
 
+    const plano = planoAbertoAtual;
     const wb = XLSX.utils.book_new();
     const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00') : new Date();
     let dataCorrente = new Date(dataInicioPlano);
@@ -125,7 +142,6 @@ function exportarPlanoParaExcel(plano) {
 
     plano.cronograma_semanal_detalhado.forEach(semana => {
         const dadosPlanilha = [];
-        
         const atividadesPorDia = (semana.dias_de_estudo || []).reduce((acc, dia) => {
             const diaSemanaCorrigido = dia.dia_semana.endsWith(" Feira") ? dia.dia_semana.split(" ")[0] : dia.dia_semana;
             acc[diaSemanaCorrigido] = (dia.atividades || []).map(atv => 
@@ -135,7 +151,6 @@ function exportarPlanoParaExcel(plano) {
         }, {});
         
         const maxAtividades = Math.max(0, ...Object.values(atividadesPorDia).map(arr => arr.length));
-
         const diaHeaderRow = [];
         const dataHeaderRow = [];
         diasDaSemanaOrdenados.forEach((dia, index) => {
@@ -157,9 +172,7 @@ function exportarPlanoParaExcel(plano) {
         }
         
         const ws = XLSX.utils.aoa_to_sheet(dadosPlanilha);
-
         ws['!cols'] = diasDaSemanaOrdenados.map(() => ({ wch: 35 }));
-        
         const estiloCelula = { alignment: { wrapText: true, vertical: 'top' } };
         dadosPlanilha.forEach((row, r) => {
             row.forEach((cell, c) => {
@@ -170,71 +183,42 @@ function exportarPlanoParaExcel(plano) {
         });
 
         XLSX.utils.book_append_sheet(wb, ws, `Semana ${semana.semana_numero}`);
-
         dataCorrente.setDate(dataCorrente.getDate() + 7);
     });
 
     XLSX.writeFile(wb, `Plano_de_Estudos_${(plano.concurso_foco || 'IAprovas').replace(/ /g, '_')}.xlsx`);
 }
 
-
-// --- LÓGICA DO FORMULÁRIO (ASSÍNCRONA) ---
-
+// --- LÓGICA DO FORMULÁRIO ---
 function adicionarMateria() {
     const textoMateria = materiasInput.value.trim().replace(/,/g, '');
     if (textoMateria) {
         const tag = document.createElement('span');
         tag.className = 'materia-tag';
         tag.textContent = textoMateria;
-        
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '&times;';
         closeBtn.setAttribute('aria-label', `Remover ${textoMateria}`);
         closeBtn.onclick = () => tag.remove();
-        
         tag.appendChild(closeBtn);
         materiasContainer.insertBefore(tag, materiasInput);
         materiasInput.value = '';
     }
 }
 
-formCronograma?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.target === materiasInput) {
-        e.preventDefault();
-        adicionarMateria();
-    }
-});
-
-materiasInput?.addEventListener('keyup', (e) => {
-    if (e.key === ',') {
-        adicionarMateria();
-    }
-});
-
-diasSemanaCheckboxes.forEach(checkbox => {
-    checkbox.addEventListener('change', (e) => {
-        const inputMinutos = e.target.closest('.dia-horario-item').querySelector('input[type="number"]');
-        if (inputMinutos) {
-            inputMinutos.disabled = !e.target.checked;
-            if (!e.target.checked) {
-                inputMinutos.value = '';
-            }
-        }
-    });
-});
+formCronograma?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === materiasInput) { e.preventDefault(); adicionarMateria(); } });
+materiasInput?.addEventListener('keyup', (e) => { if (e.key === ',') adicionarMateria(); });
+diasSemanaCheckboxes.forEach(checkbox => { checkbox.addEventListener('change', (e) => { const inputMinutos = e.target.closest('.dia-horario-item').querySelector('input[type="number"]'); if (inputMinutos) { inputMinutos.disabled = !e.target.checked; if (!e.target.checked) inputMinutos.value = ''; } }); });
 
 formCronograma?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (materiasInput.value.trim()) {
-        adicionarMateria();
-    }
+    if (materiasInput.value.trim()) adicionarMateria();
     
     const btnGerar = formCronograma.querySelector('button[type="submit"]');
 
     const materias = [...document.querySelectorAll('.materia-tag')].map(tag => tag.textContent.replace('×', '').trim());
     if (materias.length === 0) {
-        alert("Por favor, adicione pelo menos uma matéria.");
-        return;
+        alert("Por favor, adicione pelo menos uma matéria."); return;
     }
     const disponibilidade = {};
     document.querySelectorAll('.dias-semana-grid .dia-horario-item').forEach(item => {
@@ -247,13 +231,12 @@ formCronograma?.addEventListener('submit', async (e) => {
             }
         }
     });
-     if (Object.keys(disponibilidade).length === 0) {
-        alert("Por favor, selecione pelo menos um dia da semana e informe os minutos de estudo.");
-        return;
+    if (Object.keys(disponibilidade).length === 0) {
+        alert("Por favor, selecione pelo menos um dia da semana e informe os minutos de estudo."); return;
     }
     
     const dadosParaApi = {
-        userId: currentUser.uid, // CORREÇÃO 2: Adiciona o userId aqui
+        userId: currentUser.uid,
         concurso_objetivo: document.getElementById('concurso-objetivo').value,
         fase_concurso: document.getElementById('fase-concurso').value,
         materias: materias,
@@ -272,13 +255,12 @@ formCronograma?.addEventListener('submit', async (e) => {
     try {
         const respostaInicial = await gerarPlanoDeEstudos(dadosParaApi);
         if (respostaInicial.status === 'processing' && respostaInicial.jobId) {
-            alert("Sua solicitação foi recebida! Estamos gerando seu plano. Ele aparecerá no histórico em alguns instantes.");
+            showToast("Sua solicitação foi recebida! Seu plano aparecerá no histórico em instantes.", "info");
         } else {
             throw new Error('Falha ao iniciar a geração do plano.');
         }
-
     } catch (error) {
-        alert('Ocorreu um erro ao solicitar seu cronograma. Tente novamente.');
+        showToast('Ocorreu um erro ao solicitar seu cronograma. Tente novamente.', 'error');
         console.error(error);
     } finally {
         btnGerar.disabled = false;
@@ -306,7 +288,6 @@ function ouvirHistoricoDePlanos() {
     });
 }
 
-
 // --- INICIALIZAÇÃO E EVENTOS ---
 function initCronogramaPage() {
     currentUser = auth.currentUser;
@@ -324,11 +305,13 @@ document.body.addEventListener('click', async (e) => {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 exibirPlanoNaTela(docSnap.data());
+            } else {
+                showToast("Não foi possível encontrar os detalhes deste plano.", "error");
             }
         }
     }
-    if (e.target.matches('#btn-exportar-excel, #btn-exportar-excel *')) {
-        exportarPlanoParaExcel(planoAbertoAtual);
+    if (e.target.matches('#btn-exportar-excel') || e.target.closest('#btn-exportar-excel')) {
+        exportarPlanoParaExcel();
     }
 });
 
@@ -340,7 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user) {
             initCronogramaPage();
         } else {
-            if (unsubHistorico) unsubHistorico();
+            if (unsubHistorico) {
+                unsubHistorico();
+            }
         }
     });
 });

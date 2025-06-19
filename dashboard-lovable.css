@@ -1585,3 +1585,8 @@ body.dark-mode .delete-section p {
     background-color: #f87171;
     cursor: not-allowed;
 }
+
+/* Estilo para notificação (Toast) de informação */
+.feedback-toast.info {
+    background-color: #2563eb; /* Azul para informação */
+}
