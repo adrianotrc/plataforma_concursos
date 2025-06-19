@@ -174,30 +174,37 @@ def gerar_plano():
             numero_de_semanas = 4
 
     try:
+        # --- PROMPT OTIMIZADO ---
         prompt = (
-            f"Você é um especialista em preparação para concursos, baseando-se na metodologia do 'Guia Definitivo de Aprovação em Concursos'. "
-            f"Crie um plano de estudos detalhado em JSON para um aluno com as seguintes características: {json.dumps(dados_usuario, indent=2)}.\n\n"
-            f"REGRAS ESTRATÉGICAS OBRIGATÓRIAS E INEGOCIÁVEIS:\n"
-            f"1. **DURAÇÃO TOTAL:** O plano DEVE conter EXATAMENTE {numero_de_semanas} semanas, todas detalhadas.\n\n"
-            f"2. **RESPEITO AO TEMPO DIÁRIO (REGRA MAIS IMPORTANTE):** A SOMA TOTAL dos 'duracao_minutos' de TODAS as 'atividades' em um determinado 'dia_semana' NÃO PODE, EM HIPÓTESE ALGUMA, EXCEDER o valor especificado em 'disponibilidade_semanal_minutos' para aquele dia. Se um dia tem 120 minutos disponíveis, o total de atividades para esse dia deve ser 120 minutos.\n\n"
-            f"3. **DURAÇÃO DA SESSÃO DE ESTUDO:** CADA 'atividade' individual gerada DEVE ter um 'duracao_minutos' EXATAMENTE igual ao valor de 'duracao_sessao_minutos' ({dados_usuario.get('duracao_sessao_minutos')} min). A única exceção é a última atividade de um dia, que pode ser mais curta para se ajustar ao total de minutos diário.\n\n"
-            f"4. **VARIAÇÃO OBRIGATÓRIA DE TÉCNICAS:** É OBRIGATÓRIO variar o 'tipo_de_estudo'. Use termos como 'Estudo de Teoria (PDF/Livro)', 'Resolução de Exercícios', 'Revisão Ativa (Flashcards/Mapas)', 'Simulado Cronometrado'. A aplicação das técnicas deve seguir uma lógica de aprendizado (Teoria -> Exercícios -> Revisão).\n\n"
-            f"5. **RETA FINAL E FASE DE PREPARAÇÃO:** Continue aplicando as regras de intensificar exercícios na fase pós-edital e de criar uma semana de revisão final se houver data de término.\n\n"
-            f"ESTRUTURA DE RESPOSTA JSON (SEGUIR RIGOROSAMENTE):\n"
-            f"O JSON deve conter um objeto 'plano_de_estudos' com as chaves: 'concurso_foco', 'resumo_estrategico', 'mensagem_inicial', e 'cronograma_semanal_detalhado'.\n"
-            f"Cada 'semana' deve ter 'semana_numero' (int) e 'dias_de_estudo' (LISTA).\n"
-            f"Cada 'dia' deve ter 'dia_semana' (string) e 'atividades' (LISTA).\n"
-            f"Cada 'atividade' deve ter 'horario_sugerido', 'duracao_minutos' (int), 'materia', 'topico_sugerido', e 'tipo_de_estudo'."
+            "Gere um plano de estudos em JSON para um concurseiro. "
+            "Baseie-se na metodologia do 'Guia Definitivo de Aprovação em Concursos' e nos dados do aluno. "
+            f"Dados do aluno: {json.dumps(dados_usuario)}\n\n"
+            "REGRAS PRINCIPAIS:\n"
+            f"1. DURAÇÃO: O plano deve ter exatamente {numero_de_semanas} semanas.\n"
+            f"2. TEMPO DE SESSÃO: Cada atividade deve durar {dados_usuario.get('duracao_sessao_minutos')} minutos. "
+            "A soma das atividades de um dia NÃO PODE exceder a disponibilidade diária do aluno.\n"
+            "3. TÉCNICAS: Varie o 'tipo_de_estudo' entre 'Estudo de Teoria (PDF/Livro)', 'Resolução de Exercícios', e 'Revisão Ativa (Flashcards/Mapas)', seguindo uma lógica de aprendizado.\n"
+            "4. FASES: Adapte a intensidade do plano à 'fase_concurso' informada pelo aluno.\n\n"
+            "ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA:\n"
+            "{ \"plano_de_estudos\": { "
+            "\"concurso_foco\": \"...\", "
+            "\"resumo_estrategico\": \"...\", "
+            "\"mensagem_inicial\": \"...\", "
+            "\"cronograma_semanal_detalhado\": [ "
+            "{ \"semana_numero\": 1, \"dias_de_estudo\": [ "
+            "{ \"dia_semana\": \"Segunda\", \"atividades\": [ "
+            "{ \"horario_sugerido\": \"HH:MM\", \"duracao_minutos\": int, \"materia\": \"...\", \"topico_sugerido\": \"...\", \"tipo_de_estudo\": \"...\" } "
+            "] } ] } ] } }"
         )
+        # --- FIM DO PROMPT OTIMIZADO ---
+        
         system_message = "Você é um assistente especialista que cria planos de estudo JSON detalhados e estratégicos para concurseiros, seguindo rigorosamente a metodologia e a estrutura de saída solicitadas."
         
         dados = call_openai_api(prompt, system_message)
         return jsonify(dados)
     except Exception as e:
-        # --- MELHORIA NO LOG DE ERRO ---
         print(f"!!! ERRO em /gerar-plano-estudos: {e} !!!")
         traceback.print_exc()
-        # --- FIM DA MELHORIA ---
         return jsonify({"erro_geral": str(e)}), 500
     
 
