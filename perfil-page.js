@@ -1,4 +1,4 @@
-// perfil-page.js - Versão FINAL E CORRIGIDA
+// perfil-page.js - Versão FINAL E CORRIGIDA, com UI e funcionalidade de exclusão
 
 import { auth, db } from './firebase-config.js';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -19,91 +19,43 @@ function showToast(message, type = 'success', duration = 4000) {
     }, duration);
 }
 
-// --- FUNÇÃO PRINCIPAL QUE RODA APÓS OS DADOS DO USUÁRIO ESTAREM PRONTOS ---
-function inicializarPaginaPerfil() {
-    if (!state.user || !state.userData) {
-        console.error("Dados do usuário não disponíveis para inicializar a página de perfil.");
-        return;
-    }
+// --- FUNÇÃO QUE PREENCHE OS DADOS QUANDO ESTIVEREM PRONTOS ---
+function preencherDadosDoPerfil() {
+    if (!state.user || !state.userData) return;
 
-    // Elementos do DOM
-    const inputNome = document.getElementById('perfil-nome');
-    const inputEmail = document.getElementById('perfil-email');
-    const spanPlanoAtual = document.getElementById('plano-atual-nome');
-    const btnGerenciarAssinatura = document.getElementById('btn-gerenciar-assinatura');
-    const btnIniciarExclusao = document.getElementById('btn-iniciar-exclusao');
-
-    // Preenche informações
-    inputEmail.value = state.user.email;
-    inputNome.value = state.userData.nome || '';
+    document.getElementById('perfil-email').value = state.user.email;
+    document.getElementById('perfil-nome').value = state.userData.nome || '';
+    
     const plano = state.userData.plano || 'Nenhum';
-    spanPlanoAtual.textContent = plano.charAt(0).toUpperCase() + plano.slice(1);
+    document.getElementById('plano-atual-nome').textContent = plano.charAt(0).toUpperCase() + plano.slice(1);
 
-    // Configura o botão de gerenciar assinatura
-    if (btnGerenciarAssinatura) {
-        if (plano === 'trial') {
-            btnGerenciarAssinatura.innerHTML = '<i class="fas fa-star"></i> Fazer Upgrade de Plano';
-        }
-        btnGerenciarAssinatura.addEventListener('click', handleGerenciarAssinatura);
-    }
-    
-    // Configura o botão de iniciar exclusão
-    if(btnIniciarExclusao) {
-        btnIniciarExclusao.addEventListener('click', handleIniciarExclusao);
+    const btnGerenciar = document.getElementById('btn-gerenciar-assinatura');
+    if (plano === 'trial') {
+        btnGerenciar.innerHTML = '<i class="fas fa-star"></i> Fazer Upgrade de Plano';
     }
 }
 
-// --- FUNÇÕES DE LÓGICA (HANDLERS) ---
-async function handleGerenciarAssinatura() {
-    const planoAtual = state.userData.plano;
-    const stripeCustomerId = state.userData.stripeCustomerId;
-    const btn = document.getElementById('btn-gerenciar-assinatura');
-
-    if (planoAtual === 'trial') {
-        window.location.href = 'index.html#planos';
-        return;
-    }
-    
-    if (stripeCustomerId) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abrindo portal...';
-        try {
-            const response = await criarSessaoPortal(state.user.uid);
-            if (response.url) {
-                window.location.href = response.url;
-            } else { throw new Error(response.error?.message || 'URL do portal não recebida.'); }
-        } catch (error) {
-            showToast(`Erro ao abrir o portal: ${error.message}`, 'error');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-cog"></i> Gerenciar Assinatura';
-        }
-    } else {
-        showToast('Não foi possível encontrar sua assinatura. Contate o suporte.', 'error');
-    }
-}
-
-function handleIniciarExclusao() {
-    const deleteModal = document.getElementById('delete-confirm-modal');
-    deleteModal.style.display = 'flex';
-}
-
-// --- INICIALIZAÇÃO E EVENT LISTENERS GERAIS ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Ouve o evento do main-app.js para iniciar a página
-    document.addEventListener('userDataReady', inicializarPaginaPerfil);
-
-    // Lógica dos formulários que pode ser configurada imediatamente
+// --- FUNÇÃO QUE CONFIGURA OS BOTÕES E AÇÕES DA PÁGINA ---
+function configurarAcoesDaPagina() {
+    // Ações dos formulários
     const formPerfil = document.getElementById('form-perfil-pessoal');
     const formSenha = document.getElementById('form-alterar-senha');
     const reauthModal = document.getElementById('reauth-modal');
     const reauthForm = document.getElementById('reauth-form');
     const reauthCancelBtn = document.getElementById('reauth-cancel');
     const reauthPasswordInput = document.getElementById('reauth-password');
+    
+    // Ações de assinatura
+    const btnGerenciarAssinatura = document.getElementById('btn-gerenciar-assinatura');
+
+    // Ações de exclusão
+    const btnIniciarExclusao = document.getElementById('btn-iniciar-exclusao');
     const deleteModal = document.getElementById('delete-confirm-modal');
     const deleteCancelBtn = document.getElementById('delete-cancel-btn');
     const deleteConfirmInput = document.getElementById('delete-confirm-input');
     const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
 
+    // Listener do formulário de perfil
     formPerfil?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = formPerfil.querySelector('button[type="submit"]');
@@ -115,8 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 nome: document.getElementById('perfil-nome').value,
                 telefone: document.getElementById('perfil-telefone').value,
             }, { merge: true });
-            state.userData.nome = document.getElementById('perfil-nome').value;
-            document.getElementById('user-name').textContent = state.userData.nome;
+            document.getElementById('user-name').textContent = document.getElementById('perfil-nome').value;
             showToast('Perfil atualizado com sucesso!');
         } catch (error) {
             showToast('Falha ao atualizar o perfil.', 'error');
@@ -126,11 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Listener do formulário de senha
     formSenha?.addEventListener('submit', (e) => {
         e.preventDefault();
-        const novaSenha = document.getElementById('nova-senha').value;
-        if (novaSenha !== document.getElementById('confirma-nova-senha').value) {
-            return showToast('A nova senha e a confirmação não coincidem!', 'error');
+        if (document.getElementById('nova-senha').value !== document.getElementById('confirma-nova-senha').value) {
+            return showToast('As senhas não coincidem!', 'error');
         }
         reauthModal.style.display = 'flex';
         reauthPasswordInput.focus();
@@ -142,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const novaSenha = document.getElementById('nova-senha').value;
         const btnReauth = reauthForm.querySelector('button[type="submit"]');
         if (!senhaAtual) return showToast('Por favor, digite sua senha atual.', 'error');
-
+        
         btnReauth.disabled = true;
         btnReauth.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         try {
@@ -160,13 +111,41 @@ document.addEventListener('DOMContentLoaded', () => {
             btnReauth.textContent = 'Confirmar';
         }
     });
+    
+    reauthCancelBtn?.addEventListener('click', () => { reauthModal.style.display = 'none'; });
 
-    reauthCancelBtn?.addEventListener('click', () => {
-        reauthModal.style.display = 'none';
-        reauthForm.reset();
+    // Listener do botão de gerenciar assinatura
+    btnGerenciarAssinatura?.addEventListener('click', async () => {
+        if (!state.userData) return;
+        const { plano, stripeCustomerId } = state.userData;
+
+        if (plano === 'trial') {
+            window.location.href = 'index.html#planos';
+            return;
+        }
+
+        if (stripeCustomerId) {
+            btnGerenciarAssinatura.disabled = true;
+            btnGerenciarAssinatura.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abrindo portal...';
+            try {
+                const response = await criarSessaoPortal(state.user.uid);
+                if (response.url) window.location.href = response.url;
+                else throw new Error(response.error?.message || 'URL do portal não recebida.');
+            } catch (error) {
+                showToast(`Erro ao abrir o portal: ${error.message}`, 'error');
+                btnGerenciarAssinatura.disabled = false;
+                btnGerenciarAssinatura.innerHTML = '<i class="fas fa-cog"></i> Gerenciar Assinatura';
+            }
+        } else {
+            showToast('ID de assinatura não encontrado. Contate o suporte.', 'error');
+        }
     });
 
-    // Lógica do Modal de Exclusão
+    // Listeners da funcionalidade de exclusão
+    btnIniciarExclusao?.addEventListener('click', () => {
+        deleteModal.style.display = 'flex';
+    });
+
     deleteCancelBtn?.addEventListener('click', () => {
         deleteModal.style.display = 'none';
         deleteConfirmInput.value = '';
@@ -178,19 +157,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     deleteConfirmBtn?.addEventListener('click', async () => {
-        if (!state.user) return showToast('Usuário não encontrado.', 'error');
-
         deleteConfirmBtn.disabled = true;
         deleteConfirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
-
         try {
             const response = await deletarContaUsuario(state.user.uid);
             if (response.success) {
-                showToast('Sua conta foi excluída com sucesso. Você será desconectado.', 'success', 5000);
+                showToast('Conta excluída. Você será desconectado.', 'success', 5000);
                 setTimeout(() => {
-                    signOut(auth).catch(console.error).finally(() => {
-                        window.location.href = 'index.html'; // Leva para a página inicial
-                    });
+                    signOut(auth).finally(() => { window.location.href = 'index.html'; });
                 }, 4000);
             } else {
                 throw new Error(response.error?.message || 'Erro desconhecido');
@@ -201,4 +175,13 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteConfirmBtn.textContent = 'Eu entendo, excluir minha conta';
         }
     });
+}
+
+// --- INICIALIZAÇÃO ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Ouve o evento do main-app.js para preencher os dados
+    document.addEventListener('userDataReady', preencherDadosDoPerfil);
+    
+    // Configura todas as ações e botões da página imediatamente
+    configurarAcoesDaPagina();
 });
