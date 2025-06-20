@@ -59,7 +59,7 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             except ValueError:
                 numero_de_semanas = 4
 
-        # --- PROMPT FINAL COM LÓGICA DE TEMPO FLEXÍVEL ---
+        # --- PROMPT FINAL COM REGRA DE DIAS EXPLÍCITA ---
         prompt = (
             "Você é um coach especialista em criar planos de estudo para concursos públicos, seguindo a metodologia do 'Guia Definitivo de Aprovação'. "
             "Sua tarefa é criar um plano de estudos em formato JSON, com base nos dados do aluno e nas regras estritas abaixo.\n\n"
@@ -74,18 +74,19 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             "7. Cada objeto em 'atividades' DEVE ter as chaves 'materia', 'topico_sugerido' (seja específico), 'tipo_de_estudo', e 'duracao_minutos'.\n\n"
             "REGRAS DE CONTEÚDO E LÓGICA DE ALOCAÇÃO DE TEMPO (CRÍTICO SEGUIR TODAS):\n"
             "1. **DIAS DE ESTUDO:** Você DEVE gerar atividades para TODOS os dias da semana em que a disponibilidade em `dados_usuario['disponibilidade_semanal_minutos']` for MAIOR que zero.\n"
-            "2. **LÓGICA DE ALOCAÇÃO DE TEMPO (REGRA MAIS IMPORTANTE):**\n"
-            "   a. O objetivo principal é usar 100% do tempo disponível para cada dia. A soma dos 'duracao_minutos' das atividades DEVE ser IGUAL ao total de minutos daquele dia.\n"
+            "2. **NOMENCLATURA DOS DIAS (NOVA REGRA IMPORTANTE):** Os nomes dos dias (as chaves) no objeto `disponibilidade_semanal_minutos` (ex: 'Segunda', 'Terca') SÃO OS ÚNICOS NOMES VÁLIDOS que você deve usar no campo 'dia_semana' da sua resposta. NÃO traduza, modifique, adicione 'Feira' ou use cedilha (use 'Terca' e não 'Terça').\n"
+            "3. **LÓGICA DE ALOCAÇÃO DE TEMPO:**\n"
+            "   a. O objetivo principal é usar 100% do tempo disponível para cada dia.\n"
             "   b. Para preencher o tempo, primeiro crie quantas sessões completas forem possíveis com a duração preferencial de "
             f"`{dados_usuario.get('duracao_sessao_minutos')}` minutos.\n"
-            "   c. Se, após criar as sessões completas, sobrar um tempo menor que a duração preferencial (ex: sobram 30 minutos de um total de 120, com sessões de 45), crie uma ÚLTIMA sessão com exatamente esse tempo restante.\n"
-            "   d. Se o tempo total do dia já for MENOR que a duração preferencial (ex: 15 minutos disponíveis), crie UMA ÚNICA sessão com esse tempo total.\n"
-            f"3. **MATÉRIAS:** O plano DEVE OBRIGATORIAMENTE incluir TODAS as matérias listadas pelo aluno em `dados_usuario['materias']`. Distribua-as de forma equilibrada.\n"
-            f"4. **MÉTODOS DE ESTUDO:** Varie o 'tipo_de_estudo' de forma inteligente. Utilize 'Estudo de Teoria', 'Resolução de Exercícios', e 'Revisão Ativa'.\n"
-            f"5. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
-            "6. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto e motivador, explicando a lógica do plano."
+            "   c. Se, após criar as sessões completas, sobrar um tempo, crie uma ÚLTIMA sessão com exatamente esse tempo restante.\n"
+            "   d. Se o tempo total do dia já for MENOR que a duração preferencial, crie UMA ÚNICA sessão com esse tempo total.\n"
+            f"4. **MATÉRIAS:** O plano DEVE OBRIGATORIAMENTE incluir TODAS as matérias listadas pelo aluno em `dados_usuario['materias']`.\n"
+            f"5. **MÉTODOS DE ESTUDO:** Varie o 'tipo_de_estudo' entre 'Estudo de Teoria', 'Resolução de Exercícios', e 'Revisão Ativa'.\n"
+            f"6. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
+            "7. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto e motivador."
         )
-        system_message = "Você é um assistente que gera planos de estudo em formato JSON, seguindo rigorosamente a estrutura e as regras de conteúdo e de alocação de tempo solicitadas."
+        system_message = "Você é um assistente que gera planos de estudo em formato JSON, seguindo rigorosamente a estrutura e todas as regras de conteúdo e de alocação de tempo solicitadas."
         
         resultado_ia = call_openai_api(prompt, system_message)
 
