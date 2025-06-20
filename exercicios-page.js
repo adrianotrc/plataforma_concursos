@@ -17,6 +17,7 @@ const statAcertoGeral = document.getElementById('stat-acertos-geral');
 let currentUser = null;
 let unsubHistorico = null;
 let sessaoAberta = null;
+let ultimoJobIdSolicitado = null; // <-- NOVO: Guarda o ID da última solicitação
 
 // --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
 
@@ -167,7 +168,9 @@ formExercicios?.addEventListener('submit', async (e) => {
     };
 
     try {
-        await gerarExerciciosAsync(dados);
+        const respostaInicial = await gerarExerciciosAsync(dados);
+        // GUARDA o ID do job que acabamos de solicitar.
+        ultimoJobIdSolicitado = respostaInicial.jobId;
         formExercicios.style.display = 'none';
         formExercicios.reset();
     } catch (error) {
@@ -226,7 +229,25 @@ function ouvirHistoricoDeExercicios() {
     if (unsubHistorico) unsubHistorico();
     const q = query(collection(db, `users/${currentUser.uid}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50));
     unsubHistorico = onSnapshot(q, (querySnapshot) => {
-        const sessoes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const sessoes = [];
+        // APRIMORAMENTO: Verifica as mudanças para encontrar a sessão recém-completada
+        querySnapshot.docChanges().forEach((change) => {
+            const sessao = { id: change.doc.id, ...change.doc.data() };
+            // Se uma sessão foi modificada (de 'processing' para 'completed')
+            // E é a que acabamos de pedir
+            if (change.type === "modified" && sessao.status === 'completed' && sessao.jobId === ultimoJobIdSolicitado) {
+                // Abre a sessão automaticamente
+                sessaoAberta = sessao.id;
+                exibirSessaoDeExercicios(sessao.exercicios);
+                ultimoJobIdSolicitado = null; // Reseta o ID para não abrir de novo
+            }
+        });
+
+        // Atualiza a lista completa para o histórico
+        querySnapshot.forEach(doc => {
+            sessoes.push({ id: doc.id, ...doc.data() });
+        });
+        
         renderizarHistorico(sessoes);
     }, (error) => {
         console.error("Erro ao carregar o histórico de exercícios:", error);
