@@ -59,7 +59,7 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             except ValueError:
                 numero_de_semanas = 4
 
-        # --- PROMPT MELHORADO E MAIS ESPECÍFICO ---
+        # --- PROMPT FINAL REFORÇADO E INEQUÍVOCO ---
         prompt = (
             "Você é um coach especialista em criar planos de estudo para concursos públicos, seguindo a metodologia do 'Guia Definitivo de Aprovação'. "
             "Sua tarefa é criar um plano de estudos em formato JSON, com base nos dados do aluno e nas regras estritas abaixo.\n\n"
@@ -73,12 +73,13 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             "6. Cada objeto em 'dias_de_estudo' DEVE ter 'dia_semana' e uma lista chamada 'atividades'.\n"
             "7. Cada objeto em 'atividades' DEVE ter as chaves 'materia', 'topico_sugerido' (seja específico), 'tipo_de_estudo', e 'duracao_minutos'.\n\n"
             "REGRAS DE CONTEÚDO (CRÍTICO SEGUIR TODAS):\n"
-            f"1. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
-            f"2. **MATÉRIAS:** O plano DEVE OBRIGATORIAMENTE incluir TODAS as matérias listadas pelo aluno em `dados_usuario['materias']`. Distribua-as de forma equilibrada ao longo das semanas.\n"
-            f"3. **MÉTODOS DE ESTUDO:** Varie o 'tipo_de_estudo' de forma inteligente ao longo da semana. Utilize os seguintes tipos: 'Estudo de Teoria', 'Resolução de Exercícios', e 'Revisão Ativa'. Evite repetir o mesmo método para a mesma matéria consecutivamente. O plano precisa ter variedade.\n"
-            f"4. **DURAÇÃO DAS SESSÕES:** Cada atividade deve ter uma 'duracao_minutos' de EXATAMENTE {dados_usuario.get('duracao_sessao_minutos')} minutos.\n"
-            "5. **RESPEITO AO TEMPO DIÁRIO:** A SOMA TOTAL de 'duracao_minutos' das atividades de um dia NÃO PODE ULTRAPASSAR o tempo informado pelo aluno em `dados_usuario['disponibilidade_semanal_minutos']` para aquele `dia_semana`.\n"
-            "6. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto e motivador, explicando a lógica geral do plano (ex: foco inicial em teoria, seguido por mais exercícios nas semanas finais)."
+            f"1. **DIAS DE ESTUDO:** Você DEVE gerar atividades para TODOS os dias da semana em que a disponibilidade em `dados_usuario['disponibilidade_semanal_minutos']` for MAIOR que zero. Ignore os dias com zero minutos.\n"
+            f"2. **CARGA HORÁRIA DIÁRIA:** Para cada dia de estudo, a SOMA dos 'duracao_minutos' de TODAS as atividades daquele dia DEVE SER EXATAMENTE IGUAL ao total de minutos especificado para aquele dia em `dados_usuario['disponibilidade_semanal_minutos']`. Divida o tempo total em sessões.\n"
+            f"3. **DURAÇÃO DAS SESSÕES:** Cada sessão de estudo individual (cada atividade) deve ter uma 'duracao_minutos' de EXATAMENTE {dados_usuario.get('duracao_sessao_minutos')} minutos.\n"
+            f"4. **MATÉRIAS:** O plano DEVE OBRIGATORIAMENTE incluir TODAS as matérias listadas pelo aluno em `dados_usuario['materias']`. Distribua-as de forma equilibrada.\n"
+            f"5. **MÉTODOS DE ESTUDO:** Varie o 'tipo_de_estudo' de forma inteligente. Utilize 'Estudo de Teoria', 'Resolução de Exercícios', e 'Revisão Ativa'.\n"
+            f"6. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
+            "7. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto e motivador, explicando a lógica do plano."
         )
         system_message = "Você é um assistente que gera planos de estudo em formato JSON, seguindo rigorosamente a estrutura e as regras de conteúdo solicitadas."
         
