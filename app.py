@@ -106,7 +106,7 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             'error': str(e)
         })
 
-# --- Rota para Iniciar a Geração do Plano ---
+# SUBSTITUA a rota /gerar-plano-estudos por esta:
 @app.route("/gerar-plano-estudos", methods=['POST'])
 def gerar_plano_iniciar_job():
     dados_usuario = request.json
