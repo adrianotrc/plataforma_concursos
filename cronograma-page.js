@@ -40,21 +40,28 @@ function renderizarHistorico(planos) {
         containerHistorico.innerHTML = '<div class="card-placeholder"><p>Nenhum cronograma gerado ainda.</p></div>';
         return;
     }
+
+    // Ordena os planos pela data de criação, do mais novo para o mais antigo
     const planosOrdenados = planos.sort((a, b) => (b.criadoEm?.toDate() || 0) - (a.criadoEm?.toDate() || 0));
+
     containerHistorico.innerHTML = planosOrdenados.map(plano => {
         const dataFormatada = plano.criadoEm?.toDate()?.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) || 'Processando...';
+        
+        // **LÓGICA DE STATUS ATUALIZADA**
         const isProcessing = plano.status === 'processing';
-        const hasFailed = plano.status === 'failed';
+        const hasFailed = plano.status === 'failed'; // <-- Nova verificação
         
         let subtexto = `Gerado em: ${dataFormatada}`;
         if (plano.data_inicio && plano.data_termino) {
              subtexto += ` | Período: ${plano.data_inicio} a ${plano.data_termino}`;
         }
 
+        // Define o ícone com base no status
         let statusIcon = '';
         if (isProcessing) {
             statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
         } else if (hasFailed) {
+            // Ícone de erro se a geração falhou
             statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
         }
 

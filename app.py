@@ -42,8 +42,12 @@ client = OpenAI(api_key=openai_api_key)
 # --- Função de Trabalho em Segundo Plano ---
 def processar_plano_em_background(user_id, job_id, dados_usuario):
     print(f"BACKGROUND JOB INICIADO: {job_id} para usuário {user_id}")
+    # A referência ao documento no Firestore que representa nosso 'job'
     job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
+    
+    # Bloco try/except para capturar QUALQUER erro que aconteça durante a execução
     try:
+        # Lógica para calcular o número de semanas (sem alterações)
         numero_de_semanas = 4
         data_inicio_str = dados_usuario.get('data_inicio')
         data_termino_str = dados_usuario.get('data_termino')
@@ -77,22 +81,30 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
         )
         system_message = "Você é um assistente que gera planos de estudo em formato JSON, seguindo rigorosamente a estrutura e as regras de conteúdo solicitadas."
 
+        # A chamada para a OpenAI
         resultado_ia = call_openai_api(prompt, system_message)
 
         # Validação da resposta da IA
         if 'plano_de_estudos' not in resultado_ia or 'cronograma_semanal_detalhado' not in resultado_ia['plano_de_estudos']:
             raise ValueError("A resposta da IA não continha a estrutura de cronograma esperada.")
 
+        # Prepara os dados finais para salvar no Firestore
         plano_final = resultado_ia['plano_de_estudos']
-        plano_final['status'] = 'completed'
+        plano_final['status'] = 'completed' # SUCESSO: Define o status como 'completed'
 
+        # Atualiza o documento no Firestore com o plano completo
         job_ref.update(plano_final)
         print(f"BACKGROUND JOB CONCLUÍDO: {job_id}")
 
+    # PONTO-CHAVE: Se qualquer coisa no bloco 'try' der errado, este bloco 'except' será executado
     except Exception as e:
         print(f"!!! ERRO NO BACKGROUND JOB {job_id}: {e} !!!")
-        traceback.print_exc()
-        job_ref.update({'status': 'failed', 'error': str(e)})
+        traceback.print_exc() # Imprime o erro detalhado no seu terminal do servidor
+        # ATUALIZAÇÃO CRÍTICA: Avisa o Firestore que a tarefa falhou
+        job_ref.update({
+            'status': 'failed', 
+            'error': str(e)
+        })
 
 # --- Rota para Iniciar a Geração do Plano ---
 @app.route("/gerar-plano-estudos", methods=['POST'])
@@ -103,10 +115,11 @@ def gerar_plano_iniciar_job():
     if not user_id:
         return jsonify({"erro_geral": "ID do usuário não fornecido."}), 400
 
+    # Cria um novo documento na subcoleção 'plans' para este job
     job_ref = db.collection('users').document(user_id).collection('plans').document()
     job_id = job_ref.id
 
-    # Salva o placeholder com os dados iniciais
+    # Salva um "placeholder" no Firestore com o status inicial 'processing'
     placeholder_data = {
         'status': 'processing',
         'criadoEm': firestore.SERVER_TIMESTAMP,
@@ -117,10 +130,11 @@ def gerar_plano_iniciar_job():
     }
     job_ref.set(placeholder_data)
 
-    # Inicia a tarefa em segundo plano
+    # Inicia a tarefa pesada (chamar a OpenAI) em uma thread separada
     thread = threading.Thread(target=processar_plano_em_background, args=(user_id, job_id, dados_usuario))
     thread.start()
 
+    # Retorna uma resposta imediata para o frontend
     return jsonify({"status": "processing", "jobId": job_id}), 202
 
 
