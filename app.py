@@ -41,8 +41,9 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
     job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
     
     try:
-        # Lógica para calcular o número de semanas (sem alterações)
+        # Lógica de cálculo de semanas (sem alterações)
         numero_de_semanas = 4
+        # ... (o resto da lógica de data permanece o mesmo) ...
         data_inicio_str = dados_usuario.get('data_inicio')
         data_termino_str = dados_usuario.get('data_termino')
         if data_inicio_str and data_termino_str:
@@ -54,28 +55,24 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
                     numero_de_semanas = math.ceil((diferenca_dias + 1) / 7)
             except ValueError:
                 numero_de_semanas = 4
-
-        # --- PROMPT FINAL COM LÓGICA PEDAGÓGICA AVANÇADA ---
+        
+        # --- PROMPT FINAL REFORÇADO ---
         prompt = (
             "Você é um coach especialista em criar planos de estudo para concursos, baseando-se na metodologia do 'Guia Definitivo de Aprovação'. "
             "Sua tarefa é criar um plano de estudos em formato JSON, com base nos dados do aluno e nas regras estritas abaixo.\n\n"
             f"DADOS DO ALUNO:\n{json.dumps(dados_usuario, indent=2)}\n\n"
             "REGRAS DE ESTRUTURA JSON (OBRIGATÓRIO):\n"
+            # As regras de estrutura permanecem as mesmas
             "1. A resposta DEVE ser um único objeto JSON.\n"
             "2. A chave principal deve ser 'plano_de_estudos'.\n"
             "3. O objeto 'plano_de_estudos' DEVE conter as chaves: 'concurso_foco', 'resumo_estrategico', e 'cronograma_semanal_detalhado'.\n"
             "4. 'cronograma_semanal_detalhado' DEVE ser uma LISTA de objetos, um para cada semana do plano.\n"
             "5. Cada objeto de semana DEVE ter 'semana_numero' e uma lista chamada 'dias_de_estudo'.\n"
             "6. Cada objeto em 'dias_de_estudo' DEVE ter 'dia_semana' e uma lista chamada 'atividades'.\n"
-            "7. Cada objeto em 'atividades' DEVE ter as chaves 'materia', 'topico_sugerido' (seja específico), 'tipo_de_estudo', e 'duracao_minutos'.\n\n"
+            "7. Cada objeto em 'atividades' DEVE ter as chaves 'materia', 'topico_sugerido', 'tipo_de_estudo', e 'duracao_minutos'.\n\n"
             "REGRAS DE CONTEÚDO E LÓGICA (CRÍTICO SEGUIR TODAS):\n"
-            "1. **DIAS E TEMPO DE ESTUDO:** Gere atividades para TODOS os dias da semana informados em `dados_usuario['disponibilidade_semanal_minutos']` que tenham valor maior que zero. O campo 'dia_semana' na sua resposta deve ser EXATAMENTE igual à chave recebida (ex: 'Terca'). Use 100% do tempo de cada dia, de forma flexível.\n"
-            "2. **LÓGICA DE MÉTODOS DE ESTUDO (REGRA MAIS IMPORTANTE):**\n"
-            "   a. Você DEVE aplicar um ciclo de aprendizado inteligente. A escolha do 'tipo_de_estudo' deve depender da fase de preparação do aluno (`fase_concurso`) e da progressão natural do aprendizado.\n"
-            "   b. Crie uma mistura SAUDÁVEL dos seguintes métodos: 'Estudo de Teoria', 'Resolução de Exercícios', 'Revisão Ativa', 'Criação de Mapa Mental', 'Leitura de Lei Seca', 'Prática de Redação', 'Simulado Parcial'.\n"
-            "   c. Se a `fase_concurso` for 'base_sem_edital_especifico', priorize 'Estudo de Teoria' e 'Criação de Mapa Mental' nas semanas iniciais.\n"
-            "   d. Se a `fase_concurso` for 'pos_edital_publicado', priorize 'Resolução de Exercícios', 'Revisão Ativa' e 'Simulado Parcial'.\n"
-            "   e. Para um mesmo tópico, aplique uma progressão lógica: comece com teoria, depois exercícios, e por fim revisão. NÃO gere um plano contendo apenas um ou dois tipos de estudo.\n"
+            "1. **VARIEDADE DE MÉTODOS (REGRA MAIS IMPORTANTE):** O plano DEVE ser pedagogicamente rico. É OBRIGATÓRIO que você use uma mistura inteligente dos seguintes métodos de estudo: 'Estudo de Teoria', 'Resolução de Exercícios', 'Revisão Ativa', 'Criação de Mapa Mental' e 'Leitura de Lei Seca'. Um plano que usa apenas um ou dois métodos é considerado uma falha. Aplique o método mais adequado para cada matéria e momento do estudo.\n"
+            "2. **DIAS E TEMPO DE ESTUDO:** Gere atividades para TODOS os dias da semana informados em `dados_usuario['disponibilidade_semanal_minutos']`. O campo 'dia_semana' na sua resposta deve ser EXATAMENTE igual à chave recebida. Use 100% do tempo de cada dia de forma flexível.\n"
             f"3. **MATÉRIAS:** O plano DEVE incluir TODAS as matérias listadas pelo aluno.\n"
             f"4. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
             "5. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto, explicando a lógica de progressão aplicada no plano."
@@ -111,11 +108,28 @@ def gerar_plano_iniciar_job():
     if not user_id:
         return jsonify({"erro_geral": "ID do usuário não fornecido."}), 400
 
-    # Cria um novo documento na subcoleção 'plans' para este job
+    # --- INÍCIO DA NOVA SEÇÃO DE CORREÇÃO ---
+    # Pré-processa os dados para a IA, garantindo que os dias da semana estão corretos.
+    if 'disponibilidade_semanal_minutos' in dados_usuario:
+        disponibilidade = dados_usuario['disponibilidade_semanal_minutos']
+        # Mapeia o nome recebido do frontend para o nome completo que a IA entende melhor
+        mapa_dias = {
+            "Segunda": "Segunda-feira",
+            "Terca": "Terça-feira",
+            "Quarta": "Quarta-feira",
+            "Quinta": "Quinta-feira",
+            "Sexta": "Sexta-feira",
+            "Sabado": "Sábado",
+            "Domingo": "Domingo"
+        }
+        # Cria um novo dicionário corrigido
+        disponibilidade_corrigida = {mapa_dias.get(k, k): v for k, v in disponibilidade.items()}
+        dados_usuario['disponibilidade_semanal_minutos'] = disponibilidade_corrigida
+    # --- FIM DA NOVA SEÇÃO DE CORREÇÃO ---
+
     job_ref = db.collection('users').document(user_id).collection('plans').document()
     job_id = job_ref.id
 
-    # Salva um "placeholder" no Firestore com o status inicial 'processing'
     placeholder_data = {
         'status': 'processing',
         'criadoEm': firestore.SERVER_TIMESTAMP,
@@ -126,11 +140,9 @@ def gerar_plano_iniciar_job():
     }
     job_ref.set(placeholder_data)
 
-    # Inicia a tarefa pesada (chamar a OpenAI) em uma thread separada
     thread = threading.Thread(target=processar_plano_em_background, args=(user_id, job_id, dados_usuario))
     thread.start()
 
-    # Retorna uma resposta imediata para o frontend
     return jsonify({"status": "processing", "jobId": job_id}), 202
 
 
