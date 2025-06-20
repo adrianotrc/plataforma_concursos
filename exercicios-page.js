@@ -2,9 +2,9 @@
 
 import { auth, db } from './firebase-config.js';
 // CORREÇÃO 1: Adiciona 'limit' à lista de importações do Firestore.
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-// CORREÇÃO 2: Importa a função da API correta (gerarExerciciosAsync foi um nome temporário)
-import { gerarExercicios } from './api.js';
+import { collection, serverTimestamp, query, orderBy, onSnapshot, doc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// CORREÇÃO 2: Importa a função assíncrona correta da API.
+import { gerarExerciciosAsync } from './api.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-exercicios');
@@ -24,14 +24,18 @@ let sessaoAberta = null;
 
 function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsuario = {}) {
     exerciciosContainer.innerHTML = '';
-    if (!exercicios || exercicios.length === 0) return;
+    if (!exercicios || exercicios.length === 0) {
+        exerciciosContainer.innerHTML = `<div class="card-placeholder"><p>Ainda não há exercícios para esta sessão. A IA pode estar trabalhando ou ocorreu um erro.</p></div>`;
+        exerciciosContainer.style.display = 'block';
+        return;
+    };
 
     let exerciciosHtml = '';
     exercicios.forEach((questao, index) => {
         exerciciosHtml += `<div class="questao-bloco" id="questao-${index}"><p class="enunciado-questao"><strong>${index + 1}.</strong> ${questao.enunciado}</p><ul class="opcoes-lista">`;
         const opcoesOrdenadas = [...questao.opcoes].sort((a, b) => a.letra.localeCompare(b.letra));
         opcoesOrdenadas.forEach(opcao => {
-            const isChecked = respostasUsuario[index] === opcao.letra ? 'checked' : '';
+            const isChecked = respostasUsuario && respostasUsuario[index] === opcao.letra ? 'checked' : '';
             const isDisabled = jaCorrigido ? 'disabled' : '';
             exerciciosHtml += `<li class="opcao-item"><input type="radio" name="questao-${index}" id="q${index}-${opcao.letra}" value="${opcao.letra}" ${isChecked} ${isDisabled}><label for="q${index}-${opcao.letra}"><strong>${opcao.letra})</strong> ${opcao.texto}</label></li>`;
         });
@@ -55,7 +59,7 @@ function exibirCorrecao(exercicios, respostas, container) {
         const questaoContainer = container.querySelector(`#questao-${index}`);
         if (!questaoContainer) return;
         const feedbackContainer = questaoContainer.querySelector('.feedback-container');
-        const respostaUsuario = respostas[index];
+        const respostaUsuario = respostas ? respostas[index] : undefined;
         const respostaCorreta = questao.resposta_correta;
         const explicacaoHtml = `<p><strong>Explicação:</strong> ${questao.explicacao}</p>`;
         feedbackContainer.style.display = 'block';
@@ -80,20 +84,26 @@ function renderizarHistorico(sessoes) {
     }
     historicoContainer.innerHTML = sessoes.map(sessao => {
         const resumo = sessao.resumo || {};
-        const score = resumo.total > 0 ? (resumo.acertos / resumo.total) * 100 : 0;
+        const isProcessing = sessao.status === 'processing';
+        const hasFailed = sessao.status === 'failed';
+        const score = resumo.total > 0 && resumo.acertos !== undefined ? (resumo.acertos / resumo.total) * 100 : 0;
         let scoreClass = 'bom';
         if (score < 70) scoreClass = 'medio';
         if (score < 50) scoreClass = 'ruim';
+        let statusIcon = '';
+        if (isProcessing) statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
+        else if (hasFailed) statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
+        
         return `
             <div class="exercise-history-item">
                 <div class="exercise-info">
-                    <span class="exercise-subject">${resumo.materia || 'Sessão'} - ${resumo.topico || 'Geral'}</span>
+                    <span class="exercise-subject">${resumo.materia || 'Sessão'} - ${resumo.topico || 'Geral'} ${statusIcon}</span>
                     <span class="exercise-details">${resumo.total || 0} questões</span>
                 </div>
-                ${resumo.acertos !== undefined ? `<div class="exercise-score ${scoreClass}">${score.toFixed(0)}%</div>` : ''}
+                ${!isProcessing && !hasFailed && resumo.acertos !== undefined ? `<div class="exercise-score ${scoreClass}">${score.toFixed(0)}%</div>` : ''}
                 <div class="exercise-time">
                     <p>${resumo.criadoEm?.toDate().toLocaleDateString('pt-BR')}</p>
-                    <button class="btn btn-ghost btn-rever-sessao" data-session-id="${sessao.id}">Rever</button>
+                    <button class="btn btn-ghost btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${isProcessing ? 'Gerando...' : (hasFailed ? 'Falhou' : 'Rever')}</button>
                 </div>
             </div>
         `;
@@ -103,8 +113,9 @@ function renderizarHistorico(sessoes) {
 
 function atualizarMetricasGerais(sessoes) {
     if (!statTotalExercicios || !statAcertoGeral) return;
-    const totalExercicios = sessoes.reduce((acc, sessao) => acc + (sessao.resumo?.total || 0), 0);
-    const totalAcertos = sessoes.reduce((acc, sessao) => acc + (sessao.resumo?.acertos || 0), 0);
+    const sessoesCompletas = sessoes.filter(s => s.status === 'completed' && s.resumo.acertos !== undefined);
+    const totalExercicios = sessoesCompletas.reduce((acc, sessao) => acc + (sessao.resumo?.total || 0), 0);
+    const totalAcertos = sessoesCompletas.reduce((acc, sessao) => acc + (sessao.resumo?.acertos || 0), 0);
     const taxaAcertoGeral = totalExercicios > 0 ? (totalAcertos / totalExercicios) * 100 : 0;
     statTotalExercicios.textContent = totalExercicios;
     statAcertoGeral.textContent = `${taxaAcertoGeral.toFixed(0)}%`;
@@ -112,21 +123,13 @@ function atualizarMetricasGerais(sessoes) {
 
 // --- LÓGICA DE DADOS E EVENTOS ---
 
-async function salvarSessaoNoFirestore(exerciciosGerados, dadosForm) {
-    if (!currentUser) return;
+async function salvarCorrecaoNoFirestore(respostasUsuario, acertos) {
+    if (!currentUser || !sessaoAberta) return;
     try {
-        const sessaoParaSalvar = {
-            exercicios: exerciciosGerados,
-            resumo: {
-                materia: dadosForm.materia,
-                topico: dadosForm.topico,
-                total: exerciciosGerados.length,
-                criadoEm: serverTimestamp()
-            },
-        };
-        await addDoc(collection(db, `users/${currentUser.uid}/sessoesExercicios`), sessaoParaSalvar);
+        const sessaoRef = doc(db, `users/${currentUser.uid}/sessoesExercicios`, sessaoAberta);
+        await updateDoc(sessaoRef, { 'resumo.acertos': acertos, respostasUsuario });
     } catch (error) {
-        console.error("Erro ao salvar sessão de exercícios:", error);
+        console.error("Erro ao salvar correção:", error);
     }
 }
 
@@ -138,12 +141,14 @@ formExercicios?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btnGerar = formExercicios.querySelector('button[type="submit"]');
     btnGerar.disabled = true;
-    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
-    // CORREÇÃO 3: Adiciona o container de feedback para o usuário.
-    exerciciosContainer.innerHTML = `<div class="card-placeholder"><p><i class="fas fa-spinner fa-spin"></i> A IA está gerando seus exercícios... Isso pode levar um momento.</p></div>`;
-    exerciciosContainer.style.display = 'block';
+    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Solicitando...';
     
+    // CORREÇÃO 3: Adiciona o container de feedback para o usuário.
+    exerciciosContainer.innerHTML = `<div class="card-placeholder"><p><i class="fas fa-cog fa-spin"></i> Sua solicitação foi enviada. A nova sessão de exercícios aparecerá no histórico em breve para você começar.</p></div>`;
+    exerciciosContainer.style.display = 'block';
+
     const dados = {
+        userId: currentUser.uid,
         materia: document.getElementById('exercicio-materia').value,
         topico: document.getElementById('exercicio-topico').value,
         quantidade: parseInt(document.getElementById('exercicio-quantidade').value) || 5,
@@ -151,41 +156,38 @@ formExercicios?.addEventListener('submit', async (e) => {
     };
 
     try {
-        const resultado = await gerarExercicios(dados);
-        sessaoAberta = null; // Limpa sessão aberta anterior
-        exibirSessaoDeExercicios(resultado.exercicios);
-        await salvarSessaoNoFirestore(resultado.exercicios, dados);
+        // CORREÇÃO 2: Chama a função assíncrona correta
+        await gerarExerciciosAsync(dados);
+        formExercicios.style.display = 'none';
+        formExercicios.reset();
     } catch (error) {
-        alert('Erro ao gerar exercícios. Tente novamente.');
-        exerciciosContainer.innerHTML = '<div class="card-placeholder"><p>Ocorreu um erro. Por favor, tente gerar novamente.</p></div>';
+        alert('Erro ao solicitar exercícios. Tente novamente.');
+        exerciciosContainer.innerHTML = '<div class="card-placeholder"><p>Ocorreu um erro ao enviar sua solicitação. Por favor, tente novamente.</p></div>';
     } finally {
         btnGerar.disabled = false;
         btnGerar.textContent = 'Gerar';
-        formExercicios.style.display = 'none';
-        formExercicios.reset();
     }
 });
 
 // Delegação de eventos
 document.body.addEventListener('click', async (e) => {
+    const reverBtn = e.target.closest('.btn-rever-sessao');
     if (e.target.id === 'btn-corrigir-exercicios') {
+        e.target.disabled = true;
+        e.target.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Corrigindo...';
         const respostasUsuario = {};
         const sessoesRef = doc(db, `users/${currentUser.uid}/sessoesExercicios`, sessaoAberta);
         const sessaoSnap = await getDoc(sessoesRef);
+        if (!sessaoSnap.exists()) return;
         const exercicios = sessaoSnap.data().exercicios;
-
         exercicios.forEach((_, index) => {
             const respostaSelecionada = document.querySelector(`input[name="questao-${index}"]:checked`);
             if (respostaSelecionada) respostasUsuario[index] = respostaSelecionada.value;
         });
         const acertos = exibirCorrecao(exercicios, respostasUsuario, exerciciosContainer);
-        // Atualiza o documento no Firestore com as respostas e acertos
-        await updateDoc(sessoesRef, { 'resumo.acertos': acertos, respostasUsuario });
-        e.target.style.display = 'none';
-    }
-
-    if (e.target.matches('.btn-rever-sessao')) {
-        const sessionId = e.target.dataset.sessionId;
+        await salvarCorrecaoNoFirestore(respostasUsuario, acertos);
+    } else if (reverBtn && !reverBtn.disabled) {
+        const sessionId = reverBtn.dataset.sessionId;
         const sessaoRef = doc(db, `users/${currentUser.uid}/sessoesExercicios`, sessionId);
         const sessaoSnap = await getDoc(sessaoRef);
         if (sessaoSnap.exists()) {
@@ -198,14 +200,15 @@ document.body.addEventListener('click', async (e) => {
 });
 
 // --- INICIALIZAÇÃO ---
-
 function ouvirHistoricoDeExercicios() {
     if (unsubHistorico) unsubHistorico();
-    // A linha abaixo causava o erro. 'limit' foi importado e agora a função deve funcionar.
     const q = query(collection(db, `users/${currentUser.uid}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50));
     unsubHistorico = onSnapshot(q, (querySnapshot) => {
         const sessoes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderizarHistorico(sessoes);
+    }, (error) => {
+        console.error("Erro ao carregar o histórico de exercícios:", error);
+        historicoContainer.innerHTML = '<div class="card-placeholder"><p>Não foi possível carregar o histórico. Tente recarregar a página.</p></div>';
     });
 }
 
