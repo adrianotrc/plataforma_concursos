@@ -59,34 +59,32 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             except ValueError:
                 numero_de_semanas = 4
 
-        # --- PROMPT FINAL COM REGRA DE DIAS EXPLÍCITA ---
+        # --- PROMPT FINAL COM LÓGICA PEDAGÓGICA ---
         prompt = (
-            "Você é um coach especialista em criar planos de estudo para concursos públicos, seguindo a metodologia do 'Guia Definitivo de Aprovação'. "
+            "Você é um coach especialista em criar planos de estudo para concursos, baseando-se na metodologia do 'Guia Definitivo de Aprovação'. "
             "Sua tarefa é criar um plano de estudos em formato JSON, com base nos dados do aluno e nas regras estritas abaixo.\n\n"
             f"DADOS DO ALUNO:\n{json.dumps(dados_usuario, indent=2)}\n\n"
             "REGRAS DE ESTRUTURA JSON (OBRIGATÓRIO):\n"
+            # As regras de estrutura permanecem as mesmas
             "1. A resposta DEVE ser um único objeto JSON.\n"
             "2. A chave principal deve ser 'plano_de_estudos'.\n"
             "3. O objeto 'plano_de_estudos' DEVE conter as chaves: 'concurso_foco', 'resumo_estrategico', e 'cronograma_semanal_detalhado'.\n"
             "4. 'cronograma_semanal_detalhado' DEVE ser uma LISTA de objetos, um para cada semana do plano.\n"
             "5. Cada objeto de semana DEVE ter 'semana_numero' e uma lista chamada 'dias_de_estudo'.\n"
             "6. Cada objeto em 'dias_de_estudo' DEVE ter 'dia_semana' e uma lista chamada 'atividades'.\n"
-            "7. Cada objeto em 'atividades' DEVE ter as chaves 'materia', 'topico_sugerido' (seja específico), 'tipo_de_estudo', e 'duracao_minutos'.\n\n"
-            "REGRAS DE CONTEÚDO E LÓGICA DE ALOCAÇÃO DE TEMPO (CRÍTICO SEGUIR TODAS):\n"
-            "1. **DIAS DE ESTUDO:** Você DEVE gerar atividades para TODOS os dias da semana em que a disponibilidade em `dados_usuario['disponibilidade_semanal_minutos']` for MAIOR que zero.\n"
-            "2. **NOMENCLATURA DOS DIAS (NOVA REGRA IMPORTANTE):** Os nomes dos dias (as chaves) no objeto `disponibilidade_semanal_minutos` (ex: 'Segunda', 'Terca') SÃO OS ÚNICOS NOMES VÁLIDOS que você deve usar no campo 'dia_semana' da sua resposta. NÃO traduza, modifique, adicione 'Feira' ou use cedilha (use 'Terca' e não 'Terça').\n"
-            "3. **LÓGICA DE ALOCAÇÃO DE TEMPO:**\n"
-            "   a. O objetivo principal é usar 100% do tempo disponível para cada dia.\n"
-            "   b. Para preencher o tempo, primeiro crie quantas sessões completas forem possíveis com a duração preferencial de "
-            f"`{dados_usuario.get('duracao_sessao_minutos')}` minutos.\n"
-            "   c. Se, após criar as sessões completas, sobrar um tempo, crie uma ÚLTIMA sessão com exatamente esse tempo restante.\n"
-            "   d. Se o tempo total do dia já for MENOR que a duração preferencial, crie UMA ÚNICA sessão com esse tempo total.\n"
-            f"4. **MATÉRIAS:** O plano DEVE OBRIGATORIAMENTE incluir TODAS as matérias listadas pelo aluno em `dados_usuario['materias']`.\n"
-            f"5. **MÉTODOS DE ESTUDO:** Varie o 'tipo_de_estudo' entre 'Estudo de Teoria', 'Resolução de Exercícios', e 'Revisão Ativa'.\n"
-            f"6. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
-            "7. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto e motivador."
+            "7. Cada objeto em 'atividades' DEVE ter as chaves 'materia', 'topico_sugerido', 'tipo_de_estudo', e 'duracao_minutos'.\n\n"
+            "REGRAS DE CONTEÚDO E LÓGICA (CRÍTICO SEGUIR TODAS):\n"
+            "1. **DIAS E TEMPO DE ESTUDO:** Gere atividades para TODOS os dias da semana informados, usando 100% do tempo disponível para cada dia. A alocação de tempo deve ser flexível, usando a duração de sessão preferencial e criando uma sessão final com o tempo restante.\n"
+            "2. **LÓGICA DE PROGRESSÃO DE ESTUDO (REGRA MAIS IMPORTANTE):**\n"
+            "   a. Você DEVE aplicar um ciclo de aprendizado. Para cada tópico, a primeira vez que ele aparecer no plano, o 'tipo_de_estudo' DEVE ser 'Estudo de Teoria'.\n"
+            "   b. Em uma sessão FUTURA (em outro dia) para o MESMO tópico, o 'tipo_de_estudo' DEVE ser 'Resolução de Exercícios'.\n"
+            "   c. Periodicamente, e principalmente nas semanas finais, você DEVE incluir sessões de 'Revisão Ativa' para os tópicos que já foram estudados com teoria e exercícios.\n"
+            "   d. GARANTA que o plano contenha uma mistura equilibrada e inteligente dos três tipos de estudo ('Estudo de Teoria', 'Resolução de Exercícios', 'Revisão Ativa') ao longo das semanas. NÃO gere um plano contendo apenas um tipo de estudo.\n"
+            f"3. **MATÉRIAS:** O plano DEVE incluir TODAS as matérias listadas pelo aluno.\n"
+            f"4. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
+            "5. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto, explicando a lógica de progressão aplicada no plano (teoria -> exercícios -> revisão)."
         )
-        system_message = "Você é um assistente que gera planos de estudo em formato JSON, seguindo rigorosamente a estrutura e todas as regras de conteúdo e de alocação de tempo solicitadas."
+        system_message = "Você é um assistente que gera planos de estudo em formato JSON, seguindo rigorosamente a estrutura e a lógica pedagógica de progressão de estudos solicitada."
         
         resultado_ia = call_openai_api(prompt, system_message)
 
