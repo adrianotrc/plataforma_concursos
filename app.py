@@ -59,30 +59,30 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             except ValueError:
                 numero_de_semanas = 4
 
-        # --- PROMPT FINAL COM LÓGICA PEDAGÓGICA ---
+        # --- PROMPT FINAL COM LÓGICA PEDAGÓGICA AVANÇADA ---
         prompt = (
             "Você é um coach especialista em criar planos de estudo para concursos, baseando-se na metodologia do 'Guia Definitivo de Aprovação'. "
             "Sua tarefa é criar um plano de estudos em formato JSON, com base nos dados do aluno e nas regras estritas abaixo.\n\n"
             f"DADOS DO ALUNO:\n{json.dumps(dados_usuario, indent=2)}\n\n"
             "REGRAS DE ESTRUTURA JSON (OBRIGATÓRIO):\n"
-            # As regras de estrutura permanecem as mesmas
             "1. A resposta DEVE ser um único objeto JSON.\n"
             "2. A chave principal deve ser 'plano_de_estudos'.\n"
             "3. O objeto 'plano_de_estudos' DEVE conter as chaves: 'concurso_foco', 'resumo_estrategico', e 'cronograma_semanal_detalhado'.\n"
             "4. 'cronograma_semanal_detalhado' DEVE ser uma LISTA de objetos, um para cada semana do plano.\n"
             "5. Cada objeto de semana DEVE ter 'semana_numero' e uma lista chamada 'dias_de_estudo'.\n"
             "6. Cada objeto em 'dias_de_estudo' DEVE ter 'dia_semana' e uma lista chamada 'atividades'.\n"
-            "7. Cada objeto em 'atividades' DEVE ter as chaves 'materia', 'topico_sugerido', 'tipo_de_estudo', e 'duracao_minutos'.\n\n"
+            "7. Cada objeto em 'atividades' DEVE ter as chaves 'materia', 'topico_sugerido' (seja específico), 'tipo_de_estudo', e 'duracao_minutos'.\n\n"
             "REGRAS DE CONTEÚDO E LÓGICA (CRÍTICO SEGUIR TODAS):\n"
-            "1. **DIAS E TEMPO DE ESTUDO:** Gere atividades para TODOS os dias da semana informados, usando 100% do tempo disponível para cada dia. A alocação de tempo deve ser flexível, usando a duração de sessão preferencial e criando uma sessão final com o tempo restante.\n"
-            "2. **LÓGICA DE PROGRESSÃO DE ESTUDO (REGRA MAIS IMPORTANTE):**\n"
-            "   a. Você DEVE aplicar um ciclo de aprendizado. Para cada tópico, a primeira vez que ele aparecer no plano, o 'tipo_de_estudo' DEVE ser 'Estudo de Teoria'.\n"
-            "   b. Em uma sessão FUTURA (em outro dia) para o MESMO tópico, o 'tipo_de_estudo' DEVE ser 'Resolução de Exercícios'.\n"
-            "   c. Periodicamente, e principalmente nas semanas finais, você DEVE incluir sessões de 'Revisão Ativa' para os tópicos que já foram estudados com teoria e exercícios.\n"
-            "   d. GARANTA que o plano contenha uma mistura equilibrada e inteligente dos três tipos de estudo ('Estudo de Teoria', 'Resolução de Exercícios', 'Revisão Ativa') ao longo das semanas. NÃO gere um plano contendo apenas um tipo de estudo.\n"
+            "1. **DIAS E TEMPO DE ESTUDO:** Gere atividades para TODOS os dias da semana informados em `dados_usuario['disponibilidade_semanal_minutos']` que tenham valor maior que zero. O campo 'dia_semana' na sua resposta deve ser EXATAMENTE igual à chave recebida (ex: 'Terca'). Use 100% do tempo de cada dia, de forma flexível.\n"
+            "2. **LÓGICA DE MÉTODOS DE ESTUDO (REGRA MAIS IMPORTANTE):**\n"
+            "   a. Você DEVE aplicar um ciclo de aprendizado inteligente. A escolha do 'tipo_de_estudo' deve depender da fase de preparação do aluno (`fase_concurso`) e da progressão natural do aprendizado.\n"
+            "   b. Crie uma mistura SAUDÁVEL dos seguintes métodos: 'Estudo de Teoria', 'Resolução de Exercícios', 'Revisão Ativa', 'Criação de Mapa Mental', 'Leitura de Lei Seca', 'Prática de Redação', 'Simulado Parcial'.\n"
+            "   c. Se a `fase_concurso` for 'base_sem_edital_especifico', priorize 'Estudo de Teoria' e 'Criação de Mapa Mental' nas semanas iniciais.\n"
+            "   d. Se a `fase_concurso` for 'pos_edital_publicado', priorize 'Resolução de Exercícios', 'Revisão Ativa' e 'Simulado Parcial'.\n"
+            "   e. Para um mesmo tópico, aplique uma progressão lógica: comece com teoria, depois exercícios, e por fim revisão. NÃO gere um plano contendo apenas um ou dois tipos de estudo.\n"
             f"3. **MATÉRIAS:** O plano DEVE incluir TODAS as matérias listadas pelo aluno.\n"
             f"4. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
-            "5. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto, explicando a lógica de progressão aplicada no plano (teoria -> exercícios -> revisão)."
+            "5. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto, explicando a lógica de progressão aplicada no plano."
         )
         system_message = "Você é um assistente que gera planos de estudo em formato JSON, seguindo rigorosamente a estrutura e a lógica pedagógica de progressão de estudos solicitada."
         

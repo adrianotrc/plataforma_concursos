@@ -1590,3 +1590,37 @@ body.dark-mode .delete-section p {
 .feedback-toast.info {
     background-color: #2563eb; /* Azul para informação */
 }
+
+/* === ESTILOS PARA CHECKBOX DE MATÉRIAS === */
+.materias-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 10px;
+    background-color: #f9fafb;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+body.dark-mode .materias-checkbox-grid {
+    background-color: #1f2937;
+    border-color: #374151;
+}
+
+.materia-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.materia-checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
+.materia-checkbox-item label {
+    margin-bottom: 0;
+    font-weight: normal;
+}

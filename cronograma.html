@@ -60,7 +60,17 @@
                         
                         <div class="form-field-group"><label for="concurso-objetivo">Qual concurso ou cargo você está focando?</label><input type="text" id="concurso-objetivo" required placeholder="Ex: Analista do Banco Central"></div>
                         <div class="form-field-group"><label for="fase-concurso">Em qual fase de preparação você está?</label><select id="fase-concurso" required><option value="" disabled selected>Selecione a fase...</option><option value="base_sem_edital_especifico">Começando a estudar e/ou sem concurso específico para focar, sem edital</option><option value="pre_edital_com_foco">Focando em concurso específico, mas ainda sem edital (usando edital anterior/base)</option><option value="pos_edital_publicado">Focando em concurso específico, com edital publicado</option></select></div>
-                        <div class="form-field-group"><label for="materias-input">Liste as matérias/conteúdo programático principal</label><div id="materias-container" class="materias-input-container"><input type="text" id="materias-input" placeholder="Digite uma matéria e pressione Enter ou vírgula..."></div></div>
+                        <div class="form-field-group">
+                            <label>Selecione as matérias mais comuns:</label>
+                            <div id="materias-checkbox-container" class="materias-checkbox-grid">
+                                </div>
+                        </div>
+                        <div class="form-field-group">
+                            <label for="materias-input">Outras matérias (opcional):</label>
+                            <div id="materias-container" class="materias-input-container">
+                                <input type="text" id="materias-input" placeholder="Digite uma matéria e pressione Enter ou vírgula...">
+                            </div>
+                        </div>
                         
                         <div class="form-field-group">
                             <label>Em quais dias da semana você pretende estudar? Para os dias que forem selecionados, especifique a quantidade de minutos de estudo.</label>

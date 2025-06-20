@@ -1,4 +1,4 @@
-// cronograma-page.js - Versão FINAL E CORRIGIDA
+// SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO cronograma-page.js
 
 import { auth, db } from './firebase-config.js';
 import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -12,15 +12,53 @@ const btnFecharForm = document.getElementById('btn-fechar-form-cronograma');
 const containerHistorico = document.getElementById('historico-cronogramas');
 const containerExibicao = document.getElementById('plano-exibicao');
 const diasSemanaCheckboxes = document.querySelectorAll('.dias-semana-grid input[type="checkbox"]');
-const materiasContainer = document.getElementById('materias-container');
-const materiasInput = document.getElementById('materias-input');
+// Novos elementos
+const materiasCheckboxContainer = document.getElementById('materias-checkbox-container');
+const materiasContainer = document.getElementById('materias-container'); // O container de tags
+const materiasInput = document.getElementById('materias-input'); // O input de texto para tags
 
 // --- ESTADO LOCAL ---
 let currentUser = null;
-let unsubHistorico = null; // Função para desligar o listener do Firestore
+let unsubHistorico = null;
 let planoAbertoAtual = null;
 
+// --- MATÉRIAS PRÉ-DEFINIDAS ---
+const materiasPreDefinidas = [
+    "Língua Portuguesa", "Raciocínio Lógico", "Matemática", "Informática (Noções ou Conhecimentos Básicos de TI)",
+    "Legislação Aplicada ao Órgão (ex.: Lei 8.112/90, Regimento Interno)", "Direito Constitucional", "Direito Administrativo",
+    "Administração Pública", "Administração Geral", "Atualidades", "Ética no Serviço Público (com base no Decreto 1.171/94)",
+    "Direitos Humanos", "Noções de Direito Penal", "Direito Processual Penal", "Direito Civil", "Noções de Direito Processual Civil",
+    "Arquivologia", "Gestão de Pessoas / Comportamento Organizacional", "Administração Financeira e Orçamentária (AFO)",
+    "Língua Inglesa", "Contabilidade Pública ou Geral", "Legislação Específica (ex.: Lei Maria da Penha, Estatuto da Criança e do Adolescente, etc)",
+    "Contabilidade Geral", "Direito Tributário", "Legislação Tributária"
+];
+
 // --- FUNÇÕES DE UI ---
+
+function popularMaterias() {
+    materiasCheckboxContainer.innerHTML = materiasPreDefinidas.map(materia => `
+        <div class="materia-checkbox-item">
+            <input type="checkbox" id="materia-${materia.replace(/ /g, '-')}" name="materias" value="${materia}">
+            <label for="materia-${materia.replace(/ /g, '-')}">${materia}</label>
+        </div>
+    `).join('');
+}
+
+function adicionarMateriaTag() {
+    const textoMateria = materiasInput.value.trim().replace(/,/g, '');
+    if (textoMateria) {
+        const tag = document.createElement('span');
+        tag.className = 'materia-tag';
+        tag.textContent = textoMateria;
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.setAttribute('aria-label', `Remover ${textoMateria}`);
+        closeBtn.onclick = () => tag.remove();
+        tag.appendChild(closeBtn);
+        materiasContainer.insertBefore(tag, materiasInput);
+        materiasInput.value = '';
+    }
+}
 
 function showToast(message, type = 'success', duration = 5000) {
     const toast = document.createElement('div');
@@ -35,33 +73,27 @@ function showToast(message, type = 'success', duration = 5000) {
 }
 
 function renderizarHistorico(planos) {
+    // ... (Esta função não precisa de alterações)
     if (!containerHistorico) return;
     if (!planos || planos.length === 0) {
         containerHistorico.innerHTML = '<div class="card-placeholder"><p>Nenhum cronograma gerado ainda.</p></div>';
         return;
     }
-
-    // Ordena os planos pela data de criação, do mais novo para o mais antigo
     const planosOrdenados = planos.sort((a, b) => (b.criadoEm?.toDate() || 0) - (a.criadoEm?.toDate() || 0));
-
     containerHistorico.innerHTML = planosOrdenados.map(plano => {
         const dataFormatada = plano.criadoEm?.toDate()?.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) || 'Processando...';
-        
-        // **LÓGICA DE STATUS ATUALIZADA**
         const isProcessing = plano.status === 'processing';
-        const hasFailed = plano.status === 'failed'; // <-- Nova verificação
+        const hasFailed = plano.status === 'failed';
         
         let subtexto = `Gerado em: ${dataFormatada}`;
         if (plano.data_inicio && plano.data_termino) {
              subtexto += ` | Período: ${plano.data_inicio} a ${plano.data_termino}`;
         }
 
-        // Define o ícone com base no status
         let statusIcon = '';
         if (isProcessing) {
             statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
         } else if (hasFailed) {
-            // Ícone de erro se a geração falhou
             statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
         }
 
@@ -80,16 +112,12 @@ function renderizarHistorico(planos) {
 }
 
 function exibirPlanoNaTela(plano) {
+    // ... (Esta função não precisa de alterações)
     if (!containerExibicao || !plano) return;
     planoAbertoAtual = plano;
 
     if (!plano.cronograma_semanal_detalhado) {
-        containerExibicao.innerHTML = `
-            <div class="plano-formatado-container">
-                 <div class="card-placeholder">
-                    <p>O cronograma detalhado não foi encontrado. Pode ter ocorrido um erro durante a geração. Tente criar um novo plano.</p>
-                 </div>
-            </div>`;
+        containerExibicao.innerHTML = `<div class="plano-formatado-container"><div class="card-placeholder"><p>O cronograma detalhado não foi encontrado. Pode ter ocorrido um erro durante a geração. Tente criar um novo plano.</p></div></div>`;
         containerExibicao.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
     }
@@ -134,7 +162,8 @@ function exibirPlanoNaTela(plano) {
 }
 
 function exportarPlanoParaExcel() {
-    if (!planoAbertoAtual || !planoAbertoAtual.cronograma_semanal_detalhado) {
+    // ... (Esta função não precisa de alterações)
+     if (!planoAbertoAtual || !planoAbertoAtual.cronograma_semanal_detalhado) {
         showToast("Nenhum plano detalhado para exportar. Por favor, abra um cronograma primeiro.", "error");
         return;
     }
@@ -195,25 +224,9 @@ function exportarPlanoParaExcel() {
     XLSX.writeFile(wb, `Plano_de_Estudos_${(plano.concurso_foco || 'IAprovas').replace(/ /g, '_')}.xlsx`);
 }
 
-function adicionarMateria() {
-    const textoMateria = materiasInput.value.trim().replace(/,/g, '');
-    if (textoMateria) {
-        const tag = document.createElement('span');
-        tag.className = 'materia-tag';
-        tag.textContent = textoMateria;
-        const closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '&times;';
-        closeBtn.setAttribute('aria-label', `Remover ${textoMateria}`);
-        closeBtn.onclick = () => tag.remove();
-        tag.appendChild(closeBtn);
-        materiasContainer.insertBefore(tag, materiasInput);
-        materiasInput.value = '';
-    }
-}
-
 // --- LÓGICA DE EVENTOS ---
-formCronograma?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === materiasInput) { e.preventDefault(); adicionarMateria(); } });
-materiasInput?.addEventListener('keyup', (e) => { if (e.key === ',') adicionarMateria(); });
+formCronograma?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === materiasInput) { e.preventDefault(); adicionarMateriaTag(); } });
+materiasInput?.addEventListener('keyup', (e) => { if (e.key === ',') adicionarMateriaTag(); });
 diasSemanaCheckboxes.forEach(checkbox => { checkbox.addEventListener('change', (e) => { const inputMinutos = e.target.closest('.dia-horario-item').querySelector('input[type="number"]'); if (inputMinutos) { inputMinutos.disabled = !e.target.checked; if (!e.target.checked) inputMinutos.value = ''; } }); });
 
 formCronograma?.addEventListener('submit', async (e) => {
@@ -222,11 +235,17 @@ formCronograma?.addEventListener('submit', async (e) => {
         showToast("Você precisa estar logado para gerar um cronograma.", "error");
         return;
     }
-    if (materiasInput.value.trim()) adicionarMateria();
-    
     const btnGerar = formCronograma.querySelector('button[type="submit"]');
-    const materias = [...document.querySelectorAll('.materia-tag')].map(tag => tag.textContent.replace('×', '').trim());
-    if (materias.length === 0) { showToast("Por favor, adicione pelo menos uma matéria.", "error"); return; }
+
+    const materiasSelecionadas = [...document.querySelectorAll('#materias-checkbox-container input:checked')].map(cb => cb.value);
+    const materiasEmTags = [...document.querySelectorAll('#materias-container .materia-tag')].map(tag => tag.textContent.replace('×', '').trim());
+    const todasMaterias = [...new Set([...materiasSelecionadas, ...materiasEmTags])];
+
+    if (todasMaterias.length === 0) {
+        showToast("Por favor, selecione ou adicione pelo menos uma matéria.", "error");
+        return;
+    }
+
     const disponibilidade = {};
     document.querySelectorAll('.dias-semana-grid .dia-horario-item').forEach(item => {
         const checkbox = item.querySelector('input[type="checkbox"]');
@@ -238,13 +257,16 @@ formCronograma?.addEventListener('submit', async (e) => {
             }
         }
     });
-    if (Object.keys(disponibilidade).length === 0) { showToast("Por favor, selecione pelo menos um dia da semana e informe os minutos de estudo.", "error"); return; }
+    if (Object.keys(disponibilidade).length === 0) {
+        showToast("Por favor, selecione pelo menos um dia da semana e informe os minutos de estudo.", "error");
+        return;
+    }
     
     const dadosParaApi = {
         userId: currentUser.uid,
         concurso_objetivo: document.getElementById('concurso-objetivo').value,
         fase_concurso: document.getElementById('fase-concurso').value,
-        materias: materias,
+        materias: todasMaterias,
         disponibilidade_semanal_minutos: disponibilidade,
         duracao_sessao_minutos: parseInt(document.getElementById('duracao-sessao-estudo').value),
         data_inicio: document.getElementById('data-inicio').value || null,
@@ -271,7 +293,7 @@ formCronograma?.addEventListener('submit', async (e) => {
         btnGerar.disabled = false;
         btnGerar.textContent = 'Gerar Cronograma';
         formCronograma.reset();
-        materiasContainer.querySelectorAll('.materia-tag').forEach(tag => tag.remove());
+        document.querySelectorAll('#materias-container .materia-tag').forEach(tag => tag.remove());
         diasSemanaCheckboxes.forEach(cb => {
             const input = cb.closest('.dia-horario-item').querySelector('input[type="number"]');
             if (input) input.disabled = true;
@@ -280,6 +302,7 @@ formCronograma?.addEventListener('submit', async (e) => {
 });
 
 document.body.addEventListener('click', async (e) => {
+    // ... (Esta parte não precisa de alterações)
     if (e.target.matches('.btn-abrir-plano') && !e.target.disabled) {
         const planoId = e.target.dataset.id;
         const user = auth.currentUser;
@@ -303,9 +326,8 @@ btnFecharForm?.addEventListener('click', () => { containerForm.style.display = '
 
 // --- LÓGICA DE INICIALIZAÇÃO ---
 function ouvirHistoricoDePlanos() {
-    if (unsubHistorico) {
-        unsubHistorico();
-    }
+    // ... (Esta função não precisa de alterações)
+    if (unsubHistorico) unsubHistorico();
     const q = query(collection(db, `users/${currentUser.uid}/plans`), orderBy("criadoEm", "desc"));
     unsubHistorico = onSnapshot(q, (querySnapshot) => {
         const planos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -318,6 +340,7 @@ function ouvirHistoricoDePlanos() {
 function initCronogramaPage() {
     currentUser = auth.currentUser;
     if (currentUser) {
+        popularMaterias();
         ouvirHistoricoDePlanos();
     }
 }
@@ -327,9 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user) {
             initCronogramaPage();
         } else {
-            if (unsubHistorico) {
-                unsubHistorico();
-            }
+            if (unsubHistorico) unsubHistorico();
             currentUser = null;
         }
     });
