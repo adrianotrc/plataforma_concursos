@@ -233,14 +233,14 @@ def call_openai_api(prompt_content, system_message):
         raise ValueError("A chave da API da OpenAI não está configurada no servidor.")
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o-mini", # CONFIRMADO: Usando o modelo correto.
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt_content}
             ],
             response_format={"type": "json_object"},
             temperature=0.5,
-            timeout=120.0 # Aumenta o timeout da chamada específica
+            timeout=120.0
         )
         return json.loads(response.choices[0].message.content)
     except Exception as e:
@@ -275,7 +275,7 @@ def verificar_plano_status(user_id, job_id):
 # --- INÍCIO DO NOVO CÓDIGO PARA EXERCÍCIOS ASSÍNCRONOS ---
 
 def processar_exercicios_em_background(user_id, job_id, dados_req):
-    """Função que roda em segundo plano para gerar exercícios via OpenAI."""
+    """Função que roda em segundo plano para gerar exercícios de alta qualidade."""
     print(f"BACKGROUND JOB (EXERCÍCIOS) INICIADO: {job_id} para usuário {user_id}")
     job_ref = db.collection('users').document(user_id).collection('sessoesExercicios').document(job_id)
 
@@ -285,27 +285,25 @@ def processar_exercicios_em_background(user_id, job_id, dados_req):
         topico = dados_req.get('topico', 'Qualquer')
         banca = dados_req.get('banca', '')
 
+        # --- PROMPT DE ALTA QUALIDADE ---
         prompt = (
-            f"Crie EXATAMENTE {quantidade} questões de múltipla escolha (A, B, C, D, E) sobre a matéria '{materia}' e o tópico '{topico}'. "
-            f"Se uma banca for especificada ('{banca}'), imite o estilo de questões dessa banca. Se não, crie questões de estilo geral.\n\n"
-            f"REGRAS DE FORMATAÇÃO (SEGUIR RIGOROSAMENTE):\n"
-            f"1. A resposta DEVE ser um objeto JSON com uma única chave: 'exercicios', que é uma LISTA de objetos.\n"
-            f"2. Cada objeto na lista 'exercicios' DEVE conter as seguintes chaves:\n"
-            f"   - 'enunciado': O texto da pergunta.\n"
-            f"   - 'opcoes': Uma LISTA de 5 objetos, cada um com as chaves 'letra' (string, ex: 'A') e 'texto' (string).\n"
-            f"   - 'resposta_correta': APENAS a letra da opção correta (string, ex: 'C').\n"
-            f"   - 'explicacao': Uma explicação detalhada e clara sobre o porquê da resposta correta estar certa e as outras erradas."
+            f"Você é um professor experiente e especialista na elaboração de questões para concursos públicos. Sua tarefa é criar {quantidade} questões de alta qualidade, no estilo da banca '{banca}' (se informada), sobre a matéria '{materia}' e o tópico '{topico}'.\n\n"
+            "REGRAS DE QUALIDADE (OBRIGATÓRIO SEGUIR):\n"
+            "1. **PROIBIDO PERGUNTAS SIMPLES:** Não crie questões do tipo 'qual artigo diz isso?'. As perguntas devem exigir interpretação, aplicação de conceitos ou a análise de um pequeno estudo de caso. Elas devem simular a complexidade de concursos reais.\n"
+            "2. **CREDIBILIDADE:** Baseie-se no vasto conhecimento de milhares de questões de concursos já existentes. O conteúdo deve ser preciso, correto e desafiador.\n"
+            "3. **OPÇÕES PLAUSÍVEIS:** As opções incorretas (distratores) devem ser plausíveis e bem elaboradas, testando o real conhecimento do candidato, e não apenas o decoreba.\n\n"
+            "REGRAS DE FORMATAÇÃO JSON (SEGUIR RIGOROSAMENTE):\n"
+            "1. A resposta DEVE ser um objeto JSON com uma única chave: 'exercicios', que é uma LISTA de objetos.\n"
+            "2. Cada objeto na lista 'exercicios' DEVE conter as chaves: 'enunciado', 'opcoes' (uma lista de 5 objetos com 'letra' e 'texto'), 'resposta_correta' (apenas a letra), e 'explicacao' (uma explicação clara e detalhada)."
         )
-        system_message = "Você é um especialista em criar questões para concursos públicos, formatando a saída estritamente em JSON conforme as regras solicitadas."
+        system_message = "Você é um especialista em criar questões para concursos públicos, com foco em qualidade e realismo, formatando a saída estritamente em JSON."
         
-        # Usando o modelo mais rápido para esta tarefa em background
         dados = call_openai_api(prompt, system_message)
 
-        # Atualiza o documento no Firestore com os exercícios gerados e o status de concluído
         update_data = {
             'status': 'completed',
             'exercicios': dados.get('exercicios', []),
-            'resumo': { # Adiciona um resumo para consistência
+            'resumo': {
                 'materia': materia,
                 'topico': topico,
                 'total': quantidade,
