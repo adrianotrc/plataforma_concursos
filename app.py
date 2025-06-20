@@ -42,10 +42,8 @@ client = OpenAI(api_key=openai_api_key)
 # --- Função de Trabalho em Segundo Plano ---
 def processar_plano_em_background(user_id, job_id, dados_usuario):
     print(f"BACKGROUND JOB INICIADO: {job_id} para usuário {user_id}")
-    # A referência ao documento no Firestore que representa nosso 'job'
     job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
     
-    # Bloco try/except para capturar QUALQUER erro que aconteça durante a execução
     try:
         # Lógica para calcular o número de semanas (sem alterações)
         numero_de_semanas = 4
@@ -61,46 +59,43 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             except ValueError:
                 numero_de_semanas = 4
 
-        # --- PROMPT REFORÇADO E MAIS DETALHADO ---
+        # --- PROMPT MELHORADO E MAIS ESPECÍFICO ---
         prompt = (
-            "Você é um especialista em criar planos de estudo para concursos. "
-            "Crie um plano detalhado em JSON baseado nos seguintes dados e regras. "
-            f"Dados do Aluno: {json.dumps(dados_usuario)}\n\n"
-            "REGRAS ESTRUTURAIS OBRIGATÓRIAS:\n"
-            "1. A resposta DEVE ser um objeto JSON contendo uma única chave principal: 'plano_de_estudos'.\n"
-            "2. O objeto 'plano_de_estudos' DEVE conter as chaves: 'concurso_foco', 'resumo_estrategico', 'mensagem_inicial', e 'cronograma_semanal_detalhado'.\n"
-            "3. 'cronograma_semanal_detalhado' DEVE ser uma LISTA de objetos, um para cada semana.\n"
-            "4. Cada objeto de semana DEVE ter 'semana_numero' e 'dias_de_estudo' (uma lista).\n"
-            "5. Cada objeto de dia DEVE ter 'dia_semana' e 'atividades' (uma lista).\n"
-            "6. Cada objeto de atividade DEVE ter 'horario_sugerido', 'duracao_minutos', 'materia', 'topico_sugerido', e 'tipo_de_estudo'.\n\n"
-            "REGRAS DE CONTEÚDO:\n"
-            f"- O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
-            f"- A duração de cada atividade ('duracao_minutos') deve ser de {dados_usuario.get('duracao_sessao_minutos')} minutos.\n"
-            "- A soma dos minutos das atividades de um dia NÃO PODE exceder a disponibilidade informada para aquele dia.\n"
-            "- Varie o 'tipo_de_estudo' entre 'Estudo de Teoria', 'Resolução de Exercícios', e 'Revisão Ativa'."
+            "Você é um coach especialista em criar planos de estudo para concursos públicos, seguindo a metodologia do 'Guia Definitivo de Aprovação'. "
+            "Sua tarefa é criar um plano de estudos em formato JSON, com base nos dados do aluno e nas regras estritas abaixo.\n\n"
+            f"DADOS DO ALUNO:\n{json.dumps(dados_usuario, indent=2)}\n\n"
+            "REGRAS DE ESTRUTURA JSON (OBRIGATÓRIO):\n"
+            "1. A resposta DEVE ser um único objeto JSON.\n"
+            "2. A chave principal deve ser 'plano_de_estudos'.\n"
+            "3. O objeto 'plano_de_estudos' DEVE conter as chaves: 'concurso_foco', 'resumo_estrategico', e 'cronograma_semanal_detalhado'.\n"
+            "4. 'cronograma_semanal_detalhado' DEVE ser uma LISTA de objetos, um para cada semana do plano.\n"
+            "5. Cada objeto de semana DEVE ter 'semana_numero' e uma lista chamada 'dias_de_estudo'.\n"
+            "6. Cada objeto em 'dias_de_estudo' DEVE ter 'dia_semana' e uma lista chamada 'atividades'.\n"
+            "7. Cada objeto em 'atividades' DEVE ter as chaves 'materia', 'topico_sugerido' (seja específico), 'tipo_de_estudo', e 'duracao_minutos'.\n\n"
+            "REGRAS DE CONTEÚDO (CRÍTICO SEGUIR TODAS):\n"
+            f"1. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
+            f"2. **MATÉRIAS:** O plano DEVE OBRIGATORIAMENTE incluir TODAS as matérias listadas pelo aluno em `dados_usuario['materias']`. Distribua-as de forma equilibrada ao longo das semanas.\n"
+            f"3. **MÉTODOS DE ESTUDO:** Varie o 'tipo_de_estudo' de forma inteligente ao longo da semana. Utilize os seguintes tipos: 'Estudo de Teoria', 'Resolução de Exercícios', e 'Revisão Ativa'. Evite repetir o mesmo método para a mesma matéria consecutivamente. O plano precisa ter variedade.\n"
+            f"4. **DURAÇÃO DAS SESSÕES:** Cada atividade deve ter uma 'duracao_minutos' de EXATAMENTE {dados_usuario.get('duracao_sessao_minutos')} minutos.\n"
+            "5. **RESPEITO AO TEMPO DIÁRIO:** A SOMA TOTAL de 'duracao_minutos' das atividades de um dia NÃO PODE ULTRAPASSAR o tempo informado pelo aluno em `dados_usuario['disponibilidade_semanal_minutos']` para aquele `dia_semana`.\n"
+            "6. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto e motivador, explicando a lógica geral do plano (ex: foco inicial em teoria, seguido por mais exercícios nas semanas finais)."
         )
         system_message = "Você é um assistente que gera planos de estudo em formato JSON, seguindo rigorosamente a estrutura e as regras de conteúdo solicitadas."
-
-        # A chamada para a OpenAI
+        
         resultado_ia = call_openai_api(prompt, system_message)
 
-        # Validação da resposta da IA
         if 'plano_de_estudos' not in resultado_ia or 'cronograma_semanal_detalhado' not in resultado_ia['plano_de_estudos']:
             raise ValueError("A resposta da IA não continha a estrutura de cronograma esperada.")
 
-        # Prepara os dados finais para salvar no Firestore
         plano_final = resultado_ia['plano_de_estudos']
-        plano_final['status'] = 'completed' # SUCESSO: Define o status como 'completed'
+        plano_final['status'] = 'completed'
 
-        # Atualiza o documento no Firestore com o plano completo
         job_ref.update(plano_final)
         print(f"BACKGROUND JOB CONCLUÍDO: {job_id}")
 
-    # PONTO-CHAVE: Se qualquer coisa no bloco 'try' der errado, este bloco 'except' será executado
     except Exception as e:
         print(f"!!! ERRO NO BACKGROUND JOB {job_id}: {e} !!!")
-        traceback.print_exc() # Imprime o erro detalhado no seu terminal do servidor
-        # ATUALIZAÇÃO CRÍTICA: Avisa o Firestore que a tarefa falhou
+        traceback.print_exc()
         job_ref.update({
             'status': 'failed', 
             'error': str(e)
