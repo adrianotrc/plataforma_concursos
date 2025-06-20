@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import math
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from openai import OpenAI
 import stripe
 import traceback
@@ -29,11 +29,7 @@ except Exception as e:
 app = Flask(__name__)
 
 # --- Configuração de CORS ---
-allowed_origins = [
-    "http://127.0.0.1:5500", "http://localhost:5500",
-    "https://iaprovas.com.br", "https://www.iaprovas.com.br"
-]
-CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=True)
+CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500", "https://iaprovas.com.br", "https://www.iaprovas.com.br"], supports_credentials=True)
 
 # --- Configuração das APIs ---
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -107,6 +103,7 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
 
 # SUBSTITUA a rota /gerar-plano-estudos por esta:
 @app.route("/gerar-plano-estudos", methods=['POST'])
+@cross_origin(supports_credentials=True)
 def gerar_plano_iniciar_job():
     dados_usuario = request.json
     user_id = dados_usuario.get("userId")
