@@ -272,14 +272,18 @@ def verificar_plano_status(user_id, job_id):
         print(f"Erro ao verificar status do job {job_id}: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500    
 
-@app.route("/gerar-exercicios", methods=['POST'])
-def gerar_exercicios():
-    dados_req = request.json
+# --- INÍCIO DO NOVO CÓDIGO PARA EXERCÍCIOS ASSÍNCRONOS ---
+
+def processar_exercicios_em_background(user_id, job_id, dados_req):
+    """Função que roda em segundo plano para gerar exercícios via OpenAI."""
+    print(f"BACKGROUND JOB (EXERCÍCIOS) INICIADO: {job_id} para usuário {user_id}")
+    job_ref = db.collection('users').document(user_id).collection('sessoesExercicios').document(job_id)
+
     try:
         quantidade = dados_req.get('quantidade', 5)
         materia = dados_req.get('materia', 'Conhecimentos Gerais')
         topico = dados_req.get('topico', 'Qualquer')
-        banca = dados_req.get('banca', '') # Pode ser vazio
+        banca = dados_req.get('banca', '')
 
         prompt = (
             f"Crie EXATAMENTE {quantidade} questões de múltipla escolha (A, B, C, D, E) sobre a matéria '{materia}' e o tópico '{topico}'. "
@@ -294,10 +298,60 @@ def gerar_exercicios():
         )
         system_message = "Você é um especialista em criar questões para concursos públicos, formatando a saída estritamente em JSON conforme as regras solicitadas."
         
+        # Usando o modelo mais rápido para esta tarefa em background
         dados = call_openai_api(prompt, system_message)
-        return jsonify(dados)
+
+        # Atualiza o documento no Firestore com os exercícios gerados e o status de concluído
+        update_data = {
+            'status': 'completed',
+            'exercicios': dados.get('exercicios', []),
+            'resumo': { # Adiciona um resumo para consistência
+                'materia': materia,
+                'topico': topico,
+                'total': quantidade,
+                'criadoEm': firestore.SERVER_TIMESTAMP
+            }
+        }
+        job_ref.update(update_data)
+        print(f"BACKGROUND JOB (EXERCÍCIOS) CONCLUÍDO: {job_id}")
+
     except Exception as e:
-        return jsonify({"erro_geral": str(e)}), 500
+        print(f"!!! ERRO NO BACKGROUND JOB DE EXERCÍCIOS {job_id}: {e} !!!")
+        traceback.print_exc()
+        job_ref.update({'status': 'failed', 'error': str(e)})
+
+@app.route("/gerar-exercicios-async", methods=['POST'])
+@cross_origin(supports_credentials=True)
+def gerar_exercicios_async():
+    """Rota que inicia a geração de exercícios em segundo plano."""
+    dados_req = request.json
+    user_id = dados_req.get("userId")
+
+    if not user_id:
+        return jsonify({"erro_geral": "ID do usuário não fornecido."}), 400
+
+    # Cria um novo documento placeholder para a sessão de exercícios
+    job_ref = db.collection('users').document(user_id).collection('sessoesExercicios').document()
+    job_id = job_ref.id
+
+    placeholder_data = {
+        'status': 'processing',
+        'criadoEm': firestore.SERVER_TIMESTAMP,
+        'jobId': job_id,
+        'resumo': {
+             'materia': dados_req.get('materia'),
+             'topico': dados_req.get('topico'),
+             'total': dados_req.get('quantidade'),
+             'criadoEm': firestore.SERVER_TIMESTAMP
+        }
+    }
+    job_ref.set(placeholder_data)
+
+    # Inicia a thread
+    thread = threading.Thread(target=processar_exercicios_em_background, args=(user_id, job_id, dados_req))
+    thread.start()
+
+    return jsonify({"status": "processing", "jobId": job_id}), 202
 
 
 @app.route("/gerar-dica-categoria", methods=['POST'])

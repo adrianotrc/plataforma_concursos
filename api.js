@@ -48,8 +48,8 @@ export async function gerarPlanoDeEstudos(dadosDoFormulario) {
     });
 }
 
-export async function gerarExercicios(dadosDoFormulario) {
-    return fetchApi('/gerar-exercicios', {
+export async function gerarExerciciosAsync(dadosDoFormulario) {
+    return fetchApi('/gerar-exercicios-async', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dadosDoFormulario),

@@ -1,8 +1,8 @@
-// exercicios-page.js - Versão com métricas, revisão de histórico e layout de correção aprimorado
+// SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO exercicios-page.js
 
 import { auth, db } from './firebase-config.js';
-import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarExercicios } from './api.js';
+import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { gerarExerciciosAsync } from './api.js'; // Usaremos a nova função da API
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-exercicios');
@@ -13,17 +13,14 @@ const historicoContainer = document.getElementById('historico-exercicios');
 
 // --- ESTADO LOCAL ---
 let currentUser = null;
-let sessoesHistorico = []; // Armazena o histórico resumido para exibição
-let sessaoAtual = {
-    exercicios: [],
-    respostas: {}
-};
+let unsubHistorico = null;
+let sessaoAberta = null; // Guarda o ID da sessão de exercícios aberta
 
 // --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
 
-function exibirSessaoDeExercicios(exercicios) {
+function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsuario = {}) {
     exerciciosContainer.innerHTML = '';
-    if (exercicios.length === 0) return;
+    if (!exercicios || exercicios.length === 0) return;
 
     let exerciciosHtml = '';
     exercicios.forEach((questao, index) => {
@@ -32,15 +29,13 @@ function exibirSessaoDeExercicios(exercicios) {
                 <p class="enunciado-questao"><strong>${index + 1}.</strong> ${questao.enunciado}</p>
                 <ul class="opcoes-lista">
         `;
-        
-        // **CORREÇÃO APLICADA AQUI**
-        // Removemos o embaralhamento e garantimos a ordem alfabética.
         const opcoesOrdenadas = [...questao.opcoes].sort((a, b) => a.letra.localeCompare(b.letra));
-
         opcoesOrdenadas.forEach(opcao => {
+            const isChecked = respostasUsuario[index] === opcao.letra ? 'checked' : '';
+            const isDisabled = jaCorrigido ? 'disabled' : '';
             exerciciosHtml += `
                 <li class="opcao-item">
-                    <input type="radio" name="questao-${index}" id="q${index}-${opcao.letra}" value="${opcao.letra}">
+                    <input type="radio" name="questao-${index}" id="q${index}-${opcao.letra}" value="${opcao.letra}" ${isChecked} ${isDisabled}>
                     <label for="q${index}-${opcao.letra}"><strong>${opcao.letra})</strong> ${opcao.texto}</label>
                 </li>
             `;
@@ -49,8 +44,14 @@ function exibirSessaoDeExercicios(exercicios) {
     });
 
     exerciciosContainer.innerHTML = exerciciosHtml;
-    exerciciosContainer.innerHTML += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial. Revise sempre antes de utilizar.</small>`;
-    exerciciosContainer.innerHTML += '<button id="btn-corrigir-exercicios" class="btn btn-primary btn-large">Corrigir Exercícios</button>';
+    exerciciosContainer.innerHTML += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial. Revise sempre.</small>`;
+    if (!jaCorrigido) {
+        exerciciosContainer.innerHTML += '<button id="btn-corrigir-exercicios" class="btn btn-primary btn-large">Corrigir Exercícios</button>';
+    } else {
+        exibirCorrecao(exercicios, respostasUsuario, exerciciosContainer);
+    }
+    exerciciosContainer.style.display = 'block';
+    exerciciosContainer.scrollIntoView({ behavior: 'smooth' });
 }
 
 function exibirCorrecao(exercicios, respostas, container) {
@@ -73,105 +74,77 @@ function exibirCorrecao(exercicios, respostas, container) {
         } else {
             feedbackContainer.className = 'feedback-container incorreto';
             const respostaTexto = respostaUsuario ? `Sua resposta: ${respostaUsuario}` : 'Você não respondeu.';
-            feedbackContainer.innerHTML = `
-                <p>❌ <strong>Incorreto.</strong></p>
-                <p>${respostaTexto}</p>
-                <p>A resposta correta é: <strong>${respostaCorreta}</strong></p>
-                <hr style="margin: 10px 0;">
-                ${explicacaoHtml}
-            `;
+            feedbackContainer.innerHTML = `<p>❌ <strong>Incorreto.</strong></p><p>${respostaTexto}</p><p>A resposta correta é: <strong>${respostaCorreta}</strong></p><hr style="margin: 10px 0;">${explicacaoHtml}`;
         }
     });
     return acertos;
 }
 
-function renderizarHistorico() {
+function renderizarHistorico(sessoes) {
     if (!historicoContainer) return;
-    if (sessoesHistorico.length === 0) {
+    if (sessoes.length === 0) {
         historicoContainer.innerHTML = '<div class="card-placeholder"><p>Seu histórico de exercícios aparecerá aqui.</p></div>';
         return;
     }
-    historicoContainer.innerHTML = sessoesHistorico.map(sessao => {
-        const score = (sessao.resumo.acertos / sessao.resumo.total) * 100;
+    historicoContainer.innerHTML = sessoes.map(sessao => {
+        const resumo = sessao.resumo || {};
+        const isProcessing = sessao.status === 'processing';
+        const hasFailed = sessao.status === 'failed';
+        
+        const score = resumo.total > 0 ? (resumo.acertos / resumo.total) * 100 : 0;
         let scoreClass = 'bom';
         if (score < 70) scoreClass = 'medio';
         if (score < 50) scoreClass = 'ruim';
+
+        let statusIcon = '';
+        if (isProcessing) statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
+        else if (hasFailed) statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
         
         return `
             <div class="exercise-history-item">
                 <div class="exercise-info">
-                    <span class="exercise-subject">${sessao.resumo.materia} - ${sessao.resumo.topico}</span>
-                    <span class="exercise-details">${sessao.resumo.total} questões • ${sessao.resumo.acertos} corretas</span>
+                    <span class="exercise-subject">${resumo.materia || 'Sessão'} - ${resumo.topico || 'Geral'} ${statusIcon}</span>
+                    <span class="exercise-details">${resumo.total || 0} questões</span>
                 </div>
-                <div class="exercise-score ${scoreClass}">${score.toFixed(0)}%</div>
+                ${!isProcessing && !hasFailed && resumo.acertos !== undefined ? `<div class="exercise-score ${scoreClass}">${score.toFixed(0)}%</div>` : ''}
                 <div class="exercise-time">
-                    <p>${sessao.resumo.criadoEm.toDate().toLocaleDateString('pt-BR')}</p>
-                    <button class="btn btn-ghost btn-rever-sessao" data-session-id="${sessao.id}">Rever</button>
+                    <p>${resumo.criadoEm?.toDate().toLocaleDateString('pt-BR')}</p>
+                    <button class="btn btn-ghost btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${isProcessing ? 'Gerando...' : (hasFailed ? 'Falhou' : 'Rever')}</button>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-function atualizarMetricasGerais() {
-    if (sessoesHistorico.length === 0) return;
-
-    const totalExercicios = sessoesHistorico.reduce((acc, sessao) => acc + sessao.resumo.total, 0);
-    const totalAcertos = sessoesHistorico.reduce((acc, sessao) => acc + sessao.resumo.acertos, 0);
-    const taxaAcertoGeral = totalExercicios > 0 ? (totalAcertos / totalExercicios) * 100 : 0;
-
-    document.getElementById('stat-exercicios-totais').textContent = totalExercicios;
-    document.getElementById('stat-acertos-geral').textContent = `${taxaAcertoGeral.toFixed(0)}%`;
-}
-
-
 // --- LÓGICA DE DADOS E EVENTOS ---
 
-async function salvarSessaoNoFirestore(acertos, total) {
-    if (!currentUser) return;
+async function salvarCorrecaoNoFirestore(respostasUsuario, acertos) {
+    if (!currentUser || !sessaoAberta) return;
     try {
-        const sessaoParaSalvar = {
-            resumo: {
-                materia: document.getElementById('exercicio-materia').value,
-                topico: document.getElementById('exercicio-topico').value,
-                acertos: acertos,
-                total: total,
-                criadoEm: serverTimestamp()
-            },
-            exercicios: sessaoAtual.exercicios,
-            respostasUsuario: sessaoAtual.respostas
+        const sessaoRef = doc(db, `users/${currentUser.uid}/sessoesExercicios`, sessaoAberta);
+        const updateData = {
+            respostasUsuario,
+            'resumo.acertos': acertos,
+            'resumo.corrigidoEm': serverTimestamp()
         };
-        await addDoc(collection(db, `users/${currentUser.uid}/sessoesExercicios`), sessaoParaSalvar);
-        await carregarHistoricoDoFirestore(); // Recarrega para incluir a nova sessão
-        renderizarHistorico();
-        atualizarMetricasGerais();
+        await updateDoc(sessaoRef, updateData);
     } catch (error) {
-        console.error("Erro ao salvar sessão de exercícios:", error);
-    }
-}
-
-async function carregarHistoricoDoFirestore() {
-    if (!currentUser) return;
-    try {
-        const q = query(collection(db, `users/${currentUser.uid}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50));
-        const querySnapshot = await getDocs(q);
-        sessoesHistorico = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-        console.error("Erro ao carregar histórico de exercícios:", error);
+        console.error("Erro ao salvar correção:", error);
     }
 }
 
 // Eventos do Formulário
-btnAbrirForm?.addEventListener('click', () => formExercicios.style.display = 'block');
-btnFecharForm?.addEventListener('click', () => formExercicios.style.display = 'none');
+btnAbrirForm?.addEventListener('click', () => { formExercicios.style.display = 'block'; });
+btnFecharForm?.addEventListener('click', () => { formExercicios.style.display = 'none'; });
 
 formExercicios?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btnGerar = formExercicios.querySelector('button[type="submit"]');
     btnGerar.disabled = true;
-    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Solicitando...';
 
     const dados = {
+        userId: currentUser.uid,
         materia: document.getElementById('exercicio-materia').value,
         topico: document.getElementById('exercicio-topico').value,
         quantidade: parseInt(document.getElementById('exercicio-quantidade').value) || 5,
@@ -179,57 +152,70 @@ formExercicios?.addEventListener('submit', async (e) => {
     };
 
     try {
-        const resultado = await gerarExercicios(dados);
-        sessaoAtual.exercicios = resultado.exercicios || [];
-        sessaoAtual.respostas = {};
-        exibirSessaoDeExercicios(sessaoAtual.exercicios);
+        await gerarExerciciosAsync(dados); // Chama a nova rota assíncrona
         formExercicios.style.display = 'none';
+        formExercicios.reset();
+        exerciciosContainer.innerHTML = '<div class="card-placeholder"><p>Sua nova sessão de exercícios está sendo preparada pela IA e aparecerá no histórico em breve.</p></div>';
+        exerciciosContainer.style.display = 'block';
     } catch (error) {
-        alert('Erro ao gerar exercícios. Tente novamente.');
+        alert('Erro ao solicitar exercícios. Tente novamente.');
     } finally {
         btnGerar.disabled = false;
         btnGerar.textContent = 'Gerar';
     }
 });
 
-// Delegação de eventos para os containers principais
-document.body.addEventListener('click', (e) => {
+// Delegação de eventos
+document.body.addEventListener('click', async (e) => {
     // Botão de corrigir
     if (e.target.id === 'btn-corrigir-exercicios') {
-        sessaoAtual.exercicios.forEach((_, index) => {
+        const respostasUsuario = {};
+        const sessoesRef = doc(db, `users/${currentUser.uid}/sessoesExercicios`, sessaoAberta);
+        const sessaoSnap = await getDoc(sessoesRef);
+        const exercicios = sessaoSnap.data().exercicios;
+
+        exercicios.forEach((_, index) => {
             const respostaSelecionada = document.querySelector(`input[name="questao-${index}"]:checked`);
             if (respostaSelecionada) {
-                sessaoAtual.respostas[index] = respostaSelecionada.value;
+                respostasUsuario[index] = respostaSelecionada.value;
             }
         });
-        const acertos = exibirCorrecao(sessaoAtual.exercicios, sessaoAtual.respostas, exerciciosContainer);
-        salvarSessaoNoFirestore(acertos, sessaoAtual.exercicios.length);
+        const acertos = exibirCorrecao(exercicios, respostasUsuario, exerciciosContainer);
+        await salvarCorrecaoNoFirestore(respostasUsuario, acertos);
         e.target.style.display = 'none';
     }
 
     // Botão de rever sessão no histórico
     if (e.target.matches('.btn-rever-sessao')) {
         const sessionId = e.target.dataset.sessionId;
-        const sessaoSelecionada = sessoesHistorico.find(s => s.id === sessionId);
-        if (sessaoSelecionada) {
-            exibirSessaoDeExercicios(sessaoSelecionada.exercicios);
-            // Um pequeno atraso para garantir que o HTML foi renderizado antes de exibir a correção
-            setTimeout(() => {
-                exibirCorrecao(sessaoSelecionada.exercicios, sessaoSelecionada.respostasUsuario, exerciciosContainer);
-                document.getElementById('btn-corrigir-exercicios')?.remove(); // Remove o botão de corrigir, pois é uma revisão
-            }, 100);
+        const sessaoRef = doc(db, `users/${currentUser.uid}/sessoesExercicios`, sessionId);
+        const sessaoSnap = await getDoc(sessaoRef);
+        if (sessaoSnap.exists()) {
+            const sessaoData = sessaoSnap.data();
+            sessaoAberta = sessionId;
+            const jaCorrigido = sessaoData.resumo && sessaoData.resumo.acertos !== undefined;
+            exibirSessaoDeExercicios(sessaoData.exercicios, jaCorrigido, sessaoData.respostasUsuario);
         }
     }
 });
 
+
 // --- INICIALIZAÇÃO ---
 
-async function initExerciciosPage() {
+function ouvirHistoricoDeExercicios() {
+    if (unsubHistorico) unsubHistorico(); // Para o listener anterior se existir
+    const q = query(collection(db, `users/${currentUser.uid}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50));
+    unsubHistorico = onSnapshot(q, (querySnapshot) => {
+        const sessoes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderizarHistorico(sessoes);
+        // Atualizar métricas gerais (se existirem na página)
+    });
+}
+
+function initExerciciosPage() {
     currentUser = auth.currentUser;
     if (currentUser) {
-        await carregarHistoricoDoFirestore();
-        renderizarHistorico();
-        atualizarMetricasGerais();
+        ouvirHistoricoDeExercicios();
     }
 }
 
@@ -237,6 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
         if (user) {
             initExerciciosPage();
+        } else if (unsubHistorico) {
+            unsubHistorico();
         }
     });
 });
