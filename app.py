@@ -406,47 +406,109 @@ def gerar_dica_personalizada():
     except Exception as e:
         return jsonify({"erro_geral": str(e)}), 500
     
-@app.route("/gerar-enunciado-discursiva", methods=['POST'])
-def gerar_enunciado_discursiva():
-    dados_req = request.json
+# --- INÍCIO DO NOVO CÓDIGO PARA DISCURSIVAS ASSÍNCRONAS ---
+
+def processar_enunciado_em_background(user_id, job_id, dados_req):
+    """Função de background para gerar o enunciado da discursiva."""
+    print(f"BACKGROUND JOB (ENUNCIADO) INICIADO: {job_id} para usuário {user_id}")
+    job_ref = db.collection('users').document(user_id).collection('discursivasCorrigidas').document(job_id)
     try:
         prompt = (
             f"Você é um especialista em criar questões para concursos. Com base nos seguintes critérios: {json.dumps(dados_req)}, "
             f"crie um único e excelente enunciado para uma questão discursiva. O enunciado deve ser claro, objetivo e simular perfeitamente uma questão real da banca especificada (se houver).\n\n"
-            f"FORMATO OBRIGATÓRIO: Objeto JSON com uma única chave: 'enunciado_gerado', que é uma string contendo o enunciado."
+            f"FORMATO OBRIGATÓRIO: Objeto JSON com uma única chave: 'enunciado', que é uma string contendo o enunciado."
         )
         system_message = "Você gera enunciados de questões discursivas para concursos, formatando a saída em JSON."
         dados = call_openai_api(prompt, system_message)
-        return jsonify(dados)
+
+        update_data = {
+            'status': 'enunciado_pronto',
+            'enunciado': dados.get('enunciado'),
+            'criterios': dados_req # Salva os critérios para uso futuro
+        }
+        job_ref.update(update_data)
+        print(f"BACKGROUND JOB (ENUNCIADO) CONCLUÍDO: {job_id}")
     except Exception as e:
-        return jsonify({"erro_geral": str(e)}), 500
+        print(f"!!! ERRO NO BACKGROUND JOB DE ENUNCIADO {job_id}: {e} !!!")
+        traceback.print_exc()
+        job_ref.update({'status': 'failed', 'error': str(e)})
 
-
-@app.route("/corrigir-discursiva", methods=['POST'])
-def corrigir_discursiva():
+@app.route("/gerar-enunciado-discursiva-async", methods=['POST'])
+@cross_origin(supports_credentials=True)
+def gerar_enunciado_discursiva_async():
+    """Rota que inicia a geração do enunciado em segundo plano."""
     dados_req = request.json
+    user_id = dados_req.get("userId")
+    if not user_id: return jsonify({"erro": "ID do usuário não fornecido."}), 400
+
+    job_ref = db.collection('users').document(user_id).collection('discursivasCorrigidas').document()
+    job_id = job_ref.id
+
+    placeholder_data = {
+        'status': 'processing_enunciado',
+        'criadoEm': firestore.SERVER_TIMESTAMP,
+        'jobId': job_id
+    }
+    job_ref.set(placeholder_data)
+
+    thread = threading.Thread(target=processar_enunciado_em_background, args=(user_id, job_id, dados_req))
+    thread.start()
+    return jsonify({"status": "processing_enunciado", "jobId": job_id}), 202
+
+def processar_correcao_em_background(user_id, job_id, dados_correcao):
+    """Função de background para corrigir a discursiva."""
+    print(f"BACKGROUND JOB (CORREÇÃO) INICIADO: {job_id} para usuário {user_id}")
+    job_ref = db.collection('users').document(user_id).collection('discursivasCorrigidas').document(job_id)
     try:
         prompt = (
-            f"Você é um examinador de concurso rigoroso e justo, especialista em analisar questões discursivas. Analise a seguinte resposta de um aluno.\n"
-            f"### Enunciado da Questão:\n{dados_req.get('enunciado')}\n\n"
-            f"### Resposta do Aluno:\n{dados_req.get('resposta')}\n\n"
-            f"### Foco da Correção Solicitado pelo Aluno:\n{dados_req.get('foco_correcao', 'Avaliação geral')}\n\n"
+            f"Você é um examinador de concurso rigoroso e justo. Analise a seguinte resposta de um aluno.\n"
+            f"### Enunciado da Questão:\n{dados_correcao.get('enunciado')}\n\n"
+            f"### Resposta do Aluno:\n{dados_correcao.get('resposta')}\n\n"
+            f"### Foco da Correção Solicitado:\n{dados_correcao.get('foco_correcao', 'Avaliação geral')}\n\n"
             f"REGRAS DA CORREÇÃO:\n"
             f"1. Atribua uma nota de 0.0 a 10.0, com uma casa decimal.\n"
-            f"2. Forneça um 'comentario_geral' sobre o desempenho, destacando a impressão geral do texto.\n"
-            f"3. Crie uma análise detalhada por critérios, dentro de uma lista chamada 'analise_por_criterio'.\n"
-            f"4. Para cada critério na lista, inclua as chaves 'criterio' (ex: 'Desenvolvimento do Tema'), 'nota_criterio' (a nota para aquele critério específico), e 'comentario' (o feedback detalhado para o critério).\n"
-            f"5. Os critérios a serem analisados OBRIGATORIAMENTE são: 'Apresentação e Estrutura Textual', 'Desenvolvimento do Tema e Argumentação', e 'Domínio da Modalidade Escrita (Gramática)''.\n"
-            f"6. Use tags HTML `<strong>` para destacar termos ou frases importantes nos seus comentários.\n\n"
+            f"2. Forneça um 'comentario_geral' sobre o desempenho.\n"
+            f"3. Crie uma análise detalhada numa lista chamada 'analise_por_criterio'.\n"
+            f"4. Para cada critério na lista, inclua 'criterio', 'nota_criterio', e 'comentario'.\n"
+            f"5. Os critérios a serem analisados OBRIGATORIAMENTE são: 'Apresentação e Estrutura Textual', 'Desenvolvimento do Tema e Argumentação', e 'Domínio da Modalidade Escrita (Gramática)'.\n\n"
             f"ESTRUTURA DE RESPOSTA JSON (SEGUIR RIGOROSAMENTE):\n"
-            f"O JSON deve conter as chaves: 'nota_atribuida' (float), 'comentario_geral' (string), e 'analise_por_criterio' (LISTA de objetos, onde cada objeto tem 'criterio', 'nota_criterio' e 'comentario')."
+            f"O JSON deve conter as chaves: 'nota_atribuida' (float), 'comentario_geral' (string), e 'analise_por_criterio' (LISTA de objetos)."
         )
-        system_message = "Você é um examinador de concursos que fornece correções estruturadas por critérios, formatando a saída estritamente em JSON."
-        
+        system_message = "Você é um examinador de concursos que fornece correções estruturadas, formatando a saída estritamente em JSON."
         dados = call_openai_api(prompt, system_message)
-        return jsonify(dados)
+        
+        update_data = {
+            'status': 'correcao_pronta',
+            'correcao': dados
+        }
+        job_ref.update(update_data)
+        print(f"BACKGROUND JOB (CORREÇÃO) CONCLUÍDO: {job_id}")
     except Exception as e:
-        return jsonify({"erro_geral": str(e)}), 500
+        print(f"!!! ERRO NO BACKGROUND JOB DE CORREÇÃO {job_id}: {e} !!!")
+        traceback.print_exc()
+        job_ref.update({'status': 'failed', 'error': str(e)})
+
+@app.route("/corrigir-discursiva-async", methods=['POST'])
+@cross_origin(supports_credentials=True)
+def corrigir_discursiva_async():
+    """Rota que inicia a correção da discursiva em segundo plano."""
+    dados_req = request.json
+    user_id = dados_req.get("userId")
+    job_id = dados_req.get("jobId") # Recebe o ID do job existente
+    if not all([user_id, job_id]): return jsonify({"erro": "Dados insuficientes."}), 400
+
+    job_ref = db.collection('users').document(user_id).collection('discursivasCorrigidas').document(job_id)
+    # Atualiza a resposta do usuário e o status para 'processing_correcao'
+    job_ref.update({
+        'status': 'processing_correcao',
+        'resposta': dados_req.get('resposta')
+    })
+
+    thread = threading.Thread(target=processar_correcao_em_background, args=(user_id, job_id, dados_req))
+    thread.start()
+    return jsonify({"status": "processing_correcao", "jobId": job_id}), 202
+
+# --- FIM DO NOVO CÓDIGO ---
     
 @app.route("/create-checkout-session", methods=['POST'])
 def create_checkout_session():

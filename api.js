@@ -117,3 +117,21 @@ export async function verificarStatusPlano(userId, jobId) {
         method: 'GET',
     });
 }
+
+// ADICIONE ESTAS DUAS FUNÇÕES NO FINAL DO ARQUIVO api.js
+
+export async function gerarEnunciadoDiscursivaAsync(criterios) {
+    return fetchApi('/gerar-enunciado-discursiva-async', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(criterios),
+    });
+}
+
+export async function corrigirDiscursivaAsync(dadosCorrecao) {
+    return fetchApi('/corrigir-discursiva-async', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dadosCorrecao),
+    });
+}

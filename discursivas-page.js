@@ -1,10 +1,9 @@
-// discursivas-page.js - Versão definitiva e funcional
+// SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO discursivas-page.js
 
 import { auth, db } from './firebase-config.js';
-import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarEnunciadoDiscursiva, corrigirDiscursiva } from './api.js';
-// **CORREÇÃO**: Importa o estado e a função de carregamento do main-app
-import { state, carregarDadosDoUsuario } from './main-app.js';
+import { collection, onSnapshot, query, orderBy, limit, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { gerarEnunciadoDiscursivaAsync, corrigirDiscursivaAsync } from './api.js';
+import { state } from './main-app.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-discursiva');
@@ -21,14 +20,17 @@ const statTotal = document.getElementById('stat-discursivas-total');
 const statMedia = document.getElementById('stat-discursivas-media');
 
 // --- ESTADO LOCAL ---
-let sessaoAtual = {};
+let sessaoAberta = null; // Guarda o objeto da sessão atual
+let unsubHistorico = null;
 
 // --- FUNÇÕES DE RENDERIZAÇÃO ---
+
 function renderEnunciado(enunciado) {
     enunciadoContainer.innerHTML = `<h4>Enunciado Gerado:</h4><p>${enunciado.replace(/\n/g, '<br>')}</p>`;
     enunciadoContainer.style.display = 'block';
     areaResposta.style.display = 'block';
     correcaoContainer.style.display = 'none';
+    correcaoContainer.innerHTML = '';
     respostaTextarea.value = '';
     enunciadoContainer.scrollIntoView({ behavior: 'smooth' });
 }
@@ -36,9 +38,9 @@ function renderEnunciado(enunciado) {
 function renderCorrecao(correcao, container) {
     if (!container || !correcao) return;
     const analiseHtml = correcao.analise_por_criterio?.map(item => `
-        <div class="criterio-analise">
+        <div class="criterio-analise" style="margin-bottom: 1rem;">
             <h5>${item.criterio} (Nota: ${item.nota_criterio?.toFixed(1) || 'N/A'})</h5>
-            <p>${item.comentario || 'Sem comentários para este critério.'}</p>
+            <p>${item.comentario || 'Sem comentários.'}</p>
         </div>
     `).join('') || '<p>Análise detalhada não disponível.</p>';
     container.innerHTML = `
@@ -46,62 +48,64 @@ function renderCorrecao(correcao, container) {
         <p><strong>Comentário Geral:</strong> ${correcao.comentario_geral || 'Sem comentário geral.'}</p>
         <hr style="margin: 16px 0;">
         ${analiseHtml}
+        <small class="ai-disclaimer"><i class="fas fa-robot"></i> Análise e nota geradas por IA.</small>
     `;
-    container.innerHTML += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Análise e nota geradas por inteligência artificial. Utilize como um guia para seus estudos.</small>`;
     container.style.display = 'block';
 }
 
-function renderHistorico() {
+function renderHistorico(sessoes) {
     if (!historicoContainer) return;
-    const historico = state.sessoesDiscursivas || [];
-    if (historico.length === 0) {
+    if (sessoes.length === 0) {
         historicoContainer.innerHTML = '<p>Seu histórico de correções aparecerá aqui.</p>';
         return;
     }
-    historicoContainer.innerHTML = historico.map(item => {
+    historicoContainer.innerHTML = sessoes.map(item => {
         const materia = item.criterios?.materia || 'Discursiva';
         const nota = item.correcao?.nota_atribuida?.toFixed(1) || 'N/A';
         const data = item.criadoEm?.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) || 'Data indefinida';
+        let statusIcon = '';
+        if (item.status === 'processing_enunciado' || item.status === 'processing_correcao') {
+            statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
+        } else if (item.status === 'failed') {
+            statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
+        }
+
         return `
             <div class="tip-item">
                 <div class="tip-icon"><i class="fas fa-file-alt"></i></div>
                 <div class="tip-content">
-                    <div class="tip-title">${materia}</div>
+                    <div class="tip-title">${materia} ${statusIcon}</div>
                     <div class="tip-description">Nota: ${nota} | Em: ${data}</div>
                 </div>
-                <button class="btn btn-ghost btn-rever-correcao" data-id="${item.id}">Rever</button>
+                <button class="btn btn-ghost btn-rever-correcao" data-id="${item.id}" ${statusIcon ? 'disabled' : ''}>Rever</button>
             </div>
         `;
     }).join('');
+    atualizarMetricasDiscursivas(sessoes);
 }
 
-function atualizarMetricasDiscursivas() {
+function atualizarMetricasDiscursivas(sessoes) {
     if (!statTotal || !statMedia) return;
-    const historico = state.sessoesDiscursivas || [];
-    const total = historico.length;
-    const somaNotas = historico.reduce((acc, item) => acc + (item.correcao?.nota_atribuida || 0), 0);
+    const sessoesCorrigidas = sessoes.filter(s => s.status === 'correcao_pronta');
+    const total = sessoesCorrigidas.length;
+    const somaNotas = sessoesCorrigidas.reduce((acc, item) => acc + (item.correcao?.nota_atribuida || 0), 0);
     const notaMedia = total > 0 ? (somaNotas / total) : 0;
-    
     statTotal.textContent = total;
     statMedia.textContent = notaMedia.toFixed(1);
 }
 
 // --- LÓGICA DE EVENTOS ---
-btnAbrirForm?.addEventListener('click', () => {
-    containerGerador.style.display = 'block';
-    btnAbrirForm.style.display = 'none';
-});
-btnCancelarGeracao?.addEventListener('click', () => {
-    containerGerador.style.display = 'none';
-    btnAbrirForm.style.display = 'block';
-});
+btnAbrirForm?.addEventListener('click', () => { containerGerador.style.display = 'block'; btnAbrirForm.style.display = 'none'; });
+btnCancelarGeracao?.addEventListener('click', () => { containerGerador.style.display = 'none'; btnAbrirForm.style.display = 'block'; });
 
 formGerarEnunciado?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = formGerarEnunciado.querySelector('button[type="submit"]');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+    
     const criterios = {
+        userId: state.user.uid,
         concurso: document.getElementById('discursiva-concurso').value,
         banca: document.getElementById('discursiva-banca').value,
         materia: document.getElementById('discursiva-materia').value,
@@ -111,49 +115,40 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
         dificuldade: document.getElementById('discursiva-dificuldade').value,
         foco_correcao: document.getElementById('discursiva-foco').value,
     };
+
     try {
-        const resultado = await gerarEnunciadoDiscursiva(criterios);
-        sessaoAtual = { criterios, enunciado: resultado.enunciado_gerado };
-        renderEnunciado(sessaoAtual.enunciado);
+        await gerarEnunciadoDiscursivaAsync(criterios);
+        // A lógica de exibição agora é tratada pelo listener `onSnapshot`
     } catch (error) {
-        alert('Falha ao gerar o enunciado.');
+        alert('Falha ao solicitar a geração do enunciado.');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-cogs"></i> Gerar Enunciado';
+        containerGerador.style.display = 'none';
+        btnAbrirForm.style.display = 'block';
     }
 });
 
 btnCorrigir?.addEventListener('click', async () => {
     const resposta = respostaTextarea.value;
-    if (!resposta.trim() || !sessaoAtual.enunciado) {
+    if (!resposta.trim() || !sessaoAberta?.enunciado) {
         return alert('Por favor, escreva sua resposta antes de pedir a correção.');
     }
     btnCorrigir.disabled = true;
     btnCorrigir.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Corrigindo...';
     
     const dadosParaCorrecao = {
-        enunciado: sessaoAtual.enunciado,
+        userId: state.user.uid,
+        jobId: sessaoAberta.id,
+        enunciado: sessaoAberta.enunciado,
         resposta: resposta,
-        foco_correcao: sessaoAtual.criterios.foco_correcao,
+        foco_correcao: sessaoAberta.criterios.foco_correcao,
     };
     try {
-        const resultado = await corrigirDiscursiva(dadosParaCorrecao);
-        renderCorrecao(resultado, correcaoContainer);
-        if (state.user) {
-            await addDoc(collection(db, `users/${state.user.uid}/discursivasCorrigidas`), {
-                criterios: sessaoAtual.criterios,
-                enunciado: sessaoAtual.enunciado,
-                resposta: resposta,
-                correcao: resultado,
-                criadoEm: serverTimestamp(),
-            });
-            // **CORREÇÃO**: Chama a função global para recarregar todos os dados
-            await carregarDadosDoUsuario(state.user.uid);
-            renderHistorico();
-            atualizarMetricasDiscursivas();
-        }
+        await corrigirDiscursivaAsync(dadosParaCorrecao);
+        // A lógica de exibição da correção também é tratada pelo listener
     } catch (error) {
-        alert('Falha ao obter a correção.');
+        alert('Falha ao solicitar a correção.');
         console.error(error);
     } finally {
         btnCorrigir.disabled = false;
@@ -161,30 +156,49 @@ btnCorrigir?.addEventListener('click', async () => {
     }
 });
 
-historicoContainer?.addEventListener('click', (e) => {
+historicoContainer?.addEventListener('click', async (e) => {
     const btnRever = e.target.closest('.btn-rever-correcao');
-    if (btnRever) {
+    if (btnRever && !btnRever.disabled) {
         const id = btnRever.dataset.id;
-        const sessaoSelecionada = state.sessoesDiscursivas.find(item => item.id === id);
-        if (sessaoSelecionada) {
-            renderEnunciado(sessaoSelecionada.enunciado);
-            respostaTextarea.value = sessaoSelecionada.resposta;
-            renderCorrecao(sessaoSelecionada.correcao, correcaoContainer);
+        const sessaoDoc = await getDoc(doc(db, `users/${state.user.uid}/discursivasCorrigidas`, id));
+        if (sessaoDoc.exists()) {
+            sessaoAberta = { id: sessaoDoc.id, ...sessaoDoc.data() };
+            renderEnunciado(sessaoAberta.enunciado);
+            respostaTextarea.value = sessaoAberta.resposta || '';
+            if (sessaoAberta.status === 'correcao_pronta') {
+                renderCorrecao(sessaoAberta.correcao, correcaoContainer);
+            }
         }
     }
 });
 
 // --- INICIALIZAÇÃO ---
-// A inicialização agora é mais simples, pois depende do main-app.js
-function initDiscursivasPage() {
-    if (!state.user) return; // Sai se o usuário ainda não foi carregado pelo main-app
-    // Usa os dados que o main-app já carregou
-    renderHistorico();
-    atualizarMetricasDiscursivas();
+function ouvirHistoricoDiscursivas() {
+    if (unsubHistorico) unsubHistorico();
+    const q = query(collection(db, `users/${state.user.uid}/discursivasCorrigidas`), orderBy("criadoEm", "desc"), limit(50));
+    unsubHistorico = onSnapshot(q, (snapshot) => {
+        const sessoes = [];
+        snapshot.forEach(doc => sessoes.push({ id: doc.id, ...doc.data() }));
+
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === 'modified') {
+                const data = change.doc.data();
+                if (data.status === 'enunciado_pronto' && (!sessaoAberta || sessaoAberta.id === change.doc.id)) {
+                    sessaoAberta = { id: change.doc.id, ...data };
+                    renderEnunciado(data.enunciado);
+                } else if (data.status === 'correcao_pronta' && sessaoAberta && sessaoAberta.id === change.doc.id) {
+                    renderCorrecao(data.correcao, correcaoContainer);
+                }
+            }
+        });
+        renderHistorico(sessoes);
+    });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        initDiscursivasPage();
-    }, 500);
-});
+function initDiscursivasPage() {
+    if (state.user) {
+        ouvirHistoricoDiscursivas();
+    }
+}
+
+document.addEventListener('userDataReady', initDiscursivasPage);
