@@ -116,7 +116,7 @@ function exibirPlanoNaTela(plano) {
     planoAbertoAtual = plano;
 
     if (!plano.cronograma_semanal_detalhado) {
-        containerExibicao.innerHTML = `<div class="plano-formatado-container"><div class="card-placeholder"><p>O cronograma detalhado não foi encontrado. Pode ter ocorrido um erro durante a geração. Tente criar um novo plano.</p></div></div>`;
+        containerExibicao.innerHTML = `<div class="plano-formatado-container"><div class="card-placeholder"><p>O cronograma detalhado não foi encontrado. Tente criar um novo plano.</p></div></div>`;
         containerExibicao.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
     }
@@ -124,27 +124,33 @@ function exibirPlanoNaTela(plano) {
     const formatarData = (data) => data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00Z') : new Date();
     const diasDaSemanaOrdenados = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-    let cronogramaHtml = `<div class="plano-formatado-container"><div class="plano-header"><div class="feature-info"><h3>Plano de Estudos: ${plano.concurso_foco || ''}</h3><p style="white-space: pre-wrap;">${plano.resumo_estrategico || 'Sem resumo estratégico.'}</p></div><button id="btn-exportar-excel" class="btn btn-primary"><i class="fas fa-file-excel"></i> Exportar para Excel</button></div>`;
+    // Adiciona o botão "Fechar" ao lado do botão "Exportar"
+    let cronogramaHtml = `
+        <div class="plano-formatado-container">
+            <div class="plano-header">
+                <div class="feature-info">
+                    <h3>Plano de Estudos: ${plano.concurso_foco || ''}</h3>
+                    <p style="white-space: pre-wrap;">${plano.resumo_estrategico || 'Sem resumo estratégico.'}</p>
+                </div>
+                <div class="header-actions">
+                    <button id="btn-exportar-excel" class="btn btn-primary"><i class="fas fa-file-excel"></i> Exportar</button>
+                    <button id="btn-fechar-plano" class="btn btn-outline">Fechar</button>
+                </div>
+            </div>`;
     
     const semanas = plano.cronograma_semanal_detalhado;
     let dataCorrente = new Date(dataInicioPlano);
-    // Ajusta a data corrente para o domingo da semana inicial
-    dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay()); 
+    dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay());
 
     semanas.forEach(semana => {
-        // CORREÇÃO PRINCIPAL AQUI:
-        // A IA gera "dias_de_estudo". Acessamos esse campo agora.
         const diasDaSemanaApi = (semana.dias_de_estudo || []).reduce((acc, dia) => {
-            // A IA já está gerando o nome completo (ex: "Terça-feira"), então não precisamos mais corrigir.
             acc[dia.dia_semana] = dia.atividades || [];
             return acc;
         }, {});
-
         cronogramaHtml += `<div class="semana-bloco"><h3>Semana ${semana.semana_numero || ''}</h3><div class="cronograma-tabela-container"><table class="cronograma-tabela"><thead><tr>`;
         diasDaSemanaOrdenados.forEach((dia, index) => {
             const dataDoDia = new Date(dataCorrente);
             dataDoDia.setDate(dataCorrente.getDate() + index);
-            // Mostra o nome do dia sem o "-feira" para economizar espaço
             cronogramaHtml += `<th><div class="dia-header">${dia.replace('-feira', '')}<span class="data">${formatarData(dataDoDia)}</span></div></th>`;
         });
         cronogramaHtml += `</tr></thead><tbody><tr>`;
@@ -324,6 +330,11 @@ document.body.addEventListener('click', async (e) => {
     }
     if (e.target.matches('#btn-exportar-excel') || e.target.closest('#btn-exportar-excel')) {
         exportarPlanoParaExcel();
+    }
+    if (e.target.matches('#btn-fechar-plano')) {
+        containerExibicao.innerHTML = '';
+        containerExibicao.style.display = 'none';
+        planoAbertoAtual = null;
     }
 });
 

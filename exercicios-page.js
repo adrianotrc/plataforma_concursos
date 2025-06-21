@@ -24,11 +24,17 @@ let ultimoJobIdSolicitado = null; // <-- NOVO: Guarda o ID da última solicitaç
 function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsuario = {}) {
     exerciciosContainer.innerHTML = '';
     if (!exercicios || exercicios.length === 0) {
-        exerciciosContainer.innerHTML = `<div class="card-placeholder"><p>Ainda não há exercícios para esta sessão. A IA pode estar trabalhando ou ocorreu um erro.</p></div>`;
+        exerciciosContainer.innerHTML = `<div class="card-placeholder"><p>Ainda não há exercícios para esta sessão.</p></div>`;
         exerciciosContainer.style.display = 'block';
         return;
     };
-    let exerciciosHtml = '';
+    // Adiciona o cabeçalho com o botão "Fechar"
+    let exerciciosHtml = `
+        <div class="plano-header" style="margin-bottom: 20px;">
+            <h4 style="margin: 0;">Resolva as questões abaixo:</h4>
+            <button id="btn-fechar-exercicios" class="btn btn-outline">Fechar</button>
+        </div>
+    `;
     exercicios.forEach((questao, index) => {
         exerciciosHtml += `<div class="questao-bloco" id="questao-${index}"><p class="enunciado-questao"><strong>${index + 1}.</strong> ${questao.enunciado}</p><ul class="opcoes-lista">`;
         const opcoesOrdenadas = [...questao.opcoes].sort((a, b) => a.letra.localeCompare(b.letra));
@@ -84,18 +90,15 @@ function renderizarHistorico(sessoes) {
         const hasFailed = sessao.status === 'failed';
         const isCompleted = sessao.status === 'completed';
         const isAttempted = isCompleted && resumo.acertos !== undefined;
-
         let scoreHtml = '';
         if (isAttempted) {
             const score = resumo.total > 0 ? (resumo.acertos / resumo.total) * 100 : 0;
             let scoreClass = score >= 70 ? 'bom' : (score >= 50 ? 'medio' : 'ruim');
             scoreHtml = `<div class="exercise-score ${scoreClass}">${score.toFixed(0)}%</div>`;
         }
-
         let statusIcon = '';
         if (isProcessing) statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
         else if (hasFailed) statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
-
         let buttonText = 'Rever';
         if (isProcessing) buttonText = 'Gerando...';
         else if (hasFailed) buttonText = 'Falhou';
@@ -110,7 +113,8 @@ function renderizarHistorico(sessoes) {
                 ${scoreHtml}
                 <div class="exercise-time">
                     <p>${resumo.criadoEm?.toDate().toLocaleDateString('pt-BR')}</p>
-                    <button class="btn btn-ghost btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
+                    {/* MUDANÇA: btn-ghost para btn-outline */}
+                    <button class="btn btn-outline btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
                 </div>
             </div>
         `;
@@ -221,6 +225,11 @@ document.body.addEventListener('click', async (e) => {
             const jaCorrigido = sessaoData.resumo && sessaoData.resumo.acertos !== undefined;
             exibirSessaoDeExercicios(sessaoData.exercicios, jaCorrigido, sessaoData.respostasUsuario);
         }
+    }
+    if (e.target.id === 'btn-fechar-exercicios') {
+        exerciciosContainer.innerHTML = '';
+        exerciciosContainer.style.display = 'none';
+        sessaoAberta = null;
     }
 });
 
