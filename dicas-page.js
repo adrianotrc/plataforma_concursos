@@ -1,8 +1,8 @@
 // SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO dicas-page.js
 
 import { auth, db } from './firebase-config.js';
-// CORREÇÃO: Importa as funções corretas da API
-import { getUsageLimits, gerarDicaCategoria, gerarDicaPersonalizada } from './api.js';
+// CORREÇÃO: Importa os nomes corretos das funções da API.
+import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada } from './api.js'; 
 import { state } from './main-app.js';
 import { collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -154,7 +154,8 @@ geradorDicasForm?.addEventListener('submit', async (e) => {
         gerarDicaFn = gerarDicaPersonalizada;
     } else {
         params.categoria = categoria;
-        gerarDicaFn = gerarDicaCategoria;
+        // CORREÇÃO: Chama a função com o nome correto
+        gerarDicaFn = gerarDicasPorCategoria; 
     }
 
     try {
