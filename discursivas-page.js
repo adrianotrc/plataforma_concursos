@@ -2,7 +2,7 @@
 
 import { auth, db } from './firebase-config.js';
 import { collection, onSnapshot, query, orderBy, limit, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarEnunciadoDiscursivaAsync, corrigirDiscursivaAsync } from './api.js';
+import { gerarEnunciadoDiscursivaAsync, corrigirDiscursivaAsync, getUsageLimits } from './api.js';
 import { state } from './main-app.js';
 
 // --- ELEMENTOS DO DOM ---
@@ -18,6 +18,8 @@ const correcaoContainer = document.getElementById('correcao-container');
 const historicoContainer = document.getElementById('historico-discursivas');
 const statTotal = document.getElementById('stat-discursivas-total');
 const statMedia = document.getElementById('stat-discursivas-media');
+// **CORREÇÃO: A variável agora é declarada no escopo global do módulo**
+const usageCounterDiv = document.getElementById('usage-counter');
 
 // --- ESTADO LOCAL ---
 let sessaoAberta = null;
@@ -104,16 +106,12 @@ async function renderUsageInfo() {
     if (!state.user || !usageCounterDiv) return;
     try {
         const data = await getUsageLimits(state.user.uid);
-        
-        // Pega os valores para geração e correção
         const usoGeracao = data.usage.discursivas || 0;
         const limiteGeracao = data.limits.discursivas || 0;
         const restantesGeracao = limiteGeracao - usoGeracao;
-        
         const usoCorrecao = data.usage.correcoes_discursivas || 0;
         const limiteCorrecao = data.limits.correcoes_discursivas || 0;
         const restantesCorrecao = limiteCorrecao - usoCorrecao;
-
         const plano = data.plan;
 
         let mensagem = '';
@@ -161,7 +159,7 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
     try {
         await gerarEnunciadoDiscursivaAsync(criterios);
     } catch (error) {
-        alert(error.message); // Mostra erro de limite
+        alert(error.message);
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-cogs"></i> Gerar Enunciado';
@@ -172,14 +170,17 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
 });
 
 document.body.addEventListener('click', async (e) => {
-    if (e.target.id === 'btn-corrigir-texto') {
-        const btn = e.target;
+    const corrigirBtn = e.target.closest('#btn-corrigir-texto');
+    const reverBtn = e.target.closest('.btn-rever-correcao');
+    const fecharBtn = e.target.closest('#btn-fechar-visualizacao');
+
+    if (corrigirBtn) {
         const resposta = respostaTextarea.value;
         if (!resposta.trim() || !sessaoAberta?.enunciado) {
             return alert('Por favor, escreva sua resposta antes de pedir a correção.');
         }
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando para correção...';
+        corrigirBtn.disabled = true;
+        corrigirBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando para correção...';
         
         const dadosParaCorrecao = {
             userId: state.user.uid,
@@ -190,16 +191,16 @@ document.body.addEventListener('click', async (e) => {
         };
         try {
             await corrigirDiscursivaAsync(dadosParaCorrecao);
-            btn.textContent = "Aguardando correção da IA...";
+            corrigirBtn.textContent = "Aguardando correção da IA...";
         } catch (error) {
-            alert(error.message); // Mostra erro de limite
+            alert(error.message);
+            corrigirBtn.disabled = false;
+            corrigirBtn.textContent = 'Corrigir Texto';
         } finally {
-            await renderUsageInfo(); // Atualiza a contagem
+            await renderUsageInfo();
         }
-    }
-
-    if (e.target.matches('.btn-rever-correcao') && !e.target.disabled) {
-        const id = e.target.dataset.id;
+    } else if (reverBtn && !reverBtn.disabled) {
+        const id = reverBtn.dataset.id;
         const sessaoDoc = await getDoc(doc(db, `users/${state.user.uid}/discursivasCorrigidas`, id));
         if (sessaoDoc.exists()) {
             sessaoAberta = { id: sessaoDoc.id, ...sessaoDoc.data() };
@@ -209,9 +210,7 @@ document.body.addEventListener('click', async (e) => {
                 renderCorrecao(sessaoAberta.correcao, correcaoContainer);
             }
         }
-    }
-    
-    if (e.target.id === 'btn-fechar-visualizacao') {
+    } else if (fecharBtn) {
         enunciadoContainer.style.display = 'none';
         areaResposta.style.display = 'none';
         correcaoContainer.style.display = 'none';
@@ -247,7 +246,7 @@ function ouvirHistoricoDiscursivas() {
 function initDiscursivasPage() {
     if (state.user) {
         ouvirHistoricoDiscursivas();
-        renderUsageInfo(); // **CHAMA A NOVA FUNÇÃO AQUI**
+        renderUsageInfo();
     }
 }
 
