@@ -29,7 +29,7 @@ function renderEnunciado(enunciado) {
     enunciadoContainer.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h4>Enunciado Gerado:</h4>
-            <button id="btn-fechar-visualizacao" class="btn btn-ghost" style="padding: 4px 8px; font-size: 12px;">Fechar</button>
+            <button id="btn-fechar-visualizacao" class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;">Fechar</button>
         </div>
         <p>${enunciado.replace(/\n/g, '<br>')}</p>
     `;
@@ -83,7 +83,7 @@ function renderHistorico(sessoes) {
                     <div class="tip-title">${materia} ${statusIcon}</div>
                     <div class="tip-description">Nota: ${nota} | Em: ${data}</div>
                 </div>
-                <button class="btn btn-ghost btn-rever-correcao" data-id="${item.id}" ${statusIcon ? 'disabled' : ''}>Rever</button>
+                <button class="btn btn-outline btn-rever-correcao" data-id="${item.id}" ${statusIcon ? 'disabled' : ''}>Rever</button>
             </div>
         `;
     }).join('');
@@ -199,7 +199,7 @@ function ouvirHistoricoDiscursivas() {
                 } else if (data.status === 'correcao_pronta' && sessaoAberta && sessaoAberta.id === change.doc.id) {
                     renderCorrecao(data.correcao, correcaoContainer);
                     const btn = document.getElementById('btn-corrigir-texto');
-                    if(btn) btn.style.display = 'none'; // Esconde o botão após a correção ser exibida
+                    if(btn) btn.style.display = 'none';
                 }
             }
         });
