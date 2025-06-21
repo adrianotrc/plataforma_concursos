@@ -1,8 +1,7 @@
-// SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO exercicios-page.js
-
 import { auth, db } from './firebase-config.js';
 import { collection, serverTimestamp, query, orderBy, onSnapshot, doc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarExerciciosAsync } from './api.js';
+// Adicionaremos a importação da nova função
+import { gerarExerciciosAsync, getUsageLimits } from './api.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-exercicios');
@@ -12,12 +11,13 @@ const exerciciosContainer = document.getElementById('exercicios-gerados');
 const historicoContainer = document.getElementById('historico-exercicios');
 const statTotalExercicios = document.getElementById('stat-exercicios-totais');
 const statAcertoGeral = document.getElementById('stat-acertos-geral');
+const usageCounterDiv = document.getElementById('usage-counter'); // Novo elemento
 
 // --- ESTADO LOCAL ---
 let currentUser = null;
 let unsubHistorico = null;
 let sessaoAberta = null;
-let ultimoJobIdSolicitado = null; // <-- NOVO: Guarda o ID da última solicitação
+let ultimoJobIdSolicitado = null;
 
 // --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
 
@@ -134,6 +134,35 @@ function atualizarMetricasGerais(sessoes) {
     statAcertoGeral.textContent = `${taxaAcertoGeral.toFixed(0)}%`;
 }
 
+async function renderUsageInfo() {
+    if (!currentUser || !usageCounterDiv) return;
+    try {
+        const data = await getUsageLimits(currentUser.uid);
+        const uso = data.usage.exercicios || 0;
+        const limite = data.limits.exercicios || 0;
+        const restantes = limite - uso;
+        const plano = data.plan;
+
+        let mensagem = '';
+        if (plano === 'trial') {
+            mensagem = `Você ainda pode gerar ${restantes} de ${limite} simulados de exercícios durante o seu período de teste.`;
+        } else {
+            mensagem = `Hoje, você ainda pode gerar ${restantes} de ${limite} simulados de exercícios.`;
+        }
+        
+        usageCounterDiv.textContent = mensagem;
+        usageCounterDiv.style.display = 'block';
+
+        if(btnAbrirForm) {
+            btnAbrirForm.disabled = restantes <= 0;
+        }
+
+    } catch (error) {
+        console.error("Erro ao buscar limites de uso para exercícios:", error);
+        usageCounterDiv.style.display = 'none';
+    }
+}
+
 // --- LÓGICA DE DADOS E EVENTOS ---
 
 async function salvarCorrecaoNoFirestore(respostasUsuario, acertos) {
@@ -151,6 +180,7 @@ btnAbrirForm?.addEventListener('click', () => { formExercicios.style.display = '
 btnFecharForm?.addEventListener('click', () => { formExercicios.style.display = 'none'; });
 
 formExercicios?.addEventListener('submit', async (e) => {
+    // ... (Esta função não muda, mas vamos garantir que ela chame renderUsageInfo)
     e.preventDefault();
     const quantidade = parseInt(document.getElementById('exercicio-quantidade').value) || 0;
     if (quantidade < 1 || quantidade > 10) {
@@ -174,16 +204,15 @@ formExercicios?.addEventListener('submit', async (e) => {
     };
 
     try {
-        const respostaInicial = await gerarExerciciosAsync(dados);
-        // GUARDA o ID do job que acabamos de solicitar.
-        ultimoJobIdSolicitado = respostaInicial.jobId;
-        formExercicios.style.display = 'none';
-        formExercicios.reset();
+        await gerarExerciciosAsync(dados);
     } catch (error) {
-        alert('Erro ao solicitar exercícios. Tente novamente.');
+        alert(error.message); // Mostra o erro de limite excedido
     } finally {
         btnGerar.disabled = false;
         btnGerar.textContent = 'Gerar';
+        formExercicios.style.display = 'none';
+        formExercicios.reset();
+        await renderUsageInfo(); // Atualiza a contagem após a tentativa
     }
 });
 
@@ -270,6 +299,7 @@ function initExerciciosPage() {
     currentUser = auth.currentUser;
     if (currentUser) {
         ouvirHistoricoDeExercicios();
+        renderUsageInfo(); // **CHAMA A NOVA FUNÇÃO AQUI**
     }
 }
 
