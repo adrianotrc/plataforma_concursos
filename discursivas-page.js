@@ -100,6 +100,42 @@ function atualizarMetricasDiscursivas(sessoes) {
     statMedia.textContent = notaMedia.toFixed(1);
 }
 
+async function renderUsageInfo() {
+    if (!state.user || !usageCounterDiv) return;
+    try {
+        const data = await getUsageLimits(state.user.uid);
+        
+        // Pega os valores para geração e correção
+        const usoGeracao = data.usage.discursivas || 0;
+        const limiteGeracao = data.limits.discursivas || 0;
+        const restantesGeracao = limiteGeracao - usoGeracao;
+        
+        const usoCorrecao = data.usage.correcoes_discursivas || 0;
+        const limiteCorrecao = data.limits.correcoes_discursivas || 0;
+        const restantesCorrecao = limiteCorrecao - usoCorrecao;
+
+        const plano = data.plan;
+
+        let mensagem = '';
+        if (plano === 'trial') {
+            mensagem = `Período de teste: ${restantesGeracao} gerações de enunciados e ${restantesCorrecao} correções restantes.`;
+        } else {
+            mensagem = `Uso de hoje: ${restantesGeracao} de ${limiteGeracao} gerações e ${restantesCorrecao} de ${limiteCorrecao} correções restantes.`;
+        }
+        
+        usageCounterDiv.textContent = mensagem;
+        usageCounterDiv.style.display = 'block';
+
+        if(btnAbrirForm) {
+            btnAbrirForm.disabled = restantesGeracao <= 0;
+        }
+
+    } catch (error) {
+        console.error("Erro ao buscar limites de uso para discursivas:", error);
+        usageCounterDiv.style.display = 'none';
+    }
+}
+
 // --- LÓGICA DE EVENTOS ---
 btnAbrirForm?.addEventListener('click', () => { containerGerador.style.display = 'block'; btnAbrirForm.style.display = 'none'; });
 btnCancelarGeracao?.addEventListener('click', () => { containerGerador.style.display = 'none'; btnAbrirForm.style.display = 'block'; });
@@ -125,12 +161,13 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
     try {
         await gerarEnunciadoDiscursivaAsync(criterios);
     } catch (error) {
-        alert('Falha ao solicitar a geração do enunciado.');
+        alert(error.message); // Mostra erro de limite
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-cogs"></i> Gerar Enunciado';
         containerGerador.style.display = 'none';
         btnAbrirForm.style.display = 'block';
+        await renderUsageInfo();
     }
 });
 
@@ -155,9 +192,9 @@ document.body.addEventListener('click', async (e) => {
             await corrigirDiscursivaAsync(dadosParaCorrecao);
             btn.textContent = "Aguardando correção da IA...";
         } catch (error) {
-            alert('Falha ao solicitar a correção. Verifique sua conexão e tente novamente.');
-            btn.disabled = false;
-            btn.textContent = 'Corrigir Texto';
+            alert(error.message); // Mostra erro de limite
+        } finally {
+            await renderUsageInfo(); // Atualiza a contagem
         }
     }
 
@@ -210,6 +247,7 @@ function ouvirHistoricoDiscursivas() {
 function initDiscursivasPage() {
     if (state.user) {
         ouvirHistoricoDiscursivas();
+        renderUsageInfo(); // **CHAMA A NOVA FUNÇÃO AQUI**
     }
 }
 
