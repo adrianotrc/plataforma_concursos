@@ -1,77 +1,81 @@
 // SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO dicas-page.js
 
 import { auth, db } from './firebase-config.js';
+// CORREÇÃO: Importa as funções corretas da API
 import { getUsageLimits, gerarDicaCategoria, gerarDicaPersonalizada } from './api.js';
 import { state } from './main-app.js';
-import { collection, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // --- ELEMENTOS DO DOM ---
-const botoesCategoria = document.querySelectorAll('.category-buttons .btn');
-const dicasContainer = document.getElementById('dicas-geradas-container');
-const usageCounterDiv = document.getElementById('usage-counter'); // Novo elemento
+const geradorDicasForm = document.getElementById('gerador-dicas-form');
+const categoriaSelect = document.getElementById('dica-categoria-select');
+const dicaGeradaContainer = document.getElementById('dica-gerada-container');
+const historicoContainer = document.getElementById('historico-dicas');
+const usageCounterDiv = document.getElementById('usage-counter');
 
 // --- FUNÇÕES ---
 
 function renderizarDicas(dicas) {
-    if (!dicasContainer) return;
-    dicasContainer.innerHTML = ''; // Limpa o container
+    if (!dicaGeradaContainer) return;
+    dicaGeradaContainer.innerHTML = '';
     if (dicas && dicas.length > 0) {
+        let dicasHtml = '<ul>';
         dicas.forEach(dica => {
-            const dicaElemento = document.createElement('div');
-            dicaElemento.className = 'tip-item';
-            dicaElemento.innerHTML = `
-                <div class="tip-icon"><i class="fas fa-lightbulb"></i></div>
-                <div class="tip-content">
-                    <p>${dica}</p>
-                </div>
-            `;
-            dicasContainer.appendChild(dicaElemento);
+            dicasHtml += `<li>${dica}</li>`;
         });
+        dicasHtml += '</ul>';
+        dicasContainer.innerHTML = dicasHtml;
     } else {
         dicasContainer.innerHTML = '<p>Não foi possível gerar dicas neste momento.</p>';
     }
+    dicaGeradaContainer.style.display = 'block';
 }
 
-async function handleGerarDica(botao, gerarDicaFn, params) {
-    botao.disabled = true;
-    botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+async function salvarDicaNoHistorico(categoria, dicas) {
+    if (!state.user) return;
     try {
-        const resultado = await gerarDicaFn(params);
-        renderizarDicas(resultado.dicas_geradas);
+        await addDoc(collection(db, `users/${state.user.uid}/historicoDicas`), {
+            categoria,
+            dicas,
+            criadoEm: serverTimestamp()
+        });
     } catch (error) {
-        alert(error.message); // Exibe o erro de limite excedido
-    } finally {
-        botao.disabled = false;
-        botao.innerHTML = botao.dataset.originalText || 'Gerar Dica';
-        await renderUsageInfo(); // Atualiza a contagem
+        console.error("Erro ao salvar dica no histórico:", error);
     }
 }
 
-async function buscarDesempenhoRecente() {
-    if (!state.user) return [];
-    const q = query(
-        collection(db, `users/${state.user.uid}/sessoesExercicios`),
-        where("resumo.acertos", "!=", null),
-        orderBy("resumo.criadoEm", "desc"),
-        limit(20)
-    );
+async function carregarHistoricoDicas() {
+    if (!state.user || !historicoContainer) return;
+    const q = query(collection(db, `users/${state.user.uid}/historicoDicas`), orderBy("criadoEm", "desc"), limit(5));
     const querySnapshot = await getDocs(q);
-    const desempenhoPorMateria = {};
-    querySnapshot.forEach(doc => {
-        const data = doc.data().resumo;
-        if (!desempenhoPorMateria[data.materia]) {
-            desempenhoPorMateria[data.materia] = { acertos: 0, total: 0 };
-        }
-        desempenhoPorMateria[data.materia].acertos += data.acertos;
-        desempenhoPorMateria[data.materia].total += data.total;
-    });
-    return Object.entries(desempenhoPorMateria).map(([materia, dados]) => ({
-        materia: materia,
-        taxa_acerto: dados.total > 0 ? Math.round((dados.acertos / dados.total) * 100) : 0
-    }));
+    const dicas = [];
+    querySnapshot.forEach(doc => dicas.push(doc.data()));
+    
+    if (dicas.length > 0) {
+        historicoContainer.innerHTML = dicas.map(item => {
+             const iconePorCategoria = {
+                gestao_de_tempo: 'fa-clock',
+                metodos_de_estudo: 'fa-brain',
+                motivacao: 'fa-heart',
+                redacao: 'fa-pen-fancy',
+                personalizada: 'fa-robot'
+            };
+            const icone = iconePorCategoria[item.categoria] || 'fa-lightbulb';
+            return `
+                <div class="tip-item">
+                    <div class="tip-icon"><i class="fas ${icone}"></i></div>
+                    <div class="tip-content">
+                        <div class="tip-title">${item.categoria.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                        <div class="tip-description">${item.dicas[0]}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        historicoContainer.innerHTML = '<div class="card-placeholder"><p>Seu histórico de dicas aparecerá aqui.</p></div>';
+    }
 }
 
-// **NOVA FUNÇÃO PARA EXIBIR O USO**
 async function renderUsageInfo() {
     if (!state.user || !usageCounterDiv) return;
     try {
@@ -91,10 +95,10 @@ async function renderUsageInfo() {
         usageCounterDiv.textContent = mensagem;
         usageCounterDiv.style.display = 'block';
         
-        // Desabilita todos os botões de gerar dica se o limite foi atingido
-        botoesCategoria.forEach(btn => {
-            btn.disabled = restantes <= 0;
-        });
+        const btnGerar = geradorDicasForm.querySelector('button[type="submit"]');
+        if (btnGerar) {
+            btnGerar.disabled = restantes <= 0;
+        }
 
     } catch (error) {
         console.error("Erro ao buscar limites de uso para dicas:", error);
@@ -102,34 +106,78 @@ async function renderUsageInfo() {
     }
 }
 
-
 // --- LÓGICA DE EVENTOS ---
 
-botoesCategoria.forEach(botao => {
-    botao.dataset.originalText = botao.innerHTML; // Salva o texto original
-    botao.addEventListener('click', async () => {
-        const categoria = botao.dataset.category;
-        let params = { userId: state.user.uid };
+geradorDicasForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const categoria = categoriaSelect.value;
+    if (!categoria) {
+        alert("Por favor, selecione uma categoria.");
+        return;
+    }
 
-        if (categoria === 'personalizada') {
-            params.desempenho = await buscarDesempenhoRecente();
-            if (params.desempenho.length === 0) {
-                renderizarDicas(["Não há dados de desempenho recentes suficientes para uma dica personalizada. Resolva mais exercícios!"]);
-                return;
-            }
-            await handleGerarDica(botao, gerarDicaPersonalizada, params);
-        } else {
-            params.categoria = categoria;
-            await handleGerarDica(botao, gerarDicaCategoria, params);
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+    dicaGeradaContainer.style.display = 'none';
+
+    let params = { userId: state.user.uid };
+    let gerarDicaFn;
+
+    if (categoria === 'personalizada') {
+        const q = query(collection(db, `users/${state.user.uid}/sessoesExercicios`), limit(50));
+        const sessoesSnapshot = await getDocs(q);
+        const sessoes = sessoesSnapshot.docs.map(doc => doc.data());
+        const desempenhoPorMateria = sessoes.reduce((acc, sessao) => {
+             const resumo = sessao.resumo;
+             if(resumo && resumo.acertos !== undefined) {
+                 if (!acc[resumo.materia]) {
+                    acc[resumo.materia] = { acertos: 0, total: 0 };
+                }
+                acc[resumo.materia].acertos += resumo.acertos;
+                acc[resumo.materia].total += resumo.total;
+             }
+             return acc;
+        }, {});
+        
+        params.desempenho = Object.entries(desempenhoPorMateria).map(([materia, dados]) => ({
+            materia,
+            taxa_acerto: dados.total > 0 ? Math.round((dados.acertos / dados.total) * 100) : 0
+        }));
+
+        if (params.desempenho.length === 0) {
+            renderizarDicas(["Não há dados de desempenho recentes para uma dica personalizada. Resolva mais exercícios!"]);
+            btn.disabled = false;
+            btn.innerHTML = 'Gerar Dica';
+            return;
         }
-    });
+        gerarDicaFn = gerarDicaPersonalizada;
+    } else {
+        params.categoria = categoria;
+        gerarDicaFn = gerarDicaCategoria;
+    }
+
+    try {
+        const resultado = await gerarDicaFn(params);
+        renderizarDicas(resultado.dicas_geradas);
+        await salvarDicaNoHistorico(categoria, resultado.dicas_geradas);
+        await carregarHistoricoDicas();
+    } catch (error) {
+        alert(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Gerar Dica';
+        await renderUsageInfo();
+    }
 });
+
 
 // --- INICIALIZAÇÃO ---
 
 function initDicasPage() {
     if (state.user) {
-        renderUsageInfo(); // Chama a nova função na inicialização
+        renderUsageInfo();
+        carregarHistoricoDicas();
     }
 }
 
