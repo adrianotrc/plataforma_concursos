@@ -769,5 +769,31 @@ def delete_user_account():
         traceback.print_exc()
         return jsonify(error={'message': 'Ocorreu um erro interno ao tentar excluir a conta.'}), 500
 
+@app.route("/get-usage-limits/<user_id>", methods=['GET'])
+@cross_origin(supports_credentials=True)
+def get_usage_limits(user_id):
+    try:
+        today_str = datetime.utcnow().strftime('%Y-%m-%d')
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+
+        if not user_doc.exists:
+            return jsonify({"error": "Usuário não encontrado."}), 404
+
+        user_plan = user_doc.to_dict().get('plano', 'trial')
+        
+        usage_doc_ref = user_ref.collection('usage').document('total_trial' if user_plan == 'trial' else today_str)
+        usage_doc = usage_doc_ref.get()
+
+        current_usage = usage_doc.to_dict() if usage_doc.exists else {}
+        plan_limits = PLAN_LIMITS.get(user_plan, {})
+
+        return jsonify({
+            "usage": current_usage,
+            "limits": plan_limits
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True, port=int(os.environ.get("PORT", 5000)))

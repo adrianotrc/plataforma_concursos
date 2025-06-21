@@ -1,7 +1,7 @@
-
 import { auth, db } from './firebase-config.js';
 import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarPlanoDeEstudos } from './api.js';
+// Adicionaremos uma nova função à API
+import { gerarPlanoDeEstudos, getUsageLimits } from './api.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-cronograma');
@@ -10,6 +10,7 @@ const formCronograma = document.getElementById('form-cronograma');
 const btnFecharForm = document.getElementById('btn-fechar-form-cronograma');
 const containerExibicao = document.getElementById('plano-exibicao');
 const containerHistorico = document.getElementById('historico-cronogramas');
+const usageCounterDiv = document.getElementById('usage-counter'); // Novo elemento
 const diasSemanaCheckboxes = document.querySelectorAll('.dias-semana-grid input[type="checkbox"]');
 const materiasCheckboxContainer = document.getElementById('materias-checkbox-container');
 const materiasContainer = document.getElementById('materias-container');
@@ -222,6 +223,22 @@ function exportarPlanoParaExcel() {
     XLSX.writeFile(wb, `Plano_de_Estudos_${(plano.concurso_foco || 'IAprovas').replace(/ /g, '_')}.xlsx`);
 }
 
+async function renderUsageInfo() {
+    if (!currentUser) return;
+    try {
+        const data = await getUsageLimits(currentUser.uid);
+        const uso = data.usage.cronogramas || 0;
+        const limite = data.limits.cronogramas || 0;
+        const restantes = limite - uso;
+
+        usageCounterDiv.textContent = `Você pode gerar ${restantes} de ${limite} cronogramas hoje.`;
+        usageCounterDiv.style.display = 'block';
+    } catch (error) {
+        console.error("Erro ao buscar limites de uso:", error);
+        usageCounterDiv.style.display = 'none';
+    }
+}
+
 // --- LÓGICA DE EVENTOS ---
 
 formCronograma?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === materiasInput) { e.preventDefault(); adicionarMateriaTag(); } });
@@ -264,19 +281,21 @@ formCronograma?.addEventListener('submit', async (e) => {
     btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
     containerForm.style.display = 'none';
     try {
-        const respostaInicial = await gerarPlanoDeEstudos(dadosParaApi);
-        if (respostaInicial.status !== 'processing') throw new Error('Falha ao iniciar a geração.');
+        await gerarPlanoDeEstudos(dadosParaApi);
+        // **CORREÇÃO DO BUG:** Mostra uma mensagem de sucesso/info em vez de erro.
+        showToast("Solicitação enviada! Seu cronograma está sendo gerado.", 'info');
     } catch (error) {
-        showToast('Ocorreu um erro. Tente novamente.', 'error');
+        // Isso agora só vai ser executado se o limite for excedido ou houver um erro real.
+        showToast(error.message, 'error');
     } finally {
         btnGerar.disabled = false;
         btnGerar.textContent = 'Gerar Cronograma';
         formCronograma.reset();
         document.querySelectorAll('#materias-container .materia-tag').forEach(tag => tag.remove());
+        renderUsageInfo(); // Atualiza a contagem após uma tentativa
     }
 });
 
-// **CORREÇÃO DO BUG DE REABRIR**
 document.body.addEventListener('click', async (e) => {
     const abrirBtn = e.target.closest('.btn-abrir-plano');
     const fecharBtn = e.target.closest('#btn-fechar-plano');
@@ -321,6 +340,7 @@ function initCronogramaPage() {
     if (currentUser) {
         popularMaterias();
         ouvirHistoricoDePlanos();
+        renderUsageInfo(); 
     }
 }
 

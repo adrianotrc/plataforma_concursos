@@ -1624,3 +1624,22 @@ body.dark-mode .materias-checkbox-grid {
     margin-bottom: 0;
     font-weight: normal;
 }
+
+/* Caixa de Informação de Uso */
+.usage-info-box {
+    background-color: #eff6ff; /* Azul bem claro */
+    color: #1e3a8a; /* Azul escuro */
+    border: 1px solid #bfdbfe; /* Borda azul clara */
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    display: none; /* Começa escondido */
+}
+
+body.dark-mode .usage-info-box {
+    background-color: #1e3a8a;
+    color: #dbeafe;
+    border-color: #2563eb;
+}

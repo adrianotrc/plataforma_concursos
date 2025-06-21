@@ -144,3 +144,9 @@ export async function corrigirDiscursivaAsync(dadosCorrecao) {
         body: JSON.stringify(dadosCorrecao),
     });
 }
+
+export async function getUsageLimits(userId) {
+    return fetchApi(`/get-usage-limits/${userId}`, {
+        method: 'GET',
+    });
+}
