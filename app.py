@@ -13,6 +13,8 @@ import traceback
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
 import threading
+import resend
+
 
 load_dotenv()
 
@@ -34,9 +36,8 @@ CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500", "https://ia
 # --- Configuração das APIs ---
 openai_api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=openai_api_key)
-
-# ADICIONE A LINHA ABAIXO PARA CONFIGURAR A CHAVE DO STRIPE
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+resend.api_key = os.getenv("RESEND_API_KEY")
 
 # --- Função de Trabalho em Segundo Plano ---
 def processar_plano_em_background(user_id, job_id, dados_usuario):
@@ -184,14 +185,16 @@ def enviar_email_boas_vindas():
     if not email_destinatario:
         return jsonify({"erro": "E-mail do destinatário não fornecido."}), 400
 
+    # CORREÇÃO: Define a variável lendo do ambiente
+    frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+
     assunto = "Bem-vindo(a) ao IAprovas! Sua jornada para a aprovação começa agora."
     
-    # Template em HTML completo e restaurado
     conteudo_html = f"""
     <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
         <h1 style="color: #1d4ed8;">Olá, {nome_destinatario}!</h1>
         <p>Seja muito bem-vindo(a) à plataforma <strong>IAprovas</strong>!</p>
-        <p>Estamos muito felizes em ter você conosco. Nossa inteligência artificial, baseada em uma metodologia de sucesso, está pronta para criar um plano de estudos personalizado e te ajudar a alcançar a tão sonhada aprovação.</p>
+        <p>Estamos muito felizes em ter você conosco. Nossa inteligência artificial está pronta para criar um plano de estudos personalizado e te ajudar a alcançar a tão sonhada aprovação.</p>
         <p>Seus próximos passos recomendados:</p>
         <ol>
             <li>Acesse a área de <a href="{frontend_url}/cronograma.html" style="color: #1d4ed8;">Cronograma</a> para gerar seu primeiro plano de estudos.</li>
@@ -204,21 +207,14 @@ def enviar_email_boas_vindas():
     </div>
     """
 
-    # Versão em texto puro completa e restaurada
     conteudo_texto = f"""
     Olá, {nome_destinatario}!
-    
     Seja muito bem-vindo(a) à plataforma IAprovas!
-    
-    Estamos muito felizes em ter você conosco. Nossa inteligência artificial, baseada em uma metodologia de sucesso, está pronta para criar um plano de estudos personalizado e te ajudar a alcançar a tão sonhada aprovação.
-    
+    Estamos muito felizes em ter você conosco.
     Seus próximos passos recomendados:
-    1. Acesse a área de Cronograma para gerar seu primeiro plano de estudos: {frontend_url}/cronograma.html
-    2. Explore a seção de Exercícios para testar seus conhecimentos: {frontend_url}/exercicios.html
-    3. Visite a página de Dicas Estratégicas para otimizar sua preparação: {frontend_url}/dicas-estrategicas.html
-    
-    Se tiver qualquer dúvida, basta responder a este e-mail.
-    
+    1. Cronograma: {frontend_url}/cronograma.html
+    2. Exercícios: {frontend_url}/exercicios.html
+    3. Dicas Estratégicas: {frontend_url}/dicas-estrategicas.html
     Bons estudos!
     Equipe IAprovas
     """
