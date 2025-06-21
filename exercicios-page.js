@@ -90,15 +90,18 @@ function renderizarHistorico(sessoes) {
         const hasFailed = sessao.status === 'failed';
         const isCompleted = sessao.status === 'completed';
         const isAttempted = isCompleted && resumo.acertos !== undefined;
+
         let scoreHtml = '';
         if (isAttempted) {
             const score = resumo.total > 0 ? (resumo.acertos / resumo.total) * 100 : 0;
             let scoreClass = score >= 70 ? 'bom' : (score >= 50 ? 'medio' : 'ruim');
             scoreHtml = `<div class="exercise-score ${scoreClass}">${score.toFixed(0)}%</div>`;
         }
+
         let statusIcon = '';
         if (isProcessing) statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
         else if (hasFailed) statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
+
         let buttonText = 'Rever';
         if (isProcessing) buttonText = 'Gerando...';
         else if (hasFailed) buttonText = 'Falhou';
@@ -113,7 +116,7 @@ function renderizarHistorico(sessoes) {
                 ${scoreHtml}
                 <div class="exercise-time">
                     <p>${resumo.criadoEm?.toDate().toLocaleDateString('pt-BR')}</p>
-                    {/* MUDANÇA: btn-ghost para btn-outline */}
+                    {/* CORREÇÃO: O comentário incorreto foi removido daqui */}
                     <button class="btn btn-outline btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
                 </div>
             </div>

@@ -332,8 +332,10 @@ document.body.addEventListener('click', async (e) => {
         exportarPlanoParaExcel();
     }
     if (e.target.matches('#btn-fechar-plano')) {
-        containerExibicao.innerHTML = '';
-        containerExibicao.style.display = 'none';
+        if (containerExibicao) {
+            containerExibicao.innerHTML = '';
+            containerExibicao.style.display = 'none';
+        }
         planoAbertoAtual = null;
     }
 });
