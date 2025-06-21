@@ -790,7 +790,8 @@ def get_usage_limits(user_id):
 
         return jsonify({
             "usage": current_usage,
-            "limits": plan_limits
+            "limits": plan_limits,
+            "plan": user_plan # <-- Adicionado para o frontend saber o plano
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

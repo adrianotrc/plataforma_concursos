@@ -224,15 +224,31 @@ function exportarPlanoParaExcel() {
 }
 
 async function renderUsageInfo() {
-    if (!currentUser) return;
+    if (!currentUser || !usageCounterDiv) return;
     try {
         const data = await getUsageLimits(currentUser.uid);
         const uso = data.usage.cronogramas || 0;
         const limite = data.limits.cronogramas || 0;
         const restantes = limite - uso;
+        const plano = data.plan; // Pega o plano do usuário retornado pela API
 
-        usageCounterDiv.textContent = `Você pode gerar ${restantes} de ${limite} cronogramas hoje.`;
+        let mensagem = '';
+        // Lógica para personalizar a mensagem com base no plano
+        if (plano === 'trial') {
+            mensagem = `Você ainda pode gerar ${restantes} de ${limite} cronogramas durante o seu período de teste.`;
+        } else {
+            mensagem = `Hoje, você ainda pode gerar ${restantes} de ${limite} cronogramas.`;
+        }
+        
+        usageCounterDiv.textContent = mensagem;
         usageCounterDiv.style.display = 'block';
+
+        // Desabilita o botão de gerar se o limite foi atingido
+        const btnGerar = document.getElementById('btn-abrir-form-cronograma');
+        if(btnGerar) {
+            btnGerar.disabled = restantes <= 0;
+        }
+
     } catch (error) {
         console.error("Erro ao buscar limites de uso:", error);
         usageCounterDiv.style.display = 'none';
