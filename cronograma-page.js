@@ -226,14 +226,18 @@ function exportarPlanoParaExcel() {
 async function renderUsageInfo() {
     if (!currentUser || !usageCounterDiv) return;
     try {
+        // A função getUsageLimits já busca os dados do backend
         const data = await getUsageLimits(currentUser.uid);
-        const uso = data.usage.cronogramas || 0;
+
+        // Pega os valores específicos para 'cronogramas'
+        const uso = data.usage.cronogramas || 0; // Se não houver uso, considera 0
         const limite = data.limits.cronogramas || 0;
         const restantes = limite - uso;
-        const plano = data.plan; // Pega o plano do usuário retornado pela API
+        const plano = data.plan;
 
         let mensagem = '';
-        // Lógica para personalizar a mensagem com base no plano
+        
+        // Constrói a mensagem correta com os números dinâmicos
         if (plano === 'trial') {
             mensagem = `Você ainda pode gerar ${restantes} de ${limite} cronogramas durante o seu período de teste.`;
         } else {
@@ -243,7 +247,7 @@ async function renderUsageInfo() {
         usageCounterDiv.textContent = mensagem;
         usageCounterDiv.style.display = 'block';
 
-        // Desabilita o botão de gerar se o limite foi atingido
+        // Desabilita o botão se o limite foi atingido
         const btnGerar = document.getElementById('btn-abrir-form-cronograma');
         if(btnGerar) {
             btnGerar.disabled = restantes <= 0;

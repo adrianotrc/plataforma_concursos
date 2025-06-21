@@ -138,12 +138,16 @@ async function renderUsageInfo() {
     if (!currentUser || !usageCounterDiv) return;
     try {
         const data = await getUsageLimits(currentUser.uid);
-        const uso = data.usage.exercicios || 0;
+        
+        // Pega os valores específicos para 'exercicios'
+        const uso = data.usage.exercicios || 0; // Se não houver uso, considera 0
         const limite = data.limits.exercicios || 0;
         const restantes = limite - uso;
         const plano = data.plan;
 
         let mensagem = '';
+        
+        // Constrói a mensagem correta com os números dinâmicos
         if (plano === 'trial') {
             mensagem = `Você ainda pode gerar ${restantes} de ${limite} simulados de exercícios durante o seu período de teste.`;
         } else {
@@ -153,6 +157,7 @@ async function renderUsageInfo() {
         usageCounterDiv.textContent = mensagem;
         usageCounterDiv.style.display = 'block';
 
+        // Desabilita o botão se o limite foi atingido
         if(btnAbrirForm) {
             btnAbrirForm.disabled = restantes <= 0;
         }
