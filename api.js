@@ -65,19 +65,19 @@ export async function gerarExerciciosAsync(dadosDoFormulario) {
     });
 }
 
-export async function gerarDicasPorCategoria(categoria) {
+export async function gerarDicasPorCategoria(params) { // Aceita um objeto com userId e categoria
     return fetchApi('/gerar-dica-categoria', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoria }),
+        body: JSON.stringify(params), // Envia o objeto diretamente
     });
 }
 
-export async function gerarDicaPersonalizada(dadosDesempenho) {
+export async function gerarDicaPersonalizada(params) { // Aceita um objeto com userId e desempenho
     return fetchApi('/gerar-dica-personalizada', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ desempenho: dadosDesempenho }),
+        body: JSON.stringify(params), // Envia o objeto diretamente
     });
 }
 

@@ -1,7 +1,7 @@
 // SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO dicas-page.js
 
 import { auth, db } from './firebase-config.js';
-import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada } from './api.js';
+import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada } from './api.js'; 
 import { state } from './main-app.js';
 import { collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -120,48 +120,43 @@ geradorDicasForm?.addEventListener('submit', async (e) => {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
     dicaGeradaContainer.style.display = 'none';
 
-    // CORREÇÃO: O userId agora é adicionado ao objeto params desde o início.
-    let params = { userId: state.user.uid };
-    let gerarDicaFn;
-
-    if (categoria === 'personalizada') {
-        const q = query(collection(db, `users/${state.user.uid}/sessoesExercicios`), limit(50));
-        const sessoesSnapshot = await getDocs(q);
-        const sessoes = sessoesSnapshot.docs.map(doc => doc.data());
-        const desempenhoPorMateria = sessoes.reduce((acc, sessao) => {
-             const resumo = sessao.resumo;
-             if(resumo && resumo.acertos !== undefined) {
-                 if (!acc[resumo.materia]) {
-                    acc[resumo.materia] = { acertos: 0, total: 0 };
-                }
-                acc[resumo.materia].acertos += resumo.acertos;
-                acc[resumo.materia].total += resumo.total;
-             }
-             return acc;
-        }, {});
-        
-        params.desempenho = Object.entries(desempenhoPorMateria).map(([materia, dados]) => ({
-            materia,
-            taxa_acerto: dados.total > 0 ? Math.round((dados.acertos / dados.total) * 100) : 0
-        }));
-
-        if (params.desempenho.length === 0) {
-            renderizarDicas(["Não há dados de desempenho recentes para uma dica personalizada. Resolva mais exercícios!"]);
-            btn.disabled = false;
-            btn.innerHTML = 'Gerar Dica';
-            return;
-        }
-        gerarDicaFn = gerarDicaPersonalizada;
-    } else {
-        params.categoria = categoria;
-        gerarDicaFn = gerarDicasPorCategoria;
-    }
-
     try {
-        const resultado = await gerarDicaFn(params);
+        let resultado;
+        if (categoria === 'personalizada') {
+            const q = query(collection(db, `users/${state.user.uid}/sessoesExercicios`), limit(50));
+            const sessoesSnapshot = await getDocs(q);
+            const sessoes = sessoesSnapshot.docs.map(doc => doc.data());
+            const desempenhoPorMateria = sessoes.reduce((acc, sessao) => {
+                 const resumo = sessao.resumo;
+                 if(resumo && resumo.acertos !== undefined) {
+                     if (!acc[resumo.materia]) acc[resumo.materia] = { acertos: 0, total: 0 };
+                     acc[resumo.materia].acertos += resumo.acertos;
+                     acc[resumo.materia].total += resumo.total;
+                 }
+                 return acc;
+            }, {});
+            
+            const desempenhoParaApi = Object.entries(desempenhoPorMateria).map(([materia, dados]) => ({
+                materia,
+                taxa_acerto: dados.total > 0 ? Math.round((dados.acertos / dados.total) * 100) : 0
+            }));
+            
+            if (desempenhoParaApi.length === 0) {
+                renderizarDicas(["Não há dados de desempenho suficientes para uma dica personalizada."]);
+                return;
+            }
+            // Chama a API com o payload correto
+            resultado = await gerarDicaPersonalizada({ userId: state.user.uid, desempenho: desempenhoParaApi });
+
+        } else {
+            // Chama a API com o payload correto
+            resultado = await gerarDicasPorCategoria({ userId: state.user.uid, categoria: categoria });
+        }
+        
         renderizarDicas(resultado.dicas_geradas);
         await salvarDicaNoHistorico(categoria, resultado.dicas_geradas);
         await carregarHistoricoDicas();
+
     } catch (error) {
         alert(error.message);
     } finally {
@@ -170,7 +165,6 @@ geradorDicasForm?.addEventListener('submit', async (e) => {
         await renderUsageInfo();
     }
 });
-
 
 // --- INICIALIZAÇÃO ---
 
