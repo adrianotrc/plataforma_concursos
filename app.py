@@ -456,25 +456,28 @@ def gerar_enunciado_discursiva_async():
     return jsonify({"status": "processing_enunciado", "jobId": job_id}), 202
 
 def processar_correcao_em_background(user_id, job_id, dados_correcao):
-    """Função de background para corrigir a discursiva."""
+    """Função de background para corrigir a discursiva com mais rigor."""
     print(f"BACKGROUND JOB (CORREÇÃO) INICIADO: {job_id} para usuário {user_id}")
     job_ref = db.collection('users').document(user_id).collection('discursivasCorrigidas').document(job_id)
     try:
+        # --- PROMPT DE CORREÇÃO RIGOROSA ---
         prompt = (
-            f"Você é um examinador de concurso rigoroso e justo. Analise a seguinte resposta de um aluno.\n"
+            "Você é um examinador de concurso extremamente rigoroso e justo, conhecido por sua precisão técnica e por não ser 'benevolente'. Sua tarefa é analisar a resposta de um aluno, fornecendo um feedback crítico e construtivo.\n\n"
             f"### Enunciado da Questão:\n{dados_correcao.get('enunciado')}\n\n"
             f"### Resposta do Aluno:\n{dados_correcao.get('resposta')}\n\n"
             f"### Foco da Correção Solicitado:\n{dados_correcao.get('foco_correcao', 'Avaliação geral')}\n\n"
-            f"REGRAS DA CORREÇÃO:\n"
-            f"1. Atribua uma nota de 0.0 a 10.0, com uma casa decimal.\n"
-            f"2. Forneça um 'comentario_geral' sobre o desempenho.\n"
-            f"3. Crie uma análise detalhada numa lista chamada 'analise_por_criterio'.\n"
-            f"4. Para cada critério na lista, inclua 'criterio', 'nota_criterio', e 'comentario'.\n"
-            f"5. Os critérios a serem analisados OBRIGATORIAMENTE são: 'Apresentação e Estrutura Textual', 'Desenvolvimento do Tema e Argumentação', e 'Domínio da Modalidade Escrita (Gramática)'.\n\n"
-            f"ESTRUTURA DE RESPOSTA JSON (SEGUIR RIGOROSAMENTE):\n"
-            f"O JSON deve conter as chaves: 'nota_atribuida' (float), 'comentario_geral' (string), e 'analise_por_criterio' (LISTA de objetos)."
+            "REGRAS DA CORREÇÃO (SEGUIR COM MÁXIMO RIGOR):\n"
+            "1. **Nota Realista:** Atribua uma nota de 0.0 a 10.0, com uma casa decimal. Seja crítico. Uma resposta mediana não deve receber nota 8 ou 9. Use toda a escala de notas. Se a resposta for fraca, dê uma nota baixa correspondente.\n"
+            "2. **Comentário Geral Direto:** No 'comentario_geral', seja direto. Aponte o principal ponto forte e a principal fraqueza da resposta de forma clara.\n"
+            "3. **Análise Detalhada por Critério:**\n"
+            "   - **Apresentação e Estrutura Textual:** Avalie a clareza, coesão, coerência e organização dos parágrafos.\n"
+            "   - **Desenvolvimento do Tema e Argumentação:** Verifique se a resposta aborda todos os pontos do enunciado. A argumentação é bem fundamentada, ou é superficial? Há exemplos pertinentes?\n"
+            "   - **Domínio da Modalidade Escrita (Gramática):** Aponte erros de gramática, ortografia e pontuação. Seja específico se notar um erro recorrente.\n"
+            "4. **Feedback Construtivo:** Nos comentários de cada critério, use a tag `<strong>` para destacar tanto os acertos quanto os erros, de forma que o aluno saiba exatamente onde melhorar.\n\n"
+            "ESTRUTURA DE RESPOSTA JSON (SEGUIR RIGOROSAMENTE):\n"
+            "O JSON deve conter as chaves: 'nota_atribuida' (float), 'comentario_geral' (string), e 'analise_por_criterio' (LISTA de objetos)."
         )
-        system_message = "Você é um examinador de concursos que fornece correções estruturadas, formatando a saída estritamente em JSON."
+        system_message = "Você é um examinador de concursos que fornece correções rigorosas e detalhadas, formatando a saída estritamente em JSON."
         dados = call_openai_api(prompt, system_message)
         
         update_data = {

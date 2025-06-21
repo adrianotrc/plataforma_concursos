@@ -134,6 +134,8 @@ btnCorrigir?.addEventListener('click', async () => {
     if (!resposta.trim() || !sessaoAberta?.enunciado) {
         return alert('Por favor, escreva sua resposta antes de pedir a correção.');
     }
+    
+    // Desabilita o botão e mostra o status de "Corrigindo"
     btnCorrigir.disabled = true;
     btnCorrigir.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Corrigindo...';
     
@@ -144,13 +146,15 @@ btnCorrigir?.addEventListener('click', async () => {
         resposta: resposta,
         foco_correcao: sessaoAberta.criterios.foco_correcao,
     };
+
     try {
         await corrigirDiscursivaAsync(dadosParaCorrecao);
-        // A lógica de exibição da correção também é tratada pelo listener
+        // O botão NÃO é reativado aqui. A reativação será tratada
+        // pelo listener onSnapshot quando o status mudar para 'correcao_pronta' ou 'failed'.
     } catch (error) {
-        alert('Falha ao solicitar a correção.');
+        alert('Falha ao solicitar a correção. Verifique sua conexão e tente novamente.');
         console.error(error);
-    } finally {
+        // Em caso de falha ao ENVIAR, reabilita o botão.
         btnCorrigir.disabled = false;
         btnCorrigir.textContent = 'Corrigir Texto';
     }
