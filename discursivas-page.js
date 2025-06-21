@@ -20,13 +20,19 @@ const statTotal = document.getElementById('stat-discursivas-total');
 const statMedia = document.getElementById('stat-discursivas-media');
 
 // --- ESTADO LOCAL ---
-let sessaoAberta = null; // Guarda o objeto da sessão atual
+let sessaoAberta = null;
 let unsubHistorico = null;
 
-// --- FUNÇÕES DE RENDERIZAÇÃO ---
+// --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
 
 function renderEnunciado(enunciado) {
-    enunciadoContainer.innerHTML = `<h4>Enunciado Gerado:</h4><p>${enunciado.replace(/\n/g, '<br>')}</p>`;
+    enunciadoContainer.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>Enunciado Gerado:</h4>
+            <button id="btn-fechar-visualizacao" class="btn btn-ghost" style="padding: 4px 8px; font-size: 12px;">Fechar</button>
+        </div>
+        <p>${enunciado.replace(/\n/g, '<br>')}</p>
+    `;
     enunciadoContainer.style.display = 'block';
     areaResposta.style.display = 'block';
     correcaoContainer.style.display = 'none';
@@ -40,7 +46,7 @@ function renderCorrecao(correcao, container) {
     const analiseHtml = correcao.analise_por_criterio?.map(item => `
         <div class="criterio-analise" style="margin-bottom: 1rem;">
             <h5>${item.criterio} (Nota: ${item.nota_criterio?.toFixed(1) || 'N/A'})</h5>
-            <p>${item.comentario || 'Sem comentários.'}</p>
+            <p style="white-space: pre-wrap;">${item.comentario || 'Sem comentários.'}</p>
         </div>
     `).join('') || '<p>Análise detalhada não disponível.</p>';
     container.innerHTML = `
@@ -118,7 +124,6 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
 
     try {
         await gerarEnunciadoDiscursivaAsync(criterios);
-        // A lógica de exibição agora é tratada pelo listener `onSnapshot`
     } catch (error) {
         alert('Falha ao solicitar a geração do enunciado.');
     } finally {
@@ -129,41 +134,35 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
     }
 });
 
-btnCorrigir?.addEventListener('click', async () => {
-    const resposta = respostaTextarea.value;
-    if (!resposta.trim() || !sessaoAberta?.enunciado) {
-        return alert('Por favor, escreva sua resposta antes de pedir a correção.');
+document.body.addEventListener('click', async (e) => {
+    if (e.target.id === 'btn-corrigir-texto') {
+        const btn = e.target;
+        const resposta = respostaTextarea.value;
+        if (!resposta.trim() || !sessaoAberta?.enunciado) {
+            return alert('Por favor, escreva sua resposta antes de pedir a correção.');
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando para correção...';
+        
+        const dadosParaCorrecao = {
+            userId: state.user.uid,
+            jobId: sessaoAberta.id,
+            enunciado: sessaoAberta.enunciado,
+            resposta: resposta,
+            foco_correcao: sessaoAberta.criterios.foco_correcao,
+        };
+        try {
+            await corrigirDiscursivaAsync(dadosParaCorrecao);
+            btn.textContent = "Aguardando correção da IA...";
+        } catch (error) {
+            alert('Falha ao solicitar a correção. Verifique sua conexão e tente novamente.');
+            btn.disabled = false;
+            btn.textContent = 'Corrigir Texto';
+        }
     }
-    
-    // Desabilita o botão e mostra o status de "Corrigindo"
-    btnCorrigir.disabled = true;
-    btnCorrigir.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Corrigindo...';
-    
-    const dadosParaCorrecao = {
-        userId: state.user.uid,
-        jobId: sessaoAberta.id,
-        enunciado: sessaoAberta.enunciado,
-        resposta: resposta,
-        foco_correcao: sessaoAberta.criterios.foco_correcao,
-    };
 
-    try {
-        await corrigirDiscursivaAsync(dadosParaCorrecao);
-        // O botão NÃO é reativado aqui. A reativação será tratada
-        // pelo listener onSnapshot quando o status mudar para 'correcao_pronta' ou 'failed'.
-    } catch (error) {
-        alert('Falha ao solicitar a correção. Verifique sua conexão e tente novamente.');
-        console.error(error);
-        // Em caso de falha ao ENVIAR, reabilita o botão.
-        btnCorrigir.disabled = false;
-        btnCorrigir.textContent = 'Corrigir Texto';
-    }
-});
-
-historicoContainer?.addEventListener('click', async (e) => {
-    const btnRever = e.target.closest('.btn-rever-correcao');
-    if (btnRever && !btnRever.disabled) {
-        const id = btnRever.dataset.id;
+    if (e.target.matches('.btn-rever-correcao') && !e.target.disabled) {
+        const id = e.target.dataset.id;
         const sessaoDoc = await getDoc(doc(db, `users/${state.user.uid}/discursivasCorrigidas`, id));
         if (sessaoDoc.exists()) {
             sessaoAberta = { id: sessaoDoc.id, ...sessaoDoc.data() };
@@ -173,6 +172,13 @@ historicoContainer?.addEventListener('click', async (e) => {
                 renderCorrecao(sessaoAberta.correcao, correcaoContainer);
             }
         }
+    }
+    
+    if (e.target.id === 'btn-fechar-visualizacao') {
+        enunciadoContainer.style.display = 'none';
+        areaResposta.style.display = 'none';
+        correcaoContainer.style.display = 'none';
+        sessaoAberta = null;
     }
 });
 
@@ -192,6 +198,8 @@ function ouvirHistoricoDiscursivas() {
                     renderEnunciado(data.enunciado);
                 } else if (data.status === 'correcao_pronta' && sessaoAberta && sessaoAberta.id === change.doc.id) {
                     renderCorrecao(data.correcao, correcaoContainer);
+                    const btn = document.getElementById('btn-corrigir-texto');
+                    if(btn) btn.style.display = 'none'; // Esconde o botão após a correção ser exibida
                 }
             }
         });

@@ -456,26 +456,27 @@ def gerar_enunciado_discursiva_async():
     return jsonify({"status": "processing_enunciado", "jobId": job_id}), 202
 
 def processar_correcao_em_background(user_id, job_id, dados_correcao):
-    """Função de background para corrigir a discursiva com mais rigor."""
+    """Função de background para corrigir a discursiva com mais rigor e clareza."""
     print(f"BACKGROUND JOB (CORREÇÃO) INICIADO: {job_id} para usuário {user_id}")
     job_ref = db.collection('users').document(user_id).collection('discursivasCorrigidas').document(job_id)
     try:
-        # --- PROMPT DE CORREÇÃO RIGOROSA ---
+        # --- PROMPT DE CORREÇÃO FINAL E DETALHADO ---
         prompt = (
-            "Você é um examinador de concurso extremamente rigoroso e justo, conhecido por sua precisão técnica e por não ser 'benevolente'. Sua tarefa é analisar a resposta de um aluno, fornecendo um feedback crítico e construtivo.\n\n"
+            "Você é um examinador de concurso extremamente rigoroso e justo. Sua tarefa é analisar a resposta de um aluno, fornecendo um feedback crítico e construtivo.\n\n"
             f"### Enunciado da Questão:\n{dados_correcao.get('enunciado')}\n\n"
             f"### Resposta do Aluno:\n{dados_correcao.get('resposta')}\n\n"
             f"### Foco da Correção Solicitado:\n{dados_correcao.get('foco_correcao', 'Avaliação geral')}\n\n"
             "REGRAS DA CORREÇÃO (SEGUIR COM MÁXIMO RIGOR):\n"
-            "1. **Nota Realista:** Atribua uma nota de 0.0 a 10.0, com uma casa decimal. Seja crítico. Uma resposta mediana não deve receber nota 8 ou 9. Use toda a escala de notas. Se a resposta for fraca, dê uma nota baixa correspondente.\n"
-            "2. **Comentário Geral Direto:** No 'comentario_geral', seja direto. Aponte o principal ponto forte e a principal fraqueza da resposta de forma clara.\n"
-            "3. **Análise Detalhada por Critério:**\n"
-            "   - **Apresentação e Estrutura Textual:** Avalie a clareza, coesão, coerência e organização dos parágrafos.\n"
-            "   - **Desenvolvimento do Tema e Argumentação:** Verifique se a resposta aborda todos os pontos do enunciado. A argumentação é bem fundamentada, ou é superficial? Há exemplos pertinentes?\n"
-            "   - **Domínio da Modalidade Escrita (Gramática):** Aponte erros de gramática, ortografia e pontuação. Seja específico se notar um erro recorrente.\n"
-            "4. **Feedback Construtivo:** Nos comentários de cada critério, use a tag `<strong>` para destacar tanto os acertos quanto os erros, de forma que o aluno saiba exatamente onde melhorar.\n\n"
+            "1. **Nota Realista:** Atribua uma nota de 0.0 a 10.0 para a redação como um todo.\n"
+            "2. **Nota por Critério:** Para cada um dos 3 critérios abaixo, atribua uma nota individual de 0.0 a 10.0. A nota final deve ser a média dessas três notas.\n"
+            "3. **Feedback Detalhado:** Para cada critério, escreva um comentário. Comece com os pontos fortes. Depois, para os pontos fracos, **obrigatoriamente inicie uma nova linha** com a frase 'Pontos a melhorar:' e liste-os.\n"
+            "4. **Critérios de Análise:**\n"
+            "   - **Apresentação e Estrutura Textual:** Avalie clareza, coesão e organização.\n"
+            "   - **Desenvolvimento do Tema e Argumentação:** Verifique se a resposta aborda o enunciado e se a argumentação é bem fundamentada.\n"
+            "   - **Domínio da Modalidade Escrita (Gramática):** Aponte erros de gramática, ortografia e pontuação.\n"
+            "5. **Uso de Destaques:** Use a tag `<strong>` para destacar termos importantes no seu feedback.\n\n"
             "ESTRUTURA DE RESPOSTA JSON (SEGUIR RIGOROSAMENTE):\n"
-            "O JSON deve conter as chaves: 'nota_atribuida' (float), 'comentario_geral' (string), e 'analise_por_criterio' (LISTA de objetos)."
+            "O JSON deve conter 'nota_atribuida' (float), 'comentario_geral' (string), e 'analise_por_criterio' (LISTA de objetos, onde cada objeto DEVE ter 'criterio', 'nota_criterio' e 'comentario')."
         )
         system_message = "Você é um examinador de concursos que fornece correções rigorosas e detalhadas, formatando a saída estritamente em JSON."
         dados = call_openai_api(prompt, system_message)
