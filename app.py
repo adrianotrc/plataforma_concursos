@@ -35,6 +35,9 @@ CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500", "https://ia
 openai_api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=openai_api_key)
 
+# ADICIONE A LINHA ABAIXO PARA CONFIGURAR A CHAVE DO STRIPE
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
 # --- Função de Trabalho em Segundo Plano ---
 def processar_plano_em_background(user_id, job_id, dados_usuario):
     print(f"BACKGROUND JOB INICIADO: {job_id} para usuário {user_id}")
