@@ -30,6 +30,55 @@ except Exception as e:
 
 app = Flask(__name__)
 
+# --- INÍCIO DA SEÇÃO DE GERENCIAMENTO DE LIMITES ---
+
+# Define os limites diários para cada plano.
+# Futuramente, podemos facilmente alterar os valores para 'basico', 'intermediario', etc.
+PLAN_LIMITS = {
+    'trial': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
+    'basico': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
+    'intermediario': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
+    'premium': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
+    'anual': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10}
+}
+
+def check_usage_and_update(user_id, feature):
+    """Verifica e atualiza o uso de uma funcionalidade para um usuário."""
+    try:
+        today_str = datetime.utcnow().strftime('%Y-%m-%d')
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+
+        if not user_doc.exists:
+            return False, "Usuário não encontrado."
+
+        user_plan = user_doc.to_dict().get('plano', 'trial')
+        
+        # Para o plano 'trial', o limite é total, não diário.
+        if user_plan == 'trial':
+            usage_ref = user_ref.collection('usage').document('total_trial')
+        else:
+            usage_ref = user_ref.collection('usage').document(today_str)
+
+        usage_doc = usage_ref.get()
+        
+        limit = PLAN_LIMITS.get(user_plan, {}).get(feature, 0)
+
+        current_usage = 0
+        if usage_doc.exists:
+            current_usage = usage_doc.to_dict().get(feature, 0)
+
+        if current_usage >= limit:
+            return False, f"Limite diário de {limit} usos para '{feature}' atingido."
+
+        # Incrementa o uso
+        usage_ref.set({feature: firestore.Increment(1)}, merge=True)
+        return True, "Uso permitido."
+
+    except Exception as e:
+        print(f"Erro ao verificar uso: {e}")
+        return False, "Erro interno ao verificar limites de uso."
+
 # --- Configuração de CORS ---
 CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500", "https://iaprovas.com.br", "https://www.iaprovas.com.br"], supports_credentials=True)
 
@@ -102,12 +151,17 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             'error': str(e)
         })
 
-# SUBSTITUA a rota /gerar-plano-estudos por esta:
 @app.route("/gerar-plano-estudos", methods=['POST'])
 @cross_origin(supports_credentials=True)
 def gerar_plano_iniciar_job():
     dados_usuario = request.json
     user_id = dados_usuario.get("userId")
+
+    # --- INÍCIO DA VERIFICAÇÃO DE LIMITE ---
+    is_allowed, message = check_usage_and_update(user_id, 'cronogramas')
+    if not is_allowed:
+        return jsonify({"error": "limit_exceeded", "message": message}), 429
+    # --- FIM DA VERIFICAÇÃO DE LIMITE ---
 
     if not user_id:
         return jsonify({"erro_geral": "ID do usuário não fornecido."}), 400
@@ -324,6 +378,12 @@ def gerar_exercicios_async():
     dados_req = request.json
     user_id = dados_req.get("userId")
 
+    # --- INÍCIO DA VERIFICAÇÃO DE LIMITE ---
+    is_allowed, message = check_usage_and_update(user_id, 'exercicios')
+    if not is_allowed:
+        return jsonify({"error": "limit_exceeded", "message": message}), 429
+    # --- FIM DA VERIFICAÇÃO DE LIMITE ---
+
     if not user_id:
         return jsonify({"erro_geral": "ID do usuário não fornecido."}), 400
 
@@ -352,8 +412,17 @@ def gerar_exercicios_async():
 
 
 @app.route("/gerar-dica-categoria", methods=['POST'])
+@cross_origin(supports_credentials=True) # Adicione o cross_origin para consistência
 def gerar_dica_categoria():
     dados_req = request.json
+    user_id = dados_req.get("userId") # Pega o ID do usuário da requisição
+
+    # --- VERIFICAÇÃO DE LIMITE ---
+    is_allowed, message = check_usage_and_update(user_id, 'dicas')
+    if not is_allowed:
+        return jsonify({"error": "limit_exceeded", "message": message}), 429
+    # --- FIM DA VERIFICAÇÃO ---
+    
     categoria = dados_req.get("categoria", "geral")
     
     contexto_guia = {
@@ -379,8 +448,18 @@ def gerar_dica_categoria():
         return jsonify({"erro_geral": str(e)}), 500
 
 @app.route("/gerar-dica-personalizada", methods=['POST'])
+@cross_origin(supports_credentials=True) # Adicione o cross_origin para consistência
 def gerar_dica_personalizada():
-    dados_desempenho = request.json.get("desempenho", [])
+    dados_req = request.json # A requisição agora contém 'desempenho' e 'userId'
+    user_id = dados_req.get("userId") # Pega o ID do usuário da requisição
+
+    # --- VERIFICAÇÃO DE LIMITE ---
+    is_allowed, message = check_usage_and_update(user_id, 'dicas')
+    if not is_allowed:
+        return jsonify({"error": "limit_exceeded", "message": message}), 429
+    # --- FIM DA VERIFICAÇÃO ---
+
+    dados_desempenho = dados_req.get("desempenho", [])
     
     if not dados_desempenho:
         return jsonify({"dicas_geradas": ["Não há dados de desempenho suficientes para gerar uma dica personalizada. Continue praticando!"]})
@@ -438,6 +517,14 @@ def gerar_enunciado_discursiva_async():
     """Rota que inicia a geração do enunciado em segundo plano."""
     dados_req = request.json
     user_id = dados_req.get("userId")
+
+    # --- INÍCIO DA VERIFICAÇÃO DE LIMITE ---
+    is_allowed, message = check_usage_and_update(user_id, 'discursivas')
+    if not is_allowed:
+        return jsonify({"error": "limit_exceeded", "message": message}), 429
+    # --- FIM DA VERIFICAÇÃO DE LIMITE ---
+
+
     if not user_id: return jsonify({"erro": "ID do usuário não fornecido."}), 400
 
     job_ref = db.collection('users').document(user_id).collection('discursivasCorrigidas').document()
@@ -498,6 +585,14 @@ def corrigir_discursiva_async():
     dados_req = request.json
     user_id = dados_req.get("userId")
     job_id = dados_req.get("jobId") # Recebe o ID do job existente
+
+    # --- INÍCIO DA VERIFICAÇÃO DE LIMITE ---
+    is_allowed, message = check_usage_and_update(user_id, 'correcoes_discursivas')
+    if not is_allowed:
+        return jsonify({"error": "limit_exceeded", "message": message}), 429
+    # --- FIM DA VERIFICAÇÃO DE LIMITE ---
+
+
     if not all([user_id, job_id]): return jsonify({"erro": "Dados insuficientes."}), 400
 
     job_ref = db.collection('users').document(user_id).collection('discursivasCorrigidas').document(job_id)

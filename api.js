@@ -15,17 +15,26 @@ const API_BASE_URL = isLocalEnvironment()
 // Função auxiliar genérica para chamadas de API
 async function fetchApi(endpoint, options) {
     try {
-        console.log(`Fazendo chamada para: ${API_BASE_URL}${endpoint}`);
         const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        
+        // Se a resposta não for OK (ex: 429, 500), trata como erro
         if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({ erro: response.statusText }));
-            console.error(`Erro do servidor ao chamar ${endpoint}:`, errorBody);
-            throw new Error(`Erro do servidor: ${errorBody.erro_geral || response.statusText}`);
+            const errorBody = await response.json().catch(() => ({ 
+                message: `Erro ${response.status}: ${response.statusText}` 
+            }));
+            // Lança um erro com a mensagem do servidor
+            throw new Error(errorBody.message || 'Ocorreu um erro desconhecido.');
         }
+
+        // Se a resposta for OK, mas não houver conteúdo (ex: status 202 ou 204)
+        if (response.status === 202 || response.status === 204) {
+            return {}; // Retorna um objeto vazio para não quebrar a cadeia de 'then'
+        }
+
         return await response.json();
     } catch (error) {
-        console.error(`Falha grave ao chamar o endpoint ${endpoint}:`, error);
-        throw error;
+        console.error(`Falha grave ao chamar o endpoint ${endpoint}:`, error.message);
+        throw error; // Propaga o erro para ser tratado pela função que chamou
     }
 }
 
