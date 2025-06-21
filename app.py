@@ -448,14 +448,19 @@ def gerar_dica_categoria():
         return jsonify({"erro_geral": str(e)}), 500
 
 @app.route("/gerar-dica-personalizada", methods=['POST'])
-@cross_origin(supports_credentials=True) # Adicione o cross_origin para consistência
+@cross_origin(supports_credentials=True)
 def gerar_dica_personalizada():
-    dados_req = request.json # A requisição agora contém 'desempenho' e 'userId'
-    user_id = dados_req.get("userId") # Pega o ID do usuário da requisição
+    dados_req = request.json
+    user_id = dados_req.get("userId")
+
+    # CORREÇÃO: Verifica o user_id ANTES de chamar o limite
+    if not user_id:
+        return jsonify({"error": "bad_request", "message": "O ID do usuário não foi fornecido na requisição."}), 400
 
     # --- VERIFICAÇÃO DE LIMITE ---
     is_allowed, message = check_usage_and_update(user_id, 'dicas')
     if not is_allowed:
+        # A mensagem de erro agora vem da função de limite e o status está correto
         return jsonify({"error": "limit_exceeded", "message": message}), 429
     # --- FIM DA VERIFICAÇÃO ---
 

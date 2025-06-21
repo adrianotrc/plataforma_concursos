@@ -1,8 +1,7 @@
 // SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO dicas-page.js
 
 import { auth, db } from './firebase-config.js';
-// CORREÇÃO: Importa os nomes corretos das funções da API.
-import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada } from './api.js'; 
+import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada } from './api.js';
 import { state } from './main-app.js';
 import { collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -24,9 +23,9 @@ function renderizarDicas(dicas) {
             dicasHtml += `<li>${dica}</li>`;
         });
         dicasHtml += '</ul>';
-        dicasContainer.innerHTML = dicasHtml;
+        dicaGeradaContainer.innerHTML = dicasHtml;
     } else {
-        dicasContainer.innerHTML = '<p>Não foi possível gerar dicas neste momento.</p>';
+        dicaGeradaContainer.innerHTML = '<p>Não foi possível gerar dicas neste momento.</p>';
     }
     dicaGeradaContainer.style.display = 'block';
 }
@@ -121,6 +120,7 @@ geradorDicasForm?.addEventListener('submit', async (e) => {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
     dicaGeradaContainer.style.display = 'none';
 
+    // CORREÇÃO: O userId agora é adicionado ao objeto params desde o início.
     let params = { userId: state.user.uid };
     let gerarDicaFn;
 
@@ -154,8 +154,7 @@ geradorDicasForm?.addEventListener('submit', async (e) => {
         gerarDicaFn = gerarDicaPersonalizada;
     } else {
         params.categoria = categoria;
-        // CORREÇÃO: Chama a função com o nome correto
-        gerarDicaFn = gerarDicasPorCategoria; 
+        gerarDicaFn = gerarDicasPorCategoria;
     }
 
     try {
