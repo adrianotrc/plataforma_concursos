@@ -116,7 +116,6 @@ function renderizarHistorico(sessoes) {
                 ${scoreHtml}
                 <div class="exercise-time">
                     <p>${resumo.criadoEm?.toDate().toLocaleDateString('pt-BR')}</p>
-                    {/* CORREÇÃO: O comentário incorreto foi removido daqui */}
                     <button class="btn btn-outline btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
                 </div>
             </div>

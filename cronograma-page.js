@@ -1,4 +1,3 @@
-// SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO cronograma-page.js
 
 import { auth, db } from './firebase-config.js';
 import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -9,20 +8,18 @@ const btnAbrirForm = document.getElementById('btn-abrir-form-cronograma');
 const containerForm = document.getElementById('container-form-novo-plano');
 const formCronograma = document.getElementById('form-cronograma');
 const btnFecharForm = document.getElementById('btn-fechar-form-cronograma');
-const containerHistorico = document.getElementById('historico-cronogramas');
 const containerExibicao = document.getElementById('plano-exibicao');
+const containerHistorico = document.getElementById('historico-cronogramas');
 const diasSemanaCheckboxes = document.querySelectorAll('.dias-semana-grid input[type="checkbox"]');
-// Novos elementos
 const materiasCheckboxContainer = document.getElementById('materias-checkbox-container');
-const materiasContainer = document.getElementById('materias-container'); // O container de tags
-const materiasInput = document.getElementById('materias-input'); // O input de texto para tags
+const materiasContainer = document.getElementById('materias-container');
+const materiasInput = document.getElementById('materias-input');
 
 // --- ESTADO LOCAL ---
 let currentUser = null;
 let unsubHistorico = null;
 let planoAbertoAtual = null;
 
-// --- MATÉRIAS PRÉ-DEFINIDAS ---
 const materiasPreDefinidas = [
     "Língua Portuguesa", "Raciocínio Lógico", "Matemática", "Informática (Noções ou Conhecimentos Básicos de TI)",
     "Legislação Aplicada ao Órgão (ex.: Lei 8.112/90, Regimento Interno)", "Direito Constitucional", "Direito Administrativo",
@@ -73,7 +70,6 @@ function showToast(message, type = 'success', duration = 5000) {
 }
 
 function renderizarHistorico(planos) {
-    // ... (Esta função não precisa de alterações)
     if (!containerHistorico) return;
     if (!planos || planos.length === 0) {
         containerHistorico.innerHTML = '<div class="card-placeholder"><p>Nenhum cronograma gerado ainda.</p></div>';
@@ -84,19 +80,16 @@ function renderizarHistorico(planos) {
         const dataFormatada = plano.criadoEm?.toDate()?.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) || 'Processando...';
         const isProcessing = plano.status === 'processing';
         const hasFailed = plano.status === 'failed';
-        
         let subtexto = `Gerado em: ${dataFormatada}`;
         if (plano.data_inicio && plano.data_termino) {
              subtexto += ` | Período: ${plano.data_inicio} a ${plano.data_termino}`;
         }
-
         let statusIcon = '';
         if (isProcessing) {
             statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
         } else if (hasFailed) {
             statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
         }
-
         return `
             <div class="plano-item">
                 <div>
@@ -114,17 +107,14 @@ function renderizarHistorico(planos) {
 function exibirPlanoNaTela(plano) {
     if (!containerExibicao || !plano) return;
     planoAbertoAtual = plano;
-
     if (!plano.cronograma_semanal_detalhado) {
         containerExibicao.innerHTML = `<div class="plano-formatado-container"><div class="card-placeholder"><p>O cronograma detalhado não foi encontrado. Tente criar um novo plano.</p></div></div>`;
-        containerExibicao.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        containerExibicao.style.display = 'block';
         return;
     }
-
     const formatarData = (data) => data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00Z') : new Date();
     const diasDaSemanaOrdenados = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-    // Adiciona o botão "Fechar" ao lado do botão "Exportar"
     let cronogramaHtml = `
         <div class="plano-formatado-container">
             <div class="plano-header">
@@ -137,11 +127,9 @@ function exibirPlanoNaTela(plano) {
                     <button id="btn-fechar-plano" class="btn btn-outline">Fechar</button>
                 </div>
             </div>`;
-    
     const semanas = plano.cronograma_semanal_detalhado;
     let dataCorrente = new Date(dataInicioPlano);
     dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay());
-
     semanas.forEach(semana => {
         const diasDaSemanaApi = (semana.dias_de_estudo || []).reduce((acc, dia) => {
             acc[dia.dia_semana] = dia.atividades || [];
@@ -167,16 +155,14 @@ function exibirPlanoNaTela(plano) {
         cronogramaHtml += `</tr></tbody></table></div></div>`;
         dataCorrente.setDate(dataCorrente.getDate() + 7);
     });
-
     cronogramaHtml += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial.</small></div>`;
     containerExibicao.innerHTML = cronogramaHtml;
-    containerExibicao.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    containerExibicao.style.display = 'block';
 }
 
 function exportarPlanoParaExcel() {
-    // ... (Esta função não precisa de alterações)
-     if (!planoAbertoAtual || !planoAbertoAtual.cronograma_semanal_detalhado) {
-        showToast("Nenhum plano detalhado para exportar. Por favor, abra um cronograma primeiro.", "error");
+    if (!planoAbertoAtual || !planoAbertoAtual.cronograma_semanal_detalhado) {
+        showToast("Nenhum plano detalhado para exportar.", "error");
         return;
     }
 
@@ -237,27 +223,19 @@ function exportarPlanoParaExcel() {
 }
 
 // --- LÓGICA DE EVENTOS ---
+
 formCronograma?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === materiasInput) { e.preventDefault(); adicionarMateriaTag(); } });
 materiasInput?.addEventListener('keyup', (e) => { if (e.key === ',') adicionarMateriaTag(); });
 diasSemanaCheckboxes.forEach(checkbox => { checkbox.addEventListener('change', (e) => { const inputMinutos = e.target.closest('.dia-horario-item').querySelector('input[type="number"]'); if (inputMinutos) { inputMinutos.disabled = !e.target.checked; if (!e.target.checked) inputMinutos.value = ''; } }); });
 
 formCronograma?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!currentUser) {
-        showToast("Você precisa estar logado para gerar um cronograma.", "error");
-        return;
-    }
+    if (!currentUser) { showToast("Você precisa estar logado.", "error"); return; }
     const btnGerar = formCronograma.querySelector('button[type="submit"]');
-
     const materiasSelecionadas = [...document.querySelectorAll('#materias-checkbox-container input:checked')].map(cb => cb.value);
     const materiasEmTags = [...document.querySelectorAll('#materias-container .materia-tag')].map(tag => tag.textContent.replace('×', '').trim());
     const todasMaterias = [...new Set([...materiasSelecionadas, ...materiasEmTags])];
-
-    if (todasMaterias.length === 0) {
-        showToast("Por favor, selecione ou adicione pelo menos uma matéria.", "error");
-        return;
-    }
-
+    if (todasMaterias.length === 0) { showToast("Adicione pelo menos uma matéria.", "error"); return; }
     const disponibilidade = {};
     document.querySelectorAll('.dias-semana-grid .dia-horario-item').forEach(item => {
         const checkbox = item.querySelector('input[type="checkbox"]');
@@ -269,11 +247,7 @@ formCronograma?.addEventListener('submit', async (e) => {
             }
         }
     });
-    if (Object.keys(disponibilidade).length === 0) {
-        showToast("Por favor, selecione pelo menos um dia da semana e informe os minutos de estudo.", "error");
-        return;
-    }
-    
+    if (Object.keys(disponibilidade).length === 0) { showToast("Selecione pelo menos um dia.", "error"); return; }
     const dadosParaApi = {
         userId: currentUser.uid,
         concurso_objetivo: document.getElementById('concurso-objetivo').value,
@@ -286,37 +260,30 @@ formCronograma?.addEventListener('submit', async (e) => {
         dificuldades_materias: document.getElementById('dificuldades-materias').value || 'Nenhuma informada.',
         outras_consideracoes: document.getElementById('outras-consideracoes').value || 'Nenhuma.',
     };
-
     btnGerar.disabled = true;
-    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando solicitação...';
+    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
     containerForm.style.display = 'none';
-
     try {
         const respostaInicial = await gerarPlanoDeEstudos(dadosParaApi);
-        if (respostaInicial.status === 'processing' && respostaInicial.jobId) {
-            showToast("Sua solicitação foi recebida! Seu plano aparecerá no histórico em instantes.", "info");
-        } else {
-            throw new Error('Falha ao iniciar a geração do plano.');
-        }
+        if (respostaInicial.status !== 'processing') throw new Error('Falha ao iniciar a geração.');
     } catch (error) {
-        showToast('Ocorreu um erro ao solicitar seu cronograma. Tente novamente.', 'error');
-        console.error(error);
+        showToast('Ocorreu um erro. Tente novamente.', 'error');
     } finally {
         btnGerar.disabled = false;
         btnGerar.textContent = 'Gerar Cronograma';
         formCronograma.reset();
         document.querySelectorAll('#materias-container .materia-tag').forEach(tag => tag.remove());
-        diasSemanaCheckboxes.forEach(cb => {
-            const input = cb.closest('.dia-horario-item').querySelector('input[type="number"]');
-            if (input) input.disabled = true;
-        });
     }
 });
 
+// **CORREÇÃO DO BUG DE REABRIR**
 document.body.addEventListener('click', async (e) => {
-    // ... (Esta parte não precisa de alterações)
-    if (e.target.matches('.btn-abrir-plano') && !e.target.disabled) {
-        const planoId = e.target.dataset.id;
+    const abrirBtn = e.target.closest('.btn-abrir-plano');
+    const fecharBtn = e.target.closest('#btn-fechar-plano');
+    const exportarBtn = e.target.closest('#btn-exportar-excel');
+
+    if (abrirBtn && !abrirBtn.disabled) {
+        const planoId = abrirBtn.dataset.id;
         const user = auth.currentUser;
         if (planoId && user) {
             const docRef = doc(db, 'users', user.uid, 'plans', planoId);
@@ -324,18 +291,14 @@ document.body.addEventListener('click', async (e) => {
             if (docSnap.exists()) {
                 exibirPlanoNaTela(docSnap.data());
             } else {
-                showToast("Não foi possível encontrar os detalhes deste plano.", "error");
+                showToast("Não foi possível encontrar este plano.", "error");
             }
         }
-    }
-    if (e.target.matches('#btn-exportar-excel') || e.target.closest('#btn-exportar-excel')) {
+    } else if (exportarBtn) {
         exportarPlanoParaExcel();
-    }
-    if (e.target.matches('#btn-fechar-plano')) {
-        if (containerExibicao) {
-            containerExibicao.innerHTML = '';
-            containerExibicao.style.display = 'none';
-        }
+    } else if (fecharBtn) {
+        containerExibicao.style.display = 'none';
+        containerExibicao.innerHTML = '';
         planoAbertoAtual = null;
     }
 });
@@ -345,14 +308,11 @@ btnFecharForm?.addEventListener('click', () => { containerForm.style.display = '
 
 // --- LÓGICA DE INICIALIZAÇÃO ---
 function ouvirHistoricoDePlanos() {
-    // ... (Esta função não precisa de alterações)
     if (unsubHistorico) unsubHistorico();
     const q = query(collection(db, `users/${currentUser.uid}/plans`), orderBy("criadoEm", "desc"));
     unsubHistorico = onSnapshot(q, (querySnapshot) => {
         const planos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderizarHistorico(planos);
-    }, (error) => {
-        console.error("Erro ao ouvir histórico de planos:", error);
     });
 }
 
