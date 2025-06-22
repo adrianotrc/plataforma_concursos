@@ -8,14 +8,14 @@ export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizado
 
 function controlarAcessoFuncionalidades(plano) {
     const permissoes = {
-        'trial': ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas'],
-        'basico': ['dashboard', 'cronograma', 'dicas'],
-        'intermediario': ['dashboard', 'cronograma', 'dicas', 'exercicios'],
-        'premium': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas'],
-        'anual': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas']
+        'trial': ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas', 'estudo'],
+        'basico': ['dashboard', 'cronograma', 'dicas', 'estudo'],
+        'intermediario': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'estudo'],
+        'premium': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas', 'estudo'],
+        'anual': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas', 'estudo']
     };
 
-    const todasFuncionalidades = ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas'];
+    const todasFuncionalidades = ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas', 'estudo'];
     const funcionalidadesPermitidas = permissoes[plano] || [];
 
     todasFuncionalidades.forEach(func => {

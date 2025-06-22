@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material de Estudo - IAprovas</title>
+    <link rel="stylesheet" href="dashboard-lovable.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button>
+                    <div class="logo"><i class="fas fa-book-open"></i><span>IAprovas</span></div>
+                </div>
+            </div>
+        </header>
+
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-content">
+                <nav class="sidebar-nav">
+                    <a id="nav-dashboard" href="home.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                    <a id="nav-cronograma" href="cronograma.html" class="nav-item"><i class="fas fa-calendar-alt"></i><span>Cronograma</span></a>
+                    <a id="nav-exercicios" href="exercicios.html" class="nav-item"><i class="fas fa-book-open"></i><span>Exercícios</span></a>
+                    <a id="nav-discursivas" href="discursivas.html" class="nav-item"><i class="fas fa-file-signature"></i><span>Questões Discursivas</span></a>
+                    <a id="nav-dicas" href="dicas-estrategicas.html" class="nav-item"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
+                    <a id="nav-estudo" href="material-de-estudo.html" class="nav-item active"><i class="fas fa-book-reader"></i><span>Material de Estudo</span></a>
+                </nav>
+                <div class="sidebar-footer">
+                    <a href="meu-perfil.html" class="nav-item">
+                        <i class="fas fa-user-cog"></i>
+                        <span id="user-name">Carregando...</span>
+                    </a>
+                    <button id="btn-sair" class="nav-item" style="width: 100%; background: none; border: none; cursor: pointer; text-align: left;">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Sair</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+        <main class="main-content">
+            <div class="content-wrapper">
+                <section class="welcome-section">
+                    <h1>Material de Estudo</h1>
+                    <div class="intro-text">
+                        <p>Olá! Esta seção é um acervo especial de conhecimento para acelerar sua jornada rumo à aprovação.</p>
+                        <p>Todo o material aqui disponível, incluindo o Guia Definitivo e as videoaulas, foi originalmente desenvolvido por mim, Adriano Torres, em parceria com meu amigo Felipe Silva, como parte do nosso projeto "Concurso em Menos Tempo". Ambos acumulamos diversas aprovações e condensamos anos de experiência nestes conteúdos para criar uma metodologia de estudo comprovada.</p>
+                        <p>Aproveite estes recursos, que são a base da inteligência artificial da nossa plataforma. Bons estudos!</p>
+                    </div>
+                </section>
+        
+                <section class="content-section">
+                    <h2>Guias em PDF</h2>
+                    <p>Faça o download dos nossos guias completos para aprofundar seus estudos.</p>
+                    <div class="downloads-container">
+                        <div class="download-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>Guia Definitivo de Aprovação em Concursos</span>
+                            <a href="Guiadefinitivodeaprovacaoemconcursos_IAprovas.pdf" download="Guiadefinitivodeaprovacaoemconcursos_IAprovas.pdf" class="btn btn-primary">Baixar</a>
+                        </div>
+                        <div class="download-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>6 Etapas para Planejar seu Estudo</span>
+                            <a href="6_etapas_planejamento.pdf" download="6_etapas_planejamento.pdf" class="btn btn-primary">Baixar</a>
+                        </div>
+                        <div class="download-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>8 Passos para uma Redação Nota Máxima</span>
+                            <a href="8_passos_redacao.pdf" download="8_passos_redacao.pdf" class="btn btn-primary">Baixar</a>
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="content-section">
+                    <h2>Videoaulas do Guia</h2>
+                    <p>Assista às aulas em vídeo de cada módulo do Guia Definitivo de Aprovação.</p>
+                    <div class="material-estudo-container">
+                        <div class="video-playlist-container">
+                            <ul id="video-playlist">
+                                </ul>
+                        </div>
+                        <div class="video-player-container">
+                            <div id="video-player-placeholder" class="card-placeholder">
+                                <p>Selecione um vídeo da lista para assistir.</p>
+                            </div>
+                            <div id="video-player" class="video-player"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script type="module" src="main-app.js"></script>
+    <script type="module" src="material-de-estudo.js"></script>
+</body>
+</html>
