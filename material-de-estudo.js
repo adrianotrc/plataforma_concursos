@@ -1,4 +1,6 @@
-// Arquivo: material-de-estudo.js
+// SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO material-de-estudo.js
+
+// Lista de vídeos extraída dos links que você forneceu.
 const videosDoGuia = [
     { titulo: 'Módulo Introdutório', videoId: '4' },
     { titulo: 'Módulo 1: Eu quero realmente estudar?', videoId: '5' },
@@ -15,38 +17,46 @@ const videosDoGuia = [
     { titulo: 'Módulo 12: Últimas dicas', videoId: '16' }
 ];
 
+// Função que executa quando o DOM está pronto
 document.addEventListener('DOMContentLoaded', () => {
     const playlistContainer = document.getElementById('video-playlist');
     const playerContainer = document.getElementById('video-player');
     const playerPlaceholder = document.getElementById('video-player-placeholder');
 
-    if (!playlistContainer) return;
+    if (!playlistContainer || !playerContainer || !playerPlaceholder) return;
+
+    // Popula a lista de vídeos
     playlistContainer.innerHTML = videosDoGuia.map(video => `
         <li class="video-playlist-item" data-video-id="${video.videoId}">
             <i class="fab fa-youtube"></i>
             <span>${video.titulo}</span>
         </li>
     `).join('');
+
+    // Adiciona o evento de clique na lista de vídeos
     playlistContainer.addEventListener('click', (e) => {
         const itemClicado = e.target.closest('.video-playlist-item');
         if (!itemClicado) return;
-    
+
         const videoId = itemClicado.dataset.videoId;
-    
+        
+        // Destaca o item selecionado
         document.querySelectorAll('.video-playlist-item').forEach(el => el.classList.remove('active'));
         itemClicado.classList.add('active');
-    
+
+        // Esconde o placeholder e mostra o player de vídeo
         playerPlaceholder.style.display = 'none';
         playerContainer.style.display = 'block';
-    
-        // CORREÇÃO: Usando a URL de 'embed' oficial e correta do YouTube
+
+        // **CORREÇÃO DEFINITIVA:** Usando a URL de 'embed' oficial e correta do YouTube
         playerContainer.innerHTML = `
             <iframe 
-                src="https://www.youtube.com/watch?v=VIDEO_ID_21{videoId}?autoplay=1&rel=0" 
+                src="https://www.youtube.com/embed/M7lc1UVf-VE{videoId}?autoplay=1&rel=0" 
                 title="YouTube video player" 
                 frameborder="0" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                 allowfullscreen>
-            </iframe>`;
+            </iframe>
+        `;
     });
 });
