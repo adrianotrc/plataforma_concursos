@@ -4,7 +4,7 @@ import { auth, db } from './firebase-config.js';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { state } from './main-app.js';
-import { criarSessaoPortal, deletarContaUsuario } from './api.js';
+import { criarSessaoPortal, deletarContaUsuario, enviarEmailAlteracaoSenha, enviarEmailAlteracaoDados } from './api.js';
 
 // --- LÓGICA DE FEEDBACK (TOAST) ---
 function showToast(message, type = 'success', duration = 3000) {
@@ -68,12 +68,17 @@ function inicializarPaginaCompleta() {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
         try {
+            const nomeInput = document.getElementById('perfil-nome').value;
             const userDocRef = doc(db, 'users', state.user.uid);
             await setDoc(userDocRef, {
-                nome: document.getElementById('perfil-nome').value,
+                nome: nomeInput,
                 telefone: document.getElementById('perfil-telefone').value,
             }, { merge: true });
-            document.getElementById('user-name').textContent = document.getElementById('perfil-nome').value || state.user.email;
+        
+            // Envia e-mail de notificação em segundo plano
+            enviarEmailAlteracaoDados(state.user.email, nomeInput);
+        
+            document.getElementById('user-name').textContent = nomeInput || state.user.email;
             showToast('Perfil atualizado com sucesso!');
         } catch (error) {
             showToast('Falha ao atualizar o perfil.', 'error');
@@ -107,6 +112,10 @@ function inicializarPaginaCompleta() {
             const credential = EmailAuthProvider.credential(state.user.email, senhaAtual);
             await reauthenticateWithCredential(state.user, credential);
             await updatePassword(state.user, novaSenha);
+        
+            // Envia e-mail de notificação em segundo plano
+            enviarEmailAlteracaoSenha(state.user.email, state.userData.nome);
+        
             showToast('Senha alterada com sucesso!', 'success');
             reauthModal.style.display = 'none';
             formSenha.reset();

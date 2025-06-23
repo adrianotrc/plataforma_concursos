@@ -145,6 +145,22 @@ export async function corrigirDiscursivaAsync(dadosCorrecao) {
     });
 }
 
+export async function enviarEmailAlteracaoSenha(email, nome) {
+    return fetchApi('/enviar-email-alteracao-senha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, nome }),
+    });
+}
+
+export async function enviarEmailAlteracaoDados(email, nome) {
+    return fetchApi('/enviar-email-alteracao-dados', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, nome }),
+    });
+}
+
 export async function getUsageLimits(userId) {
     return fetchApi(`/get-usage-limits/${userId}`, {
         method: 'GET',

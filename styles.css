@@ -1240,3 +1240,9 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Adicionado para o link da logo */
+.logo-link {
+    text-decoration: none;
+    color: inherit;
+}

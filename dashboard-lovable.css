@@ -1761,3 +1761,8 @@ body.dark-mode .video-playlist-item.active {
 .content-section + .content-section {
     margin-top: 2rem;
 }
+
+/* Adicionado para o link da logo */
+.logo-link {
+    text-decoration: none;
+}

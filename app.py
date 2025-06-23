@@ -279,6 +279,59 @@ def enviar_email_boas_vindas():
         return jsonify({"mensagem": "Solicitação de e-mail de boas-vindas processada."}), 200
     else:
         return jsonify({"erro": "Falha interna ao tentar enviar o e-mail."}), 500
+    
+@app.route("/enviar-email-alteracao-senha", methods=['POST'])
+@cross_origin(supports_credentials=True)
+def enviar_email_alteracao_senha():
+    dados = request.get_json()
+    email_destinatario = dados.get("email")
+    nome_destinatario = dados.get("nome", "estudante")
+    if not email_destinatario:
+        return jsonify({"erro": "E-mail não fornecido."}), 400
+
+    assunto = "Sua senha na IAprovas foi alterada"
+    conteudo_html = f"""
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h1 style="color: #1d4ed8;">Olá, {nome_destinatario}!</h1>
+        <p>Este é um e-mail para confirmar que a sua senha de acesso à plataforma <strong>IAprovas</strong> foi alterada com sucesso.</p>
+        <p>Se você realizou esta alteração, pode ignorar este e-mail.</p>
+        <p>Se você <strong>não</strong> reconhece esta atividade, por favor, redefina sua senha imediatamente e entre em contato com nosso suporte.</p>
+        <p>Atenciosamente,<br><strong>Equipe IAprovas</strong></p>
+    </div>
+    """
+    conteudo_texto = f"Olá, {nome_destinatario}! Sua senha na IAprovas foi alterada. Se você não reconhece esta atividade, por favor, redefina sua senha e contate o suporte."
+
+    sucesso = enviar_email(email_destinatario, nome_destinatario, assunto, conteudo_html, conteudo_texto)
+    if sucesso:
+        return jsonify({"mensagem": "E-mail de alteração de senha enviado."}), 200
+    else:
+        return jsonify({"erro": "Falha ao enviar e-mail."}), 500
+
+@app.route("/enviar-email-alteracao-dados", methods=['POST'])
+@cross_origin(supports_credentials=True)
+def enviar_email_alteracao_dados():
+    dados = request.get_json()
+    email_destinatario = dados.get("email")
+    nome_destinatario = dados.get("nome", "estudante")
+    if not email_destinatario:
+        return jsonify({"erro": "E-mail não fornecido."}), 400
+
+    assunto = "Seus dados pessoais foram atualizados na IAprovas"
+    conteudo_html = f"""
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h1 style="color: #1d4ed8;">Olá, {nome_destinatario}!</h1>
+        <p>Confirmamos que suas informações pessoais foram atualizadas em seu perfil na <strong>IAprovas</strong>.</p>
+        <p>Se você realizou esta alteração, está tudo certo. Caso não reconheça esta atividade, por favor, entre em contato com o suporte.</p>
+        <p>Atenciosamente,<br><strong>Equipe IAprovas</strong></p>
+    </div>
+    """
+    conteudo_texto = f"Olá, {nome_destinatario}! Seus dados pessoais foram atualizados na IAprovas. Se você não reconhece esta atividade, contate o suporte."
+
+    sucesso = enviar_email(email_destinatario, nome_destinatario, assunto, conteudo_html, conteudo_texto)
+    if sucesso:
+        return jsonify({"mensagem": "E-mail de alteração de dados enviado."}), 200
+    else:
+        return jsonify({"erro": "Falha ao enviar e-mail."}), 500
 
 
 def call_openai_api(prompt_content, system_message):
@@ -684,28 +737,55 @@ def stripe_webhook():
 
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        print("Sessão de checkout completada:", session['id'])
-        
         user_id = session.get('client_reference_id')
-        stripe_customer_id = session.get('customer') # Pega o ID do cliente Stripe
-        
+        stripe_customer_id = session.get('customer')
+
         if user_id and stripe_customer_id:
-            print(f"Atualizando plano para o usuário: {user_id} com Stripe Customer ID: {stripe_customer_id}")
             try:
-                if db is not None:
-                    user_ref = db.collection('users').document(user_id)
-                    # ATUALIZAÇÃO: Salva tanto o plano quanto o ID do cliente
+                user_ref = db.collection('users').document(user_id)
+                user_doc = user_ref.get()
+                if user_doc.exists:
+                    user_data = user_doc.to_dict()
+                    user_email = user_data.get('email')
+                    user_nome = user_data.get('nome', 'estudante')
+
+                    # Atualiza plano no Firestore
                     user_ref.update({
-                        'plano': 'premium', # ou o plano específico
+                        'plano': 'premium', # Simplificando para 'premium' em qualquer assinatura
                         'stripeCustomerId': stripe_customer_id
                     })
-                    print("Usuário atualizado com sucesso no Firestore!")
-                else:
-                    print("ERRO: Conexão com Firestore não está disponível.")
+
+                    # Envia e-mail de confirmação de assinatura
+                    assunto = "Sua assinatura IAprovas foi confirmada!"
+                    conteudo_html = f"<p>Olá, {user_nome},</p><p>Sua assinatura do plano Premium foi ativada com sucesso! Explore todo o potencial da plataforma.</p>"
+                    conteudo_texto = "Sua assinatura do plano Premium foi ativada com sucesso!"
+                    enviar_email(user_email, user_nome, assunto, conteudo_html, conteudo_texto)
+
             except Exception as e:
-                print(f"!!! Erro ao atualizar usuário no Firestore: {e} !!!")
-        else:
-            print("!!! Alerta: Webhook recebido sem client_reference_id ou customer_id !!!")
+                print(f"Erro no webhook checkout.session.completed: {e}")
+    elif event['type'] == 'customer.subscription.deleted':
+        subscription = event['data']['object']
+        stripe_customer_id = subscription.get('customer')
+
+        try:
+            # Encontra o usuário pelo stripeCustomerId
+            users_ref = db.collection('users')
+            query = users_ref.where('stripeCustomerId', '==', stripe_customer_id).limit(1)
+            docs = query.stream()
+
+            for doc in docs:
+                user_data = doc.to_dict()
+                user_email = user_data.get('email')
+                user_nome = user_data.get('nome', 'estudante')
+
+                # Envia e-mail de cancelamento
+                assunto = "Sua assinatura IAprovas foi cancelada"
+                conteudo_html = f"<p>Olá, {user_nome},</p><p>Confirmamos o cancelamento da sua assinatura. Você terá acesso às funcionalidades premium até o final do seu ciclo de faturamento atual.</p>"
+                conteudo_texto = "Sua assinatura IAprovas foi cancelada."
+                enviar_email(user_email, user_nome, assunto, conteudo_html, conteudo_texto)
+                break # Para após encontrar o usuário
+        except Exception as e:
+            print(f"Erro no webhook customer.subscription.deleted: {e}")
 
     return 'Success', 200
 
@@ -742,37 +822,43 @@ def create_portal_session():
 
 
 @app.route('/delete-user-account', methods=['POST'])
+@cross_origin(supports_credentials=True) # Adicionado para consistência
 def delete_user_account():
     data = request.get_json()
     user_id = data.get('userId')
-
-    if not user_id:
-        return jsonify(error={'message': 'ID do usuário não fornecido.'}), 400
-
-    print(f"--- Recebida solicitação para excluir conta do usuário: {user_id} ---")
+    if not user_id: return jsonify(error={'message': 'ID do usuário não fornecido.'}), 400
 
     try:
-        # Passo 1: Excluir o usuário do Firebase Authentication
+        # Passo 1: Obter dados do usuário ANTES de deletar
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+            # Se não existe no Firestore, apenas tenta deletar do Auth
+            firebase_auth.delete_user(user_id)
+            return jsonify(success=True, message="Conta de autenticação excluída.")
+
+        user_data = user_doc.to_dict()
+        user_email = user_data.get('email')
+        user_nome = user_data.get('nome', 'Ex-usuário')
+
+        # Passo 2: Deletar do Firestore e Auth
+        user_ref.delete()
         firebase_auth.delete_user(user_id)
-        print(f"Usuário {user_id} excluído com sucesso do Firebase Authentication.")
 
-        # Passo 2: Excluir o documento do usuário no Firestore
-        if db:
-            user_ref = db.collection('users').document(user_id)
-            user_ref.delete()
-            print(f"Documento do usuário {user_id} excluído com sucesso do Firestore.")
-        
-        # Opcional: Futuramente, poderíamos adicionar a exclusão de subcoleções aqui.
+        # Passo 3: Enviar e-mail de confirmação de exclusão
+        if user_email:
+            assunto = "Sua conta na IAprovas foi excluída"
+            conteudo_html = f"<p>Olá, {user_nome},</p><p>Confirmamos que sua conta e todos os seus dados na plataforma IAprovas foram permanentemente excluídos, conforme sua solicitação.</p><p>Agradecemos pelo tempo que esteve conosco.</p>"
+            conteudo_texto = "Sua conta na IAprovas foi excluída com sucesso."
+            enviar_email(user_email, user_nome, assunto, conteudo_html, conteudo_texto)
 
-        return jsonify(success=True, message="Conta excluída com sucesso.")
+        return jsonify(success=True, message="Conta e dados excluídos com sucesso.")
 
     except firebase_auth.UserNotFoundError:
-        print(f"Erro: Usuário {user_id} não encontrado no Firebase Authentication.")
-        return jsonify(error={'message': 'Usuário não encontrado.'}), 404
+        return jsonify(error={'message': 'Usuário não encontrado na autenticação.'}), 404
     except Exception as e:
-        print(f"!!! Erro crítico ao excluir a conta {user_id}: {e} !!!")
         traceback.print_exc()
-        return jsonify(error={'message': 'Ocorreu um erro interno ao tentar excluir a conta.'}), 500
+        return jsonify(error={'message': 'Ocorreu um erro interno ao excluir a conta.'}), 500
 
 @app.route("/get-usage-limits/<user_id>", methods=['GET'])
 @cross_origin(supports_credentials=True)
