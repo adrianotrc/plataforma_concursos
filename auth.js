@@ -4,9 +4,11 @@ import { auth, db } from './firebase-config.js';
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
-    onAuthStateChanged
+    onAuthStateChanged,
+    GoogleAuthProvider,
+    signInWithPopup
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { doc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { enviarEmailBoasVindas } from './api.js';
 
 // --- PÁGINA DE LOGIN ---
@@ -135,3 +137,50 @@ onAuthStateChanged(auth, (user) => {
         window.location.href = returnUrl;
     }
 });
+
+// --- LÓGICA DE LOGIN COM O GOOGLE ---
+const btnGoogleLogin = document.getElementById('btn-google-login');
+
+if (btnGoogleLogin) {
+    btnGoogleLogin.addEventListener('click', async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // Verifica se o usuário já existe no nosso banco de dados (Firestore)
+            const userDocRef = doc(db, "users", user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+
+            // Se o usuário NÃO existe, é o primeiro login dele, então criamos o perfil
+            if (!userDocSnap.exists()) {
+                console.log("Novo usuário via Google. Criando perfil...");
+                const dataExpiracao = new Date();
+                dataExpiracao.setDate(dataExpiracao.getDate() + 7); // Período de trial
+
+                const novoUserData = {
+                    email: user.email,
+                    nome: user.displayName, // Pegamos o nome direto do Google
+                    plano: "trial",
+                    criadoEm: serverTimestamp(),
+                    trialFim: Timestamp.fromDate(dataExpiracao)
+                };
+                await setDoc(userDocRef, novoUserData);
+
+                // Envia o e-mail de boas-vindas para o novo usuário
+                enviarEmailBoasVindas(user.email, user.displayName);
+            }
+
+            // Redireciona para o dashboard
+            window.location.href = 'home.html';
+
+        } catch (error) {
+            console.error("Erro no login com Google: ", error);
+            const errorMessage = document.getElementById('error-message') || document.getElementById('error-message-cadastro');
+            if (errorMessage) {
+                errorMessage.textContent = 'Falha no login com o Google. Tente novamente.';
+                errorMessage.style.display = 'block';
+            }
+        }
+    });
+}
