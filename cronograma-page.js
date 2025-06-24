@@ -1,7 +1,6 @@
 import { auth, db } from './firebase-config.js';
 import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-// Adicionaremos uma nova função à API
-import { gerarPlanoDeEstudos, getUsageLimits } from './api.js';
+import { gerarPlanoDeEstudos, getUsageLimits, refinarPlanoDeEstudosAsync } from './api.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-cronograma');
@@ -79,7 +78,7 @@ function renderizarHistorico(planos) {
     const planosOrdenados = planos.sort((a, b) => (b.criadoEm?.toDate() || 0) - (a.criadoEm?.toDate() || 0));
     containerHistorico.innerHTML = planosOrdenados.map(plano => {
         const dataFormatada = plano.criadoEm?.toDate()?.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) || 'Processando...';
-        const isProcessing = plano.status === 'processing';
+        const isProcessing = plano.status === 'processing' || plano.status === 'processing_refinement';
         const hasFailed = plano.status === 'failed';
         let subtexto = `Gerado em: ${dataFormatada}`;
         if (plano.data_inicio && plano.data_termino) {
@@ -98,7 +97,7 @@ function renderizarHistorico(planos) {
                     <p>${subtexto}</p>
                 </div>
                 <button class="btn btn-primary btn-abrir-plano" data-id="${plano.jobId || plano.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>
-                    ${isProcessing ? 'Gerando...' : (hasFailed ? 'Falhou' : 'Abrir')}
+                    ${plano.status === 'processing' ? 'Gerando...' : plano.status === 'processing_refinement' ? 'Refinando...' : (hasFailed ? 'Falhou' : 'Abrir')}
                 </button>
             </div>
         `;
@@ -124,9 +123,22 @@ function exibirPlanoNaTela(plano) {
                     <p style="white-space: pre-wrap;">${plano.resumo_estrategico || 'Sem resumo estratégico.'}</p>
                 </div>
                 <div class="header-actions">
+                    <button id="btn-refinar-plano" class="btn btn-outline"><i class="fas fa-magic"></i> Refinar este Plano</button>
                     <button id="btn-exportar-excel" class="btn btn-primary"><i class="fas fa-file-excel"></i> Exportar</button>
                     <button id="btn-fechar-plano" class="btn btn-outline">Fechar</button>
                 </div>
+            </div>
+            <div id="container-refinamento" class="feature-card" style="display: none; margin-top: 20px;">
+                <form id="form-refinamento">
+                    <div class="form-field-group">
+                        <label for="feedback-input">Que ajustes você gostaria de fazer neste plano?</label>
+                        <textarea id="feedback-input" rows="3" placeholder="Ex: 'Gostaria de estudar Português às segundas e ter mais exercícios de Direito Administrativo.'" required></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Ajustar com IA</button>
+                        <button type="button" id="btn-cancelar-refinamento" class="btn btn-ghost">Cancelar</button>
+                    </div>
+                </form>
             </div>`;
     const semanas = plano.cronograma_semanal_detalhado;
     let dataCorrente = new Date(dataInicioPlano);
@@ -320,6 +332,8 @@ document.body.addEventListener('click', async (e) => {
     const abrirBtn = e.target.closest('.btn-abrir-plano');
     const fecharBtn = e.target.closest('#btn-fechar-plano');
     const exportarBtn = e.target.closest('#btn-exportar-excel');
+    const refinarBtn = e.target.closest('#btn-refinar-plano');
+    const cancelarRefinamentoBtn = e.target.closest('#btn-cancelar-refinamento');
 
     if (abrirBtn && !abrirBtn.disabled) {
         const planoId = abrirBtn.dataset.id;
@@ -333,6 +347,12 @@ document.body.addEventListener('click', async (e) => {
                 showToast("Não foi possível encontrar este plano.", "error");
             }
         }
+    } else if (refinarBtn) {
+        const container = document.getElementById('container-refinamento');
+        if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
+    } else if (cancelarRefinamentoBtn) {
+        const container = document.getElementById('container-refinamento');
+        if (container) container.style.display = 'none';
     } else if (exportarBtn) {
         exportarPlanoParaExcel();
     } else if (fecharBtn) {
@@ -373,4 +393,45 @@ document.addEventListener('DOMContentLoaded', () => {
             currentUser = null;
         }
     });
+});
+
+document.body.addEventListener('submit', async (e) => {
+    if (e.target.id === 'form-refinamento') {
+        e.preventDefault();
+        if (!planoAbertoAtual) {
+            showToast("Nenhum plano aberto para refinar.", "error");
+            return;
+        }
+
+        const feedbackInput = document.getElementById('feedback-input');
+        const feedbackText = feedbackInput.value;
+        if (!feedbackText.trim()) {
+            showToast("Por favor, descreva o ajuste desejado.", "error");
+            return;
+        }
+
+        const btnAjustar = e.target.querySelector('button[type="submit"]');
+        btnAjustar.disabled = true;
+        btnAjustar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ajustando...';
+
+        const dados = {
+            userId: currentUser.uid,
+            jobId: planoAbertoAtual.jobId || planoAbertoAtual.id,
+            originalPlan: planoAbertoAtual,
+            feedbackText: feedbackText
+        };
+
+        try {
+            await refinarPlanoDeEstudosAsync(dados);
+            showToast("Solicitação de ajuste enviada! Seu cronograma será atualizado em breve.", 'info');
+            document.getElementById('container-refinamento').style.display = 'none';
+            feedbackInput.value = '';
+        } catch (error) {
+            showToast(error.message, 'error');
+        } finally {
+            btnAjustar.disabled = false;
+            btnAjustar.innerHTML = 'Ajustar com IA';
+            renderUsageInfo(); // Atualiza a contagem de uso
+        }
+    }
 });

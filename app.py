@@ -151,6 +151,75 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             'error': str(e)
         })
 
+def processar_refinamento_em_background(user_id, job_id, original_plan, feedback_text):
+    """Função de background para refinar um plano existente com base no feedback."""
+    print(f"BACKGROUND JOB (REFINAMENTO) INICIADO: {job_id} para usuário {user_id}")
+    job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
+
+    try:
+        # Remove campos que não devem ser enviados de volta para a IA
+        original_plan.pop('status', None)
+        original_plan.pop('jobId', None)
+        original_plan.pop('criadoEm', None)
+
+        prompt = (
+            "Você é um coach especialista em otimizar planos de estudo para concursos. Sua tarefa é ajustar um plano de estudos JSON existente com base no feedback de um aluno.\n\n"
+            f"### PLANO ORIGINAL (JSON):\n{json.dumps(original_plan, indent=2)}\n\n"
+            f"### PEDIDO DE AJUSTE DO ALUNO:\n'{feedback_text}'\n\n"
+            "### SUAS INSTRUÇÕES:\n"
+            "1.  **Analise o pedido:** Entenda exatamente o que o aluno quer mudar (trocar matérias, ajustar horários, mudar foco de estudo, etc.).\n"
+            "2.  **Modifique o JSON:** Reescreva o JSON do plano original, aplicando as mudanças solicitadas. Mantenha o restante da estrutura e do conteúdo que não foi mencionado no feedback.\n"
+            "3.  **Atualize o Resumo:** No campo 'resumo_estrategico', adicione uma nova linha no final, começando com 'Ajuste realizado:', e descreva brevemente a alteração que você fez.\n"
+            "4.  **Formato de Saída:** A resposta DEVE ser um único objeto JSON contendo a estrutura completa e atualizada do plano de estudos, com a chave principal 'plano_de_estudos'."
+        )
+        system_message = "Você é um assistente que refina planos de estudo em formato JSON, seguindo rigorosamente o feedback do usuário e mantendo a estrutura original."
+
+        resultado_ia = call_openai_api(prompt, system_message)
+
+        if 'plano_de_estudos' not in resultado_ia:
+            raise ValueError("A resposta da IA não continha a estrutura de plano esperada.")
+
+        plano_refinado = resultado_ia['plano_de_estudos']
+        plano_refinado['status'] = 'completed' # Marca como completo novamente
+        plano_refinado['criadoEm'] = firestore.SERVER_TIMESTAMP # Atualiza o timestamp
+
+        job_ref.update(plano_refinado)
+        print(f"BACKGROUND JOB (REFINAMENTO) CONCLUÍDO: {job_id}")
+
+    except Exception as e:
+        print(f"!!! ERRO NO BACKGROUND JOB DE REFINAMENTO {job_id}: {e} !!!")
+        traceback.print_exc()
+        job_ref.update({'status': 'failed', 'error': str(e)})
+
+@app.route("/refinar-plano-estudos-async", methods=['POST'])
+@cross_origin(supports_credentials=True)
+def refinar_plano_estudos_async():
+    """Rota que inicia o refinamento de um plano de estudos em segundo plano."""
+    dados_req = request.json
+    user_id = dados_req.get("userId")
+    job_id = dados_req.get("jobId")
+    original_plan = dados_req.get("originalPlan")
+    feedback_text = dados_req.get("feedbackText")
+
+    if not all([user_id, job_id, original_plan, feedback_text]):
+        return jsonify({"erro": "Dados insuficientes para refinar o plano."}), 400
+
+    # Verifica o limite de uso da funcionalidade 'cronogramas'
+    is_allowed, message = check_usage_and_update(user_id, 'cronogramas')
+    if not is_allowed:
+        return jsonify({"error": "limit_exceeded", "message": message}), 429
+
+    job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
+
+    # Atualiza o status do plano para indicar que está sendo refinado
+    job_ref.update({'status': 'processing_refinement'})
+
+    # Inicia a thread para o trabalho pesado
+    thread = threading.Thread(target=processar_refinamento_em_background, args=(user_id, job_id, original_plan, feedback_text))
+    thread.start()
+
+    return jsonify({"status": "processing_refinement", "jobId": job_id}), 202
+
 @app.route("/gerar-plano-estudos", methods=['POST'])
 @cross_origin(supports_credentials=True)
 def gerar_plano_iniciar_job():

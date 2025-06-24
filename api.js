@@ -161,6 +161,14 @@ export async function enviarEmailAlteracaoDados(email, nome) {
     });
 }
 
+export async function refinarPlanoDeEstudosAsync(dados) {
+    return fetchApi('/refinar-plano-estudos-async', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados),
+    });
+}
+
 export async function getUsageLimits(userId) {
     return fetchApi(`/get-usage-limits/${userId}`, {
         method: 'GET',
