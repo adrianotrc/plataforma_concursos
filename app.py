@@ -35,11 +35,11 @@ app = Flask(__name__)
 # Define os limites diários para cada plano.
 # Futuramente, podemos facilmente alterar os valores para 'basico', 'intermediario', etc.
 PLAN_LIMITS = {
-    'trial': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
+    'trial': {'cronogramas': 5, 'exercicios': 5, 'correcoes_exercicios': 5, 'discursivas': 5, 'correcoes_discursivas': 5, 'dicas': 5},
     'basico': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
-    'intermediario': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
-    'premium': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
-    'anual': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10}
+    'intermediario': {'cronogramas': 15, 'exercicios': 15, 'correcoes_exercicios': 15, 'discursivas': 15, 'correcoes_discursivas': 15, 'dicas': 15},
+    'premium': {'cronogramas': 20, 'exercicios': 20, 'correcoes_exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20},
+    'anual': {'cronogramas': 20, 'exercicios': 20, 'correcoes_exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20}
 }
 
 def check_usage_and_update(user_id, feature):

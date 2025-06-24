@@ -106,24 +106,25 @@ async function renderUsageInfo() {
     if (!state.user || !usageCounterDiv) return;
     try {
         const data = await getUsageLimits(state.user.uid);
+        // Vamos focar apenas no limite de geração de enunciados para a mensagem principal
         const usoGeracao = data.usage.discursivas || 0;
         const limiteGeracao = data.limits.discursivas || 0;
         const restantesGeracao = limiteGeracao - usoGeracao;
-        const usoCorrecao = data.usage.correcoes_discursivas || 0;
-        const limiteCorrecao = data.limits.correcoes_discursivas || 0;
-        const restantesCorrecao = limiteCorrecao - usoCorrecao;
         const plano = data.plan;
 
         let mensagem = '';
+        // Nova lógica para criar a mensagem de forma clara e consistente
         if (plano === 'trial') {
-            mensagem = `Período de teste: ${restantesGeracao} gerações de enunciados e ${restantesCorrecao} correções restantes.`;
+            mensagem = `Você ainda pode gerar ${restantesGeracao} de ${limiteGeracao} questões discursivas durante o seu período de teste.`;
         } else {
-            mensagem = `Uso de hoje: ${restantesGeracao} de ${limiteGeracao} gerações e ${restantesCorrecao} de ${limiteCorrecao} correções restantes.`;
+            mensagem = `Hoje, você ainda pode gerar ${restantesGeracao} de ${limiteGeracao} questões discursivas.`;
         }
-        
+
         usageCounterDiv.textContent = mensagem;
         usageCounterDiv.style.display = 'block';
 
+        // A lógica para desabilitar o botão continua a mesma
+        const btnAbrirForm = document.getElementById('btn-abrir-form-discursiva');
         if(btnAbrirForm) {
             btnAbrirForm.disabled = restantesGeracao <= 0;
         }
