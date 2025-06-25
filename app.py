@@ -163,14 +163,16 @@ def processar_refinamento_em_background(user_id, job_id, original_plan, feedback
         original_plan.pop('criadoEm', None)
 
         prompt = (
-            "Você é um coach especialista em otimizar planos de estudo para concursos. Sua tarefa é ajustar um plano de estudos JSON existente com base no feedback de um aluno.\n\n"
+            "Você é um coach especialista em otimizar planos de estudo para concursos. Sua tarefa é ajustar um plano de estudos JSON existente com base no feedback de um aluno, seguindo regras estritas e invioláveis.\n\n"
             f"### PLANO ORIGINAL (JSON):\n{json.dumps(original_plan, indent=2)}\n\n"
             f"### PEDIDO DE AJUSTE DO ALUNO:\n'{feedback_text}'\n\n"
-            "### SUAS INSTRUÇÕES:\n"
-            "1.  **Analise o pedido:** Entenda exatamente o que o aluno quer mudar (trocar matérias, ajustar horários, mudar foco de estudo, etc.).\n"
-            "2.  **Modifique o JSON:** Reescreva o JSON do plano original, aplicando as mudanças solicitadas. Mantenha o restante da estrutura e do conteúdo que não foi mencionado no feedback.\n"
-            "3.  **Atualize o Resumo:** No campo 'resumo_estrategico', adicione uma nova linha no final, começando com 'Ajuste realizado:', e descreva brevemente a alteração que você fez.\n"
-            "4.  **Formato de Saída:** A resposta DEVE ser um único objeto JSON contendo a estrutura completa e atualizada do plano de estudos, com a chave principal 'plano_de_estudos'."
+            "### SUAS INSTRUÇÕES (SEGUIR TODAS, SEM EXCEÇÃO):\n"
+            "1.  **REGRA DE MODIFICAÇÃO (NÃO DUPLICAR):** Se o aluno pedir para alterar uma matéria ou método de estudo que já existe no plano (ex: 'trocar teoria de Direito por exercícios'), você deve MODIFICAR a entrada existente. NUNCA adicione uma nova entrada para a mesma matéria no mesmo dia, a menos que o pedido seja explicitamente para adicionar mais tempo de estudo.\n"
+            "2.  **REGRA DE DURAÇÃO DAS SESSÕES:** Observe as durações das atividades no plano original (ex: 25 minutos). Todas as atividades, novas ou modificadas, DEVEM respeitar essa mesma duração. Se o aluno pedir para adicionar 50 minutos de estudo, crie DUAS atividades de 25 minutos.\n"
+            "3.  **REGRA DO TEMPO TOTAL DIÁRIO:** O tempo total de estudo para cada dia deve permanecer o mesmo do plano original. Não exceda o tempo diário, a menos que o aluno peça para adicionar horas e especifique isso claramente.\n"
+            "4.  **Processo de Execução:** Primeiro, entenda o pedido do aluno. Em seguida, reescreva o JSON do plano original aplicando a mudança solicitada, garantindo que as regras 1, 2 e 3 sejam rigorosamente cumpridas. Mantenha toda a estrutura e conteúdo que não foram mencionados no feedback.\n"
+            "5.  **Atualize o Resumo:** No campo 'resumo_estrategico', adicione uma nova linha no final, começando com 'Ajuste realizado:', e descreva brevemente a alteração que você fez.\n"
+            "6.  **Formato de Saída:** A resposta DEVE ser um único objeto JSON contendo a estrutura completa e atualizada do plano de estudos, com a chave principal 'plano_de_estudos'."
         )
         system_message = "Você é um assistente que refina planos de estudo em formato JSON, seguindo rigorosamente o feedback do usuário e mantendo a estrutura original."
 
