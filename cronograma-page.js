@@ -424,8 +424,18 @@ document.body.addEventListener('submit', async (e) => {
         try {
             await refinarPlanoDeEstudosAsync(dados);
             showToast("Solicitação de ajuste enviada! Seu cronograma será atualizado em breve.", 'info');
+        
+            // Limpa e oculta o formulário de refinamento
             document.getElementById('container-refinamento').style.display = 'none';
             feedbackInput.value = '';
+        
+            // --- Linhas Adicionadas ---
+            // Oculta a visualização do plano atual, retornando ao histórico
+            containerExibicao.style.display = 'none';
+            containerExibicao.innerHTML = '';
+            planoAbertoAtual = null;
+            // --- Fim das Linhas Adicionadas ---
+        
         } catch (error) {
             showToast(error.message, 'error');
         } finally {
