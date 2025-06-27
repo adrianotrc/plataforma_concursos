@@ -2,7 +2,7 @@
 
 import { auth, db } from './firebase-config.js';
 import { collection, serverTimestamp, query, orderBy, onSnapshot, doc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarExerciciosAsync, getUsageLimits } from './api.js';
+import { gerarExerciciosAsync, getUsageLimits, avaliarQuestao } from './api.js'; // Importa a nova função
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-exercicios');
@@ -36,17 +36,19 @@ function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsua
         </div>
     `;
     exercicios.forEach((questao, index) => {
-        exerciciosHtml += `<div class="questao-bloco" id="questao-${index}"><p class="enunciado-questao"><strong>${index + 1}.</strong> ${questao.enunciado}</p><ul class="opcoes-lista">`;
+        // Usa o ID da questão que agora vem do backend
+        exerciciosHtml += `<div class="questao-bloco" id="questao-${index}" data-question-id="${questao.id || ''}">
+                            <p class="enunciado-questao"><strong>${index + 1}.</strong> ${questao.enunciado}</p>
+                            <ul class="opcoes-lista">`;
         
         if (questao.tipo_questao === 'certo_errado') {
-            const opcoes = [{letra: 'Certo', texto: 'Certo'}, {letra: 'Errado', texto: 'Errado'}];
-            opcoes.forEach(opcao => {
-               const isChecked = respostasUsuario && respostasUsuario[index] === opcao.letra ? 'checked' : '';
-               const isDisabled = jaCorrigido ? 'disabled' : '';
-               // AQUI A MUDANÇA: O texto do label foi simplificado
-               exerciciosHtml += `<li class="opcao-item"><input type="radio" name="questao-${index}" id="q${index}-${opcao.letra}" value="${opcao.letra}" ${isChecked} ${isDisabled}><label for="q${index}-${opcao.letra}">${opcao.texto}</label></li>`;
-            });
-        } else { // múltipla escolha
+             const opcoes = [{letra: 'Certo', texto: 'Certo'}, {letra: 'Errado', texto: 'Errado'}];
+             opcoes.forEach(opcao => {
+                const isChecked = respostasUsuario && respostasUsuario[index] === opcao.letra ? 'checked' : '';
+                const isDisabled = jaCorrigido ? 'disabled' : '';
+                exerciciosHtml += `<li class="opcao-item"><input type="radio" name="questao-${index}" id="q${index}-${opcao.letra}" value="${opcao.letra}" ${isChecked} ${isDisabled}><label for="q${index}-${opcao.letra}">${opcao.texto}</label></li>`;
+             });
+        } else {
             const opcoesOrdenadas = [...(questao.opcoes || [])].sort((a, b) => a.letra.localeCompare(b.letra));
             opcoesOrdenadas.forEach(opcao => {
                 const isChecked = respostasUsuario && respostasUsuario[index] === opcao.letra ? 'checked' : '';
@@ -68,7 +70,6 @@ function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsua
     exerciciosContainer.scrollIntoView({ behavior: 'smooth' });
 }
 
-
 function exibirCorrecao(exercicios, respostas, container) {
     let acertos = 0;
     exercicios.forEach((questao, index) => {
@@ -76,7 +77,26 @@ function exibirCorrecao(exercicios, respostas, container) {
         if (!questaoContainer) return;
         const feedbackContainer = questaoContainer.querySelector('.feedback-container');
         const respostaUsuario = respostas ? respostas[index] : undefined;
-        const explicacaoHtml = `<p><strong>Explicação:</strong> ${questao.explicacao}</p>`;
+        
+        // **CORREÇÃO APLICADA AQUI**
+        // 1. Garante que a explicação seja sempre um texto, mesmo que a IA retorne um objeto.
+        let textoExplicacao = questao.explicacao;
+        if (typeof textoExplicacao === 'object' && textoExplicacao !== null) {
+            // Tenta pegar a primeira propriedade do objeto, que geralmente é o texto.
+            textoExplicacao = Object.values(textoExplicacao)[0] || "Não foi possível carregar a explicação.";
+        }
+
+        // 2. Adiciona o espaçamento solicitado (margin-top) na div dos botões.
+        const feedbackButtonsHtml = `
+            <div class="user-feedback-actions" style="margin-top: 16px;">
+                <span>Esta questão foi útil?</span>
+                <button class="btn-feedback" data-evaluation="positiva" data-question-id="${questao.id}"><i class="fas fa-thumbs-up"></i></button>
+                <button class="btn-feedback" data-evaluation="negativa" data-question-id="${questao.id}"><i class="fas fa-thumbs-down"></i></button>
+            </div>
+        `;
+
+        const explicacaoHtml = `<p><strong>Explicação:</strong> ${textoExplicacao}</p>${feedbackButtonsHtml}`;
+
         feedbackContainer.style.display = 'block';
         if (respostaUsuario === questao.resposta_correta) {
             acertos++;
@@ -221,6 +241,24 @@ formExercicios?.addEventListener('submit', async (e) => {
 });
 
 document.body.addEventListener('click', async (e) => {
+    const feedbackBtn = e.target.closest('.btn-feedback');
+    if (feedbackBtn) {
+        feedbackBtn.disabled = true;
+        const parentActions = feedbackBtn.parentElement;
+        parentActions.querySelectorAll('.btn-feedback').forEach(btn => btn.disabled = true);
+        
+        const questionId = feedbackBtn.dataset.questionId;
+        const evaluation = feedbackBtn.dataset.evaluation;
+
+        try {
+            await avaliarQuestao(questionId, evaluation);
+            parentActions.innerHTML = "<span>Obrigado pelo feedback!</span>";
+        } catch (error) {
+            console.error("Erro ao enviar avaliação:", error);
+            parentActions.innerHTML = "<span>Erro ao enviar.</span>";
+        }
+        return; // Impede que outros handlers sejam acionados
+    }
     const reverBtn = e.target.closest('.btn-rever-sessao');
     const corrigirBtn = e.target.closest('#btn-corrigir-exercicios');
     if (corrigirBtn) {

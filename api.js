@@ -174,3 +174,11 @@ export async function getUsageLimits(userId) {
         method: 'GET',
     });
 }
+
+export async function avaliarQuestao(questionId, evaluation) {
+    return fetchApi('/avaliar-questao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId, evaluation }),
+    });
+}

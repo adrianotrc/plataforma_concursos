@@ -430,14 +430,34 @@ def verificar_plano_status(user_id, job_id):
 
 # --- LÓGICA DE GERAÇÃO DE EXERCÍCIOS COM RAG ---
 def find_similar_questions(materia, topico, tipo_questao, limit=3):
+    """
+    Busca no Firestore por questões que sirvam de exemplo para a IA,
+    priorizando as mais bem avaliadas pelos usuários.
+    """
     try:
-        query = db.collection('banco_questoes').where('materia', '==', materia).where('tipo_questao', '==', tipo_questao)
+        # A consulta agora ordena pelas avaliações positivas, em ordem decrescente.
+        # Isso significa que as questões com mais "likes" virão primeiro.
+        query = db.collection('banco_questoes').where('materia', '==', materia).where('tipo_questao', '==', tipo_questao).order_by('avaliacoes.positivas', direction=firestore.Query.DESCENDING)
+        
         docs = query.limit(limit).stream()
         examples = [doc.to_dict() for doc in docs]
-        print(f"Encontrados {len(examples)} exemplos de questões para RAG.")
+        
+        if examples:
+            print(f"Encontrados {len(examples)} exemplos de questões bem avaliadas para RAG.")
+        else:
+            # Se não houver questões avaliadas, buscamos quaisquer exemplos para não falhar.
+            print("Nenhum exemplo bem avaliado encontrado, buscando exemplos aleatórios como fallback.")
+            query_fallback = db.collection('banco_questoes').where('materia', '==', materia).where('tipo_questao', '==', tipo_questao).limit(limit)
+            docs_fallback = query_fallback.stream()
+            examples = [doc.to_dict() for doc in docs_fallback]
+            print(f"Fallback: Encontrados {len(examples)} exemplos aleatórios.")
+
         return examples
     except Exception as e:
-        print(f"ERRO ao buscar questões similares no Firestore: {e}")
+        # NOTA IMPORTANTE: Esta nova consulta pode exigir um "Índice Composto" no Firestore.
+        # Se você vir um erro no terminal falando sobre "needs an index", ele incluirá um link.
+        # Basta clicar nesse link no navegador, logar na sua conta do Google, e o Firebase criará o índice necessário automaticamente.
+        print(f"ERRO ao buscar questões similares: {e}. Pode ser necessário criar um índice no Firestore. Verifique o log de erro para um link de criação.")
         return []
 
 def processar_exercicios_em_background(user_id, job_id, dados_req):
