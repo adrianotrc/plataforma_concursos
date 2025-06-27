@@ -2,7 +2,7 @@
 
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import math
 import traceback
 import threading
@@ -430,22 +430,10 @@ def verificar_plano_status(user_id, job_id):
 
 # --- LÓGICA DE GERAÇÃO DE EXERCÍCIOS COM RAG ---
 def find_similar_questions(materia, topico, tipo_questao, limit=3):
-    """
-    Busca no Firestore por questões que sirvam de exemplo para a IA.
-    Esta é uma simulação de busca. Uma implementação real usaria um banco de dados vetorial.
-    """
     try:
         query = db.collection('banco_questoes').where('materia', '==', materia).where('tipo_questao', '==', tipo_questao)
-        # Se um tópico for fornecido, a consulta pode ser mais específica (opcional)
-        # if topico:
-        #     query = query.where('topico', '==', topico)
-        
         docs = query.limit(limit).stream()
-        
-        examples = []
-        for doc in docs:
-            examples.append(doc.to_dict())
-        
+        examples = [doc.to_dict() for doc in docs]
         print(f"Encontrados {len(examples)} exemplos de questões para RAG.")
         return examples
     except Exception as e:
@@ -463,39 +451,86 @@ def processar_exercicios_em_background(user_id, job_id, dados_req):
         banca = dados_req.get('banca', 'geral')
         tipo_questao = dados_req.get('tipo_questao', 'multipla_escolha')
 
-        # Passo 1 (RAG): Buscar exemplos relevantes
         exemplos_questoes = find_similar_questions(materia, topico, tipo_questao)
         
-        exemplos_json_str = json.dumps(exemplos_questoes, indent=2, ensure_ascii=False)
+        exemplos_simplificados = []
+        for ex in exemplos_questoes:
+            ex_copy = ex.copy()
+            ex_copy.pop('avaliacoes', None); ex_copy.pop('status_revisao', None); ex_copy.pop('criadoEm', None)
+            exemplos_simplificados.append(ex_copy)
 
-        # Passo 2 (RAG): Construir o novo prompt enriquecido
+        exemplos_json_str = json.dumps(exemplos_simplificados, indent=2, ensure_ascii=False)
+
+        # --- PROMPT REFORÇADO E À PROVA DE FALHAS ---
+        
+        regras_de_formato_json = ""
+        if tipo_questao == 'multipla_escolha':
+            regras_de_formato_json = """
+        - **Estrutura do Objeto de Questão:** Cada objeto deve conter as chaves: "enunciado", "opcoes", "resposta_correta", "explicacao", e "tipo_questao".
+        - **Chave "tipo_questao":** O valor DEVE ser "multipla_escolha".
+        - **Chave "opcoes":** O valor DEVE ser uma lista contendo EXATAMENTE 5 (cinco) objetos. Cada objeto deve ter as chaves "letra" (A, B, C, D, E) e "texto".
+        """
+        else: # Certo ou Errado
+            regras_de_formato_json = """
+        - **Estrutura do Objeto de Questão:** Cada objeto deve conter as chaves: "enunciado", "opcoes", "resposta_correta", "explicacao", e "tipo_questao".
+        - **Chave "tipo_questao":** O valor DEVE ser "certo_errado".
+        - **Chave "opcoes":** O valor DEVE ser uma lista VAZIA [].
+        - **Chave "resposta_correta":** O valor DEVE ser a string "Certo" ou "Errado".
+        """
+
         prompt = f"""
-        Você é um professor especialista em criar questões para concursos.
+        Você é um assistente especialista em criar questões de concurso, extremamente rigoroso com formatos.
 
-        ### Tarefa:
-        Crie {quantidade} novas e originais questões sobre a matéria '{materia}' e o tópico '{topico}', no estilo da banca '{banca}'.
-        O formato das questões DEVE ser '{tipo_questao}'.
+        ### TAREFA PRINCIPAL E INFLEXÍVEL
+        Crie {quantidade} questões sobre a matéria '{materia}' e tópico '{topico}'. O formato de TODAS as questões DEVE ser, sem exceção, '{tipo_questao}'.
+        Para questões de múltipla escolha, CRIE OBRIGATORIAMENTE 5 ALTERNATIVAS (A, B, C, D, E).
 
-        ### Exemplos de Referência (NÃO COPIE, APENAS USE COMO BASE DE ESTILO E COMPLEXIDADE):
+        ### EXEMPLOS DE REFERÊNCIA (APENAS PARA ESTILO, NÃO COPIE)
         {exemplos_json_str if exemplos_questoes else "Nenhum exemplo encontrado, use seu conhecimento geral."}
 
-        ### Regras Obrigatórias:
-        1.  **Originalidade:** As questões devem ser 100% novas, não cópias dos exemplos.
-        2.  **Qualidade:** Crie enunciados que exijam interpretação e alternativas incorretas que sejam plausíveis.
-        3.  **Formato de Saída JSON:** A resposta DEVE ser um objeto JSON com uma chave 'exercicios', que é uma LISTA. Cada objeto na lista deve ter: "enunciado", "opcoes" (uma lista de objetos com "letra" e "texto"), "resposta_correta", "explicacao", e "tipo_questao". Para questões 'certo_errado', a lista "opcoes" deve ser vazia e a "resposta_correta" deve ser a string "Certo" ou "Errado".
-        """
-        system_message = "Você cria questões de concurso de alta qualidade, baseando-se em exemplos, e formata a saída estritamente em JSON."
-        
-        # Passo 3: Chamar a IA e salvar o resultado
-        dados_ia = call_openai_api(prompt, system_message)
+        ### REGRAS DE SAÍDA (SEGUIR RIGOROSAMENTE)
+        Sua resposta final DEVE ser um único objeto JSON, contendo apenas uma chave principal chamada "exercicios", que é uma lista de objetos.
 
+        #### ESTRUTURA DETALHADA PARA CADA OBJETO NA LISTA "exercicios":
+        {regras_de_formato_json}
+
+        ### VERIFICAÇÃO FINAL (OBRIGATÓRIO)
+        Antes de gerar a resposta, revise seu próprio trabalho para garantir que 100% das questões de múltipla escolha geradas possuem exatamente 5 alternativas.
+        """
+        
+        system_message = "Você é um assistente que gera conteúdo JSON e segue regras de formatação com precisão absoluta."
+        
+        dados_ia = call_openai_api(prompt, system_message)
+        
+        exercicios_finais = []
+        for exercicio_gerado in dados_ia.get('exercicios', []):
+            if exercicio_gerado.get('tipo_questao') != tipo_questao:
+                print(f"AVISO: IA gerou um tipo de questão incorreto ({exercicio_gerado.get('tipo_questao')}). Ignorando esta questão.")
+                continue
+
+            # Validação extra para o número de alternativas
+            if tipo_questao == 'multipla_escolha' and len(exercicio_gerado.get('opcoes', [])) != 5:
+                print(f"AVISO: IA gerou um número incorreto de alternativas ({len(exercicio_gerado.get('opcoes', []))}). Ignorando esta questão.")
+                continue
+
+            agora = datetime.now(timezone.utc)
+            exercicio_para_banco = {**exercicio_gerado}
+            exercicio_para_banco.update({
+                'banca': banca, 'materia': materia, 'topico': topico, 'criadoEm': agora,
+                'avaliacoes': {'positivas': 0, 'negativas': 0}
+            })
+            
+            doc_ref = db.collection('banco_questoes').document()
+            doc_ref.set(exercicio_para_banco)
+            
+            exercicio_para_usuario = {**exercicio_gerado, 'id': doc_ref.id, 'criadoEm': agora.isoformat()}
+            exercicios_finais.append(exercicio_para_usuario)
+            
         update_data = {
             'status': 'completed',
-            'exercicios': dados_ia.get('exercicios', []),
+            'exercicios': exercicios_finais,
             'resumo': {
-                'materia': materia,
-                'topico': topico,
-                'total': quantidade,
+                'materia': materia, 'topico': topico, 'total': len(exercicios_finais),
                 'criadoEm': firestore.SERVER_TIMESTAMP
             }
         }
@@ -505,47 +540,52 @@ def processar_exercicios_em_background(user_id, job_id, dados_req):
     except Exception as e:
         print(f"!!! ERRO NO BACKGROUND JOB DE EXERCÍCIOS {job_id}: {e} !!!")
         traceback.print_exc()
-        job_ref.update({'status': 'failed', 'error': str(e)})    
+        job_ref.update({'status': 'failed', 'error': str(e)})
+
+@app.route("/avaliar-questao", methods=['POST'])
+@cross_origin(supports_credentials=True)
+def avaliar_questao():
+    """ Rota para receber o feedback (like/dislike) de uma questão. """
+    dados = request.get_json()
+    question_id = dados.get('questionId')
+    evaluation = dados.get('evaluation') # 'positiva' or 'negativa'
+
+    if not all([question_id, evaluation]):
+        return jsonify({"error": "Dados insuficientes"}), 400
+
+    try:
+        question_ref = db.collection('banco_questoes').document(question_id)
+        
+        if evaluation == 'positiva':
+            question_ref.update({'avaliacoes.positivas': firestore.Increment(1)})
+        elif evaluation == 'negativa':
+            question_ref.update({'avaliacoes.negativas': firestore.Increment(1)})
+        
+        return jsonify({"success": True, "message": "Avaliação registrada."}), 200
+    except Exception as e:
+        print(f"Erro ao registrar avaliação para a questão {question_id}: {e}")
+        return jsonify({"error": "Erro interno ao salvar avaliação"}), 500   
 
 # --- INÍCIO DO NOVO CÓDIGO PARA EXERCÍCIOS ASSÍNCRONOS ---
 
 @app.route("/gerar-exercicios-async", methods=['POST'])
 @cross_origin(supports_credentials=True)
 def gerar_exercicios_async():
-    """Rota que inicia a geração de exercícios em segundo plano."""
     dados_req = request.json
     user_id = dados_req.get("userId")
-
-    # --- INÍCIO DA VERIFICAÇÃO DE LIMITE ---
+    if not user_id: return jsonify({"erro": "ID do usuário não fornecido."}), 400
     is_allowed, message = check_usage_and_update(user_id, 'exercicios')
-    if not is_allowed:
-        return jsonify({"error": "limit_exceeded", "message": message}), 429
-    # --- FIM DA VERIFICAÇÃO DE LIMITE ---
-
-    if not user_id:
-        return jsonify({"erro_geral": "ID do usuário não fornecido."}), 400
-
-    # Cria um novo documento placeholder para a sessão de exercícios
+    if not is_allowed: return jsonify({"error": "limit_exceeded", "message": message}), 429
     job_ref = db.collection('users').document(user_id).collection('sessoesExercicios').document()
     job_id = job_ref.id
-
     placeholder_data = {
-        'status': 'processing',
-        'criadoEm': firestore.SERVER_TIMESTAMP,
-        'jobId': job_id,
-        'resumo': {
-             'materia': dados_req.get('materia'),
-             'topico': dados_req.get('topico'),
-             'total': dados_req.get('quantidade'),
-             'criadoEm': firestore.SERVER_TIMESTAMP
-        }
+        'status': 'processing', 'criadoEm': firestore.SERVER_TIMESTAMP, 'jobId': job_id,
+        'resumo': { 'materia': dados_req.get('materia'), 'topico': dados_req.get('topico'),
+                    'total': dados_req.get('quantidade'), 'criadoEm': firestore.SERVER_TIMESTAMP }
     }
     job_ref.set(placeholder_data)
-
-    # Inicia a thread
     thread = threading.Thread(target=processar_exercicios_em_background, args=(user_id, job_id, dados_req))
     thread.start()
-
     return jsonify({"status": "processing", "jobId": job_id}), 202
 
 
