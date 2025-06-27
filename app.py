@@ -14,6 +14,8 @@ from flask_cors import CORS, cross_origin
 from openai import OpenAI
 import stripe
 import resend
+import numpy as np
+
 
 load_dotenv()
 
@@ -85,6 +87,16 @@ def call_openai_api(prompt_content, system_message, model="gpt-4o-mini"):
     except Exception as e:
         print(f"ERRO na chamada da API OpenAI: {e}")
         raise
+
+def get_embedding(text, model="text-embedding-3-small"):
+   """Gera o vetor de embedding para um determinado texto."""
+   text = text.replace("\n", " ")
+   try:
+       response = client.embeddings.create(input=[text], model=model)
+       return response.data[0].embedding
+   except Exception as e:
+       print(f"ERRO ao gerar embedding para a busca: {e}")
+       return None
 
 # --- Função de Trabalho em Segundo Plano ---
 def processar_plano_em_background(user_id, job_id, dados_usuario):
@@ -431,34 +443,48 @@ def verificar_plano_status(user_id, job_id):
 # --- LÓGICA DE GERAÇÃO DE EXERCÍCIOS COM RAG ---
 def find_similar_questions(materia, topico, tipo_questao, limit=3):
     """
-    Busca no Firestore por questões que sirvam de exemplo para a IA,
-    priorizando as mais bem avaliadas pelos usuários.
+    Busca no Firestore por questões semanticamente similares usando embeddings vetoriais.
     """
     try:
-        # A consulta agora ordena pelas avaliações positivas, em ordem decrescente.
-        # Isso significa que as questões com mais "likes" virão primeiro.
-        query = db.collection('banco_questoes').where('materia', '==', materia).where('tipo_questao', '==', tipo_questao).order_by('avaliacoes.positivas', direction=firestore.Query.DESCENDING)
-        
-        docs = query.limit(limit).stream()
-        examples = [doc.to_dict() for doc in docs]
-        
-        if examples:
-            print(f"Encontrados {len(examples)} exemplos de questões bem avaliadas para RAG.")
-        else:
-            # Se não houver questões avaliadas, buscamos quaisquer exemplos para não falhar.
-            print("Nenhum exemplo bem avaliado encontrado, buscando exemplos aleatórios como fallback.")
-            query_fallback = db.collection('banco_questoes').where('materia', '==', materia).where('tipo_questao', '==', tipo_questao).limit(limit)
-            docs_fallback = query_fallback.stream()
-            examples = [doc.to_dict() for doc in docs_fallback]
-            print(f"Fallback: Encontrados {len(examples)} exemplos aleatórios.")
+        # Cria um texto de busca combinando os inputs do usuário
+        search_text = f"{materia}: {topico}"
+        query_embedding = get_embedding(search_text)
 
-        return examples
+        if not query_embedding:
+            raise ValueError("Não foi possível gerar o embedding para a busca.")
+
+        # Converte para um array numpy para cálculos
+        query_vector = np.array(query_embedding)
+
+        # Busca candidatas no Firestore (filtrando por matéria para otimizar)
+        docs = db.collection('banco_questoes').where('materia', '==', materia).stream()
+
+        similar_questions = []
+        for doc in docs:
+            question_data = doc.to_dict()
+            if 'embedding' in question_data and question_data.get('embedding'):
+                question_vector = np.array(question_data['embedding'])
+                
+                # Calcula a similaridade de cosseno (um valor entre -1 e 1, onde 1 é mais similar)
+                similarity = np.dot(question_vector, query_vector) / (np.linalg.norm(question_vector) * np.linalg.norm(query_vector))
+                
+                similar_questions.append((similarity, question_data))
+
+        # Ordena as questões pela similaridade, da maior para a menor
+        similar_questions.sort(key=lambda x: x[0], reverse=True)
+        
+        # Pega as 'limit' questões mais similares
+        top_questions = [question for similarity, question in similar_questions[:limit]]
+        
+        print(f"Busca vetorial encontrou {len(top_questions)} exemplos relevantes.")
+        return top_questions
+
     except Exception as e:
-        # NOTA IMPORTANTE: Esta nova consulta pode exigir um "Índice Composto" no Firestore.
-        # Se você vir um erro no terminal falando sobre "needs an index", ele incluirá um link.
-        # Basta clicar nesse link no navegador, logar na sua conta do Google, e o Firebase criará o índice necessário automaticamente.
-        print(f"ERRO ao buscar questões similares: {e}. Pode ser necessário criar um índice no Firestore. Verifique o log de erro para um link de criação.")
-        return []
+        print(f"ERRO na busca vetorial: {e}. Usando fallback para busca simples.")
+        # Fallback para a busca simples caso a busca vetorial falhe
+        query_fallback = db.collection('banco_questoes').where('materia', '==', materia).where('tipo_questao', '==', tipo_questao).limit(limit)
+        docs_fallback = query_fallback.stream()
+        return [doc.to_dict() for doc in docs_fallback]
 
 def processar_exercicios_em_background(user_id, job_id, dados_req):
     print(f"BACKGROUND JOB (EXERCÍCIOS RAG) INICIADO: {job_id}")
