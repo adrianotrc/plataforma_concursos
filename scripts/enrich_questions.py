@@ -121,8 +121,8 @@ def enrich_and_save_question(raw_question):
         print(f"ERRO ao salvar no Firestore: {e}")
 
 
-# --- Bloco Principal para Execução do Script ---
 if __name__ == "__main__":
+    # Lista de questões "cruas" que encontramos para teste
     sample_questions = [
         {
           "texto_enunciado": "Julgue o item a seguir, a respeito de direitos e garantias fundamentais. A prática do racismo, crime inafiançável e imprescritível, é punível com reclusão.",
@@ -135,9 +135,10 @@ if __name__ == "__main__":
           "texto_enunciado": "A respeito dos princípios fundamentais da República Federativa do Brasil, assinale a afirmativa correta.",
           "alternativas": [
             { "letra": "A", "texto": "Todo poder emana do povo, que o exerce por meio de representantes eleitos ou diretamente, nos termos da Constituição Federal." },
-            { "letra": "B", "texto": "A República Federativa do Brasil rege-se nas suas relações internacionais pelo princípio da não intervenção e da prevalência dos direitos humanos." },
-            { "letra": "C", "texto": "Um dos fundamentos da República Federativa do Brasil é a garantia do desenvolvimento nacional." },
-            { "letra": "D", "texto": "Constitui um dos objetivos da República Federativa do Brasil a construção de uma sociedade livre, justa e solidária." }
+            { "letra": "B", "texto": "Um dos fundamentos da República Federativa do Brasil é a garantia do desenvolvimento nacional." },
+            { "letra": "C", "texto": "Constitui um dos objetivos da República Federativa do Brasil a construção de uma sociedade livre, justa e solidária." },
+            { "letra": "D", "texto": "A República Federativa do Brasil rege-se nas suas relações internacionais pelo princípio da não intervenção." },
+            { "letra": "E", "texto": "A soberania e a cidadania são objetivos fundamentais da República Federativa do Brasil." }
           ],
           "resposta_correta": "A",
           "banca": "FGV",
