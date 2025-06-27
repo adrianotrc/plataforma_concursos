@@ -1,6 +1,7 @@
+// exercicios-page.js
+
 import { auth, db } from './firebase-config.js';
 import { collection, serverTimestamp, query, orderBy, onSnapshot, doc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-// Adicionaremos a importação da nova função
 import { gerarExerciciosAsync, getUsageLimits } from './api.js';
 
 // --- ELEMENTOS DO DOM ---
@@ -11,7 +12,7 @@ const exerciciosContainer = document.getElementById('exercicios-gerados');
 const historicoContainer = document.getElementById('historico-exercicios');
 const statTotalExercicios = document.getElementById('stat-exercicios-totais');
 const statAcertoGeral = document.getElementById('stat-acertos-geral');
-const usageCounterDiv = document.getElementById('usage-counter'); // Novo elemento
+const usageCounterDiv = document.getElementById('usage-counter');
 
 // --- ESTADO LOCAL ---
 let currentUser = null;
@@ -19,7 +20,7 @@ let unsubHistorico = null;
 let sessaoAberta = null;
 let ultimoJobIdSolicitado = null;
 
-// --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
+// --- FUNÇÕES DE UI ---
 
 function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsuario = {}) {
     exerciciosContainer.innerHTML = '';
@@ -28,7 +29,6 @@ function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsua
         exerciciosContainer.style.display = 'block';
         return;
     };
-    // Adiciona o cabeçalho com o botão "Fechar"
     let exerciciosHtml = `
         <div class="plano-header" style="margin-bottom: 20px;">
             <h4 style="margin: 0;">Resolva as questões abaixo:</h4>
@@ -37,12 +37,24 @@ function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsua
     `;
     exercicios.forEach((questao, index) => {
         exerciciosHtml += `<div class="questao-bloco" id="questao-${index}"><p class="enunciado-questao"><strong>${index + 1}.</strong> ${questao.enunciado}</p><ul class="opcoes-lista">`;
-        const opcoesOrdenadas = [...questao.opcoes].sort((a, b) => a.letra.localeCompare(b.letra));
-        opcoesOrdenadas.forEach(opcao => {
-            const isChecked = respostasUsuario && respostasUsuario[index] === opcao.letra ? 'checked' : '';
-            const isDisabled = jaCorrigido ? 'disabled' : '';
-            exerciciosHtml += `<li class="opcao-item"><input type="radio" name="questao-${index}" id="q${index}-${opcao.letra}" value="${opcao.letra}" ${isChecked} ${isDisabled}><label for="q${index}-${opcao.letra}"><strong>${opcao.letra})</strong> ${opcao.texto}</label></li>`;
-        });
+        
+        if (questao.tipo_questao === 'certo_errado') {
+            const opcoes = [{letra: 'Certo', texto: 'Certo'}, {letra: 'Errado', texto: 'Errado'}];
+            opcoes.forEach(opcao => {
+               const isChecked = respostasUsuario && respostasUsuario[index] === opcao.letra ? 'checked' : '';
+               const isDisabled = jaCorrigido ? 'disabled' : '';
+               // AQUI A MUDANÇA: O texto do label foi simplificado
+               exerciciosHtml += `<li class="opcao-item"><input type="radio" name="questao-${index}" id="q${index}-${opcao.letra}" value="${opcao.letra}" ${isChecked} ${isDisabled}><label for="q${index}-${opcao.letra}">${opcao.texto}</label></li>`;
+            });
+        } else { // múltipla escolha
+            const opcoesOrdenadas = [...(questao.opcoes || [])].sort((a, b) => a.letra.localeCompare(b.letra));
+            opcoesOrdenadas.forEach(opcao => {
+                const isChecked = respostasUsuario && respostasUsuario[index] === opcao.letra ? 'checked' : '';
+                const isDisabled = jaCorrigido ? 'disabled' : '';
+                exerciciosHtml += `<li class="opcao-item"><input type="radio" name="questao-${index}" id="q${index}-${opcao.letra}" value="${opcao.letra}" ${isChecked} ${isDisabled}><label for="q${index}-${opcao.letra}"><strong>${opcao.letra})</strong> ${opcao.texto}</label></li>`;
+            });
+        }
+        
         exerciciosHtml += `</ul><div class="feedback-container" style="display: none;"></div></div>`;
     });
 
@@ -55,6 +67,7 @@ function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsua
     exerciciosContainer.style.display = 'block';
     exerciciosContainer.scrollIntoView({ behavior: 'smooth' });
 }
+
 
 function exibirCorrecao(exercicios, respostas, container) {
     let acertos = 0;
@@ -138,30 +151,21 @@ async function renderUsageInfo() {
     if (!currentUser || !usageCounterDiv) return;
     try {
         const data = await getUsageLimits(currentUser.uid);
-        
-        // Pega os valores específicos para 'exercicios'
-        const uso = data.usage.exercicios || 0; // Se não houver uso, considera 0
+        const uso = data.usage.exercicios || 0;
         const limite = data.limits.exercicios || 0;
         const restantes = limite - uso;
         const plano = data.plan;
-
         let mensagem = '';
-        
-        // Constrói a mensagem correta com os números dinâmicos
         if (plano === 'trial') {
             mensagem = `Você ainda pode gerar ${restantes} de ${limite} simulados de exercícios durante o seu período de teste.`;
         } else {
             mensagem = `Hoje, você ainda pode gerar ${restantes} de ${limite} simulados de exercícios.`;
         }
-        
         usageCounterDiv.textContent = mensagem;
         usageCounterDiv.style.display = 'block';
-
-        // Desabilita o botão se o limite foi atingido
         if(btnAbrirForm) {
             btnAbrirForm.disabled = restantes <= 0;
         }
-
     } catch (error) {
         console.error("Erro ao buscar limites de uso para exercícios:", error);
         usageCounterDiv.style.display = 'none';
@@ -180,56 +184,48 @@ async function salvarCorrecaoNoFirestore(respostasUsuario, acertos) {
     }
 }
 
-// Eventos do Formulário
 btnAbrirForm?.addEventListener('click', () => { formExercicios.style.display = 'block'; });
 btnFecharForm?.addEventListener('click', () => { formExercicios.style.display = 'none'; });
 
 formExercicios?.addEventListener('submit', async (e) => {
-    // ... (Esta função não muda, mas vamos garantir que ela chame renderUsageInfo)
     e.preventDefault();
     const quantidade = parseInt(document.getElementById('exercicio-quantidade').value) || 0;
     if (quantidade < 1 || quantidade > 10) {
         alert('Por favor, insira uma quantidade de exercícios entre 1 e 10.');
         return;
     }
-
     const btnGerar = formExercicios.querySelector('button[type="submit"]');
     btnGerar.disabled = true;
     btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Solicitando...';
-    
     exerciciosContainer.innerHTML = '';
     exerciciosContainer.style.display = 'none';
-
     const dados = {
         userId: currentUser.uid,
         materia: document.getElementById('exercicio-materia').value,
         topico: document.getElementById('exercicio-topico').value,
         quantidade: quantidade,
-        banca: document.getElementById('exercicio-banca').value
+        banca: document.getElementById('exercicio-banca').value,
+        tipo_questao: document.getElementById('exercicio-tipo').value // Enviando o novo campo
     };
-
     try {
         await gerarExerciciosAsync(dados);
     } catch (error) {
-        alert(error.message); // Mostra o erro de limite excedido
+        alert(error.message);
     } finally {
         btnGerar.disabled = false;
         btnGerar.textContent = 'Gerar';
         formExercicios.style.display = 'none';
         formExercicios.reset();
-        await renderUsageInfo(); // Atualiza a contagem após a tentativa
+        await renderUsageInfo();
     }
 });
 
-// Delegação de eventos
 document.body.addEventListener('click', async (e) => {
     const reverBtn = e.target.closest('.btn-rever-sessao');
     const corrigirBtn = e.target.closest('#btn-corrigir-exercicios');
-
     if (corrigirBtn) {
         corrigirBtn.disabled = true;
         corrigirBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Corrigindo...';
-        
         const respostasUsuario = {};
         const sessoesRef = doc(db, `users/${currentUser.uid}/sessoesExercicios`, sessaoAberta);
         try {
@@ -269,30 +265,22 @@ document.body.addEventListener('click', async (e) => {
     }
 });
 
-// --- INICIALIZAÇÃO ---
 function ouvirHistoricoDeExercicios() {
     if (unsubHistorico) unsubHistorico();
     const q = query(collection(db, `users/${currentUser.uid}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50));
     unsubHistorico = onSnapshot(q, (querySnapshot) => {
         const sessoes = [];
-        // APRIMORAMENTO: Verifica as mudanças para encontrar a sessão recém-completada
         querySnapshot.docChanges().forEach((change) => {
             const sessao = { id: change.doc.id, ...change.doc.data() };
-            // Se uma sessão foi modificada (de 'processing' para 'completed')
-            // E é a que acabamos de pedir
             if (change.type === "modified" && sessao.status === 'completed' && sessao.jobId === ultimoJobIdSolicitado) {
-                // Abre a sessão automaticamente
                 sessaoAberta = sessao.id;
                 exibirSessaoDeExercicios(sessao.exercicios);
-                ultimoJobIdSolicitado = null; // Reseta o ID para não abrir de novo
+                ultimoJobIdSolicitado = null;
             }
         });
-
-        // Atualiza a lista completa para o histórico
         querySnapshot.forEach(doc => {
             sessoes.push({ id: doc.id, ...doc.data() });
         });
-        
         renderizarHistorico(sessoes);
     }, (error) => {
         console.error("Erro ao carregar o histórico de exercícios:", error);
@@ -304,7 +292,7 @@ function initExerciciosPage() {
     currentUser = auth.currentUser;
     if (currentUser) {
         ouvirHistoricoDeExercicios();
-        renderUsageInfo(); // **CHAMA A NOVA FUNÇÃO AQUI**
+        renderUsageInfo();
     }
 }
 

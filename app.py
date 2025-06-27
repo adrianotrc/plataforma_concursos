@@ -1,92 +1,90 @@
-# app.py - Versão com correção definitiva para a geração de cronogramas
+# app.py
 
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 import math
+import traceback
+import threading
+import firebase_admin
+from firebase_admin import credentials, firestore, auth as firebase_auth
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 from openai import OpenAI
 import stripe
-import traceback
-import firebase_admin
-from firebase_admin import credentials, firestore, auth as firebase_auth
-import threading
 import resend
-
 
 load_dotenv()
 
-# --- Configuração do Firebase ---
+# --- Configurações Iniciais ---
+app = Flask(__name__)
+CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500", "https://iaprovas.com.br", "https://www.iaprovas.com.br"], supports_credentials=True)
+
+# --- Inicialização dos Serviços ---
 try:
     if not firebase_admin._apps:
         cred = credentials.Certificate("serviceAccountKey.json")
         firebase_admin.initialize_app(cred)
     db = firestore.client()
 except Exception as e:
-    print(f"ERRO: Falha ao inicializar o Firebase Admin SDK: {e}")
+    print(f"ERRO CRÍTICO: Falha ao inicializar Firebase: {e}")
     db = None
 
-app = Flask(__name__)
+try:
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    client = OpenAI(api_key=openai_api_key)
+except Exception as e:
+    print(f"ERRO CRÍTICO: Falha ao inicializar OpenAI: {e}")
+    client = None
 
-# --- INÍCIO DA SEÇÃO DE GERENCIAMENTO DE LIMITES ---
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+resend.api_key = os.getenv("RESEND_API_KEY")
 
-# Define os limites diários para cada plano.
-# Futuramente, podemos facilmente alterar os valores para 'basico', 'intermediario', etc.
+# --- Lógica de Gerenciamento de Limites de Uso ---
 PLAN_LIMITS = {
-    'trial': {'cronogramas': 5, 'exercicios': 5, 'correcoes_exercicios': 5, 'discursivas': 5, 'correcoes_discursivas': 5, 'dicas': 5},
-    'basico': {'cronogramas': 10, 'exercicios': 10, 'correcoes_exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
-    'intermediario': {'cronogramas': 15, 'exercicios': 15, 'correcoes_exercicios': 15, 'discursivas': 15, 'correcoes_discursivas': 15, 'dicas': 15},
-    'premium': {'cronogramas': 20, 'exercicios': 20, 'correcoes_exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20},
-    'anual': {'cronogramas': 20, 'exercicios': 20, 'correcoes_exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20}
+    'trial': {'cronogramas': 5, 'exercicios': 5, 'discursivas': 5, 'dicas': 5},
+    'basico': {'cronogramas': 10, 'exercicios': 10, 'discursivas': 10, 'dicas': 10},
+    'intermediario': {'cronogramas': 15, 'exercicios': 15, 'discursivas': 15, 'dicas': 15},
+    'premium': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'dicas': 20},
+    'anual': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'dicas': 20}
 }
 
 def check_usage_and_update(user_id, feature):
-    """Verifica e atualiza o uso de uma funcionalidade para um usuário."""
     try:
         today_str = datetime.utcnow().strftime('%Y-%m-%d')
         user_ref = db.collection('users').document(user_id)
         user_doc = user_ref.get()
-
-        if not user_doc.exists:
-            return False, "Usuário não encontrado."
-
+        if not user_doc.exists: return False, "Usuário não encontrado."
         user_plan = user_doc.to_dict().get('plano', 'trial')
-        
-        # Para o plano 'trial', o limite é total, não diário.
-        if user_plan == 'trial':
-            usage_ref = user_ref.collection('usage').document('total_trial')
-        else:
-            usage_ref = user_ref.collection('usage').document(today_str)
-
+        usage_ref = user_ref.collection('usage').document('total_trial' if user_plan == 'trial' else today_str)
         usage_doc = usage_ref.get()
-        
         limit = PLAN_LIMITS.get(user_plan, {}).get(feature, 0)
-
-        current_usage = 0
-        if usage_doc.exists:
-            current_usage = usage_doc.to_dict().get(feature, 0)
-
+        current_usage = usage_doc.to_dict().get(feature, 0) if usage_doc.exists else 0
         if current_usage >= limit:
-            return False, f"Limite diário de {limit} usos para '{feature}' atingido."
-
-        # Incrementa o uso
+            return False, f"Limite de {limit} usos para '{feature}' atingido."
         usage_ref.set({feature: firestore.Increment(1)}, merge=True)
         return True, "Uso permitido."
-
     except Exception as e:
-        print(f"Erro ao verificar uso: {e}")
-        return False, "Erro interno ao verificar limites de uso."
+        return False, "Erro ao verificar limites de uso."
 
-# --- Configuração de CORS ---
-CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500", "https://iaprovas.com.br", "https://www.iaprovas.com.br"], supports_credentials=True)
-
-# --- Configuração das APIs ---
-openai_api_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=openai_api_key)
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-resend.api_key = os.getenv("RESEND_API_KEY")
+# --- Funções de API ---
+def call_openai_api(prompt_content, system_message, model="gpt-4o-mini"):
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": prompt_content}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.5,
+            timeout=120.0
+        )
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        print(f"ERRO na chamada da API OpenAI: {e}")
+        raise
 
 # --- Função de Trabalho em Segundo Plano ---
 def processar_plano_em_background(user_id, job_id, dados_usuario):
@@ -405,25 +403,6 @@ def enviar_email_alteracao_dados():
         return jsonify({"erro": "Falha ao enviar e-mail."}), 500
 
 
-def call_openai_api(prompt_content, system_message):
-    if not openai_api_key:
-        raise ValueError("A chave da API da OpenAI não está configurada no servidor.")
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini", # CONFIRMADO: Usando o modelo correto.
-            messages=[
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": prompt_content}
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.5,
-            timeout=120.0
-        )
-        return json.loads(response.choices[0].message.content)
-    except Exception as e:
-        print(f"ERRO na chamada da API OpenAI: {e}")
-        raise
-
 @app.route("/")
 def ola_mundo():
     return "Backend ConcursoIA Funcionando"
@@ -447,39 +426,72 @@ def verificar_plano_status(user_id, job_id):
 
     except Exception as e:
         print(f"Erro ao verificar status do job {job_id}: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500    
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-# --- INÍCIO DO NOVO CÓDIGO PARA EXERCÍCIOS ASSÍNCRONOS ---
+# --- LÓGICA DE GERAÇÃO DE EXERCÍCIOS COM RAG ---
+def find_similar_questions(materia, topico, tipo_questao, limit=3):
+    """
+    Busca no Firestore por questões que sirvam de exemplo para a IA.
+    Esta é uma simulação de busca. Uma implementação real usaria um banco de dados vetorial.
+    """
+    try:
+        query = db.collection('banco_questoes').where('materia', '==', materia).where('tipo_questao', '==', tipo_questao)
+        # Se um tópico for fornecido, a consulta pode ser mais específica (opcional)
+        # if topico:
+        #     query = query.where('topico', '==', topico)
+        
+        docs = query.limit(limit).stream()
+        
+        examples = []
+        for doc in docs:
+            examples.append(doc.to_dict())
+        
+        print(f"Encontrados {len(examples)} exemplos de questões para RAG.")
+        return examples
+    except Exception as e:
+        print(f"ERRO ao buscar questões similares no Firestore: {e}")
+        return []
 
 def processar_exercicios_em_background(user_id, job_id, dados_req):
-    """Função que roda em segundo plano para gerar exercícios de alta qualidade."""
-    print(f"BACKGROUND JOB (EXERCÍCIOS) INICIADO: {job_id} para usuário {user_id}")
+    print(f"BACKGROUND JOB (EXERCÍCIOS RAG) INICIADO: {job_id}")
     job_ref = db.collection('users').document(user_id).collection('sessoesExercicios').document(job_id)
-
+    
     try:
+        materia = dados_req.get('materia')
+        topico = dados_req.get('topico')
         quantidade = dados_req.get('quantidade', 5)
-        materia = dados_req.get('materia', 'Conhecimentos Gerais')
-        topico = dados_req.get('topico', 'Qualquer')
-        banca = dados_req.get('banca', '')
+        banca = dados_req.get('banca', 'geral')
+        tipo_questao = dados_req.get('tipo_questao', 'multipla_escolha')
 
-        # --- PROMPT DE ALTA QUALIDADE ---
-        prompt = (
-            f"Você é um professor experiente e especialista na elaboração de questões para concursos públicos. Sua tarefa é criar {quantidade} questões de alta qualidade, no estilo da banca '{banca}' (se informada), sobre a matéria '{materia}' e o tópico '{topico}'.\n\n"
-            "REGRAS DE QUALIDADE (OBRIGATÓRIO SEGUIR):\n"
-            "1. **PROIBIDO PERGUNTAS SIMPLES:** Não crie questões do tipo 'qual artigo diz isso?'. As perguntas devem exigir interpretação, aplicação de conceitos ou a análise de um pequeno estudo de caso. Elas devem simular a complexidade de concursos reais.\n"
-            "2. **CREDIBILIDADE:** Baseie-se no vasto conhecimento de milhares de questões de concursos já existentes. O conteúdo deve ser preciso, correto e desafiador.\n"
-            "3. **OPÇÕES PLAUSÍVEIS:** As opções incorretas (distratores) devem ser plausíveis e bem elaboradas, testando o real conhecimento do candidato, e não apenas o decoreba.\n\n"
-            "REGRAS DE FORMATAÇÃO JSON (SEGUIR RIGOROSAMENTE):\n"
-            "1. A resposta DEVE ser um objeto JSON com uma única chave: 'exercicios', que é uma LISTA de objetos.\n"
-            "2. Cada objeto na lista 'exercicios' DEVE conter as chaves: 'enunciado', 'opcoes' (uma lista de 5 objetos com 'letra' e 'texto'), 'resposta_correta' (apenas a letra), e 'explicacao' (uma explicação clara e detalhada)."
-        )
-        system_message = "Você é um especialista em criar questões para concursos públicos, com foco em qualidade e realismo, formatando a saída estritamente em JSON."
+        # Passo 1 (RAG): Buscar exemplos relevantes
+        exemplos_questoes = find_similar_questions(materia, topico, tipo_questao)
         
-        dados = call_openai_api(prompt, system_message)
+        exemplos_json_str = json.dumps(exemplos_questoes, indent=2, ensure_ascii=False)
+
+        # Passo 2 (RAG): Construir o novo prompt enriquecido
+        prompt = f"""
+        Você é um professor especialista em criar questões para concursos.
+
+        ### Tarefa:
+        Crie {quantidade} novas e originais questões sobre a matéria '{materia}' e o tópico '{topico}', no estilo da banca '{banca}'.
+        O formato das questões DEVE ser '{tipo_questao}'.
+
+        ### Exemplos de Referência (NÃO COPIE, APENAS USE COMO BASE DE ESTILO E COMPLEXIDADE):
+        {exemplos_json_str if exemplos_questoes else "Nenhum exemplo encontrado, use seu conhecimento geral."}
+
+        ### Regras Obrigatórias:
+        1.  **Originalidade:** As questões devem ser 100% novas, não cópias dos exemplos.
+        2.  **Qualidade:** Crie enunciados que exijam interpretação e alternativas incorretas que sejam plausíveis.
+        3.  **Formato de Saída JSON:** A resposta DEVE ser um objeto JSON com uma chave 'exercicios', que é uma LISTA. Cada objeto na lista deve ter: "enunciado", "opcoes" (uma lista de objetos com "letra" e "texto"), "resposta_correta", "explicacao", e "tipo_questao". Para questões 'certo_errado', a lista "opcoes" deve ser vazia e a "resposta_correta" deve ser a string "Certo" ou "Errado".
+        """
+        system_message = "Você cria questões de concurso de alta qualidade, baseando-se em exemplos, e formata a saída estritamente em JSON."
+        
+        # Passo 3: Chamar a IA e salvar o resultado
+        dados_ia = call_openai_api(prompt, system_message)
 
         update_data = {
             'status': 'completed',
-            'exercicios': dados.get('exercicios', []),
+            'exercicios': dados_ia.get('exercicios', []),
             'resumo': {
                 'materia': materia,
                 'topico': topico,
@@ -488,12 +500,14 @@ def processar_exercicios_em_background(user_id, job_id, dados_req):
             }
         }
         job_ref.update(update_data)
-        print(f"BACKGROUND JOB (EXERCÍCIOS) CONCLUÍDO: {job_id}")
+        print(f"BACKGROUND JOB (EXERCÍCIOS RAG) CONCLUÍDO: {job_id}")
 
     except Exception as e:
         print(f"!!! ERRO NO BACKGROUND JOB DE EXERCÍCIOS {job_id}: {e} !!!")
         traceback.print_exc()
-        job_ref.update({'status': 'failed', 'error': str(e)})
+        job_ref.update({'status': 'failed', 'error': str(e)})    
+
+# --- INÍCIO DO NOVO CÓDIGO PARA EXERCÍCIOS ASSÍNCRONOS ---
 
 @app.route("/gerar-exercicios-async", methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -959,4 +973,4 @@ def get_usage_limits(user_id):
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True, port=int(os.environ.get("PORT", 5000)))
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=True)
