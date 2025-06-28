@@ -1246,3 +1246,43 @@ body {
     text-decoration: none;
     color: inherit;
 }
+
+/* === Estilos para o Banner de Cookies === */
+.cookie-consent-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #1f2937; /* Fundo escuro */
+    color: #f9fafb; /* Texto claro */
+    padding: 16px 24px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+    display: none; /* Começa escondido */
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    z-index: 1050;
+    flex-wrap: wrap;
+}
+
+.cookie-consent-banner p {
+    margin: 0;
+    flex-grow: 1;
+    font-size: 14px;
+}
+
+.cookie-consent-banner p a {
+    color: #60a5fa; /* Azul claro para o link */
+    text-decoration: underline;
+}
+
+.cookie-consent-banner .btn {
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .cookie-consent-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+}

@@ -46,6 +46,30 @@
             </div>
         </div>
     </div>
-    <script type="module" src="auth.js"></script> 
+    <script type="module" src="auth.js"></script>
+    <div id="cookie-banner" class="cookie-consent-banner">
+        <p>Nós utilizamos cookies essenciais e de preferência para garantir o melhor funcionamento da nossa plataforma. Ao continuar, você concorda com a nossa <a href="privacidade.html" target="_blank">Política de Privacidade</a>.</p>
+        <button id="accept-cookies-btn" class="btn btn-primary">Aceitar</button>
+    </div>
+    <script>
+        // Lógica do Banner de Cookies
+        document.addEventListener('DOMContentLoaded', () => {
+            const banner = document.getElementById('cookie-banner');
+            const acceptBtn = document.getElementById('accept-cookies-btn');
+    
+            // Verifica no armazenamento local se o usuário já deu o consentimento
+            if (!localStorage.getItem('cookieConsent')) {
+                banner.style.display = 'flex';
+            }
+    
+            // Quando o botão de aceitar é clicado
+            acceptBtn.addEventListener('click', () => {
+                // Salva a informação no armazenamento local para não mostrar novamente
+                localStorage.setItem('cookieConsent', 'true');
+                // Esconde o banner com uma transição suave
+                banner.style.display = 'none';
+            });
+        });
+    </script>
 </body>
 </html>
