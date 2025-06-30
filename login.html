@@ -49,24 +49,35 @@
     <script type="module" src="auth.js"></script>
     <div id="cookie-banner" class="cookie-consent-banner">
         <p>Nós utilizamos cookies essenciais e de preferência para garantir o melhor funcionamento da nossa plataforma. Ao continuar, você concorda com a nossa <a href="privacidade.html" target="_blank">Política de Privacidade</a>.</p>
-        <button id="accept-cookies-btn" class="btn btn-primary">Aceitar</button>
+        <div style="display: flex; gap: 12px; flex-shrink: 0;">
+            <button id="reject-cookies-btn" class="btn btn-secondary">Rejeitar</button>
+            <button id="accept-cookies-btn" class="btn btn-primary">Aceitar</button>
+        </div>
     </div>
     <script>
         // Lógica do Banner de Cookies
         document.addEventListener('DOMContentLoaded', () => {
             const banner = document.getElementById('cookie-banner');
             const acceptBtn = document.getElementById('accept-cookies-btn');
+            const rejectBtn = document.getElementById('reject-cookies-btn');
     
-            // Verifica no armazenamento local se o usuário já deu o consentimento
-            if (!localStorage.getItem('cookieConsent')) {
+            // Verifica no armazenamento local se o usuário já fez uma escolha
+            const consent = localStorage.getItem('cookieConsent');
+            if (!consent) {
                 banner.style.display = 'flex';
             }
     
-            // Quando o botão de aceitar é clicado
+            // Lógica do botão ACEITAR
             acceptBtn.addEventListener('click', () => {
-                // Salva a informação no armazenamento local para não mostrar novamente
-                localStorage.setItem('cookieConsent', 'true');
-                // Esconde o banner com uma transição suave
+                // Salva a escolha positiva do usuário para visitas futuras
+                localStorage.setItem('cookieConsent', 'accepted');
+                banner.style.display = 'none';
+            });
+    
+            // Lógica do botão REJEITAR
+            rejectBtn.addEventListener('click', () => {
+                // Apenas esconde o banner. Em uma futura visita, ele aparecerá novamente.
+                // Alternativamente, poderíamos salvar 'rejected' se quiséssemos lembrar da recusa.
                 banner.style.display = 'none';
             });
         });

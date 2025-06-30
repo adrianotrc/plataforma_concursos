@@ -96,6 +96,15 @@ body {
     justify-content: center;
 }
 
+.btn-secondary {
+    background: #4b5563; /* Cinza escuro */
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #374151; /* Cinza mais escuro */
+}
+
 /* Header */
 .header {
     background: white;
