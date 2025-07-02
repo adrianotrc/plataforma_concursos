@@ -1,9 +1,9 @@
-// main-app.js - Versão com envio de boas-vindas no primeiro acesso
+// main-app.js - Versão FINAL E CORRIGIDA
 
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc, serverTimestamp, Timestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { enviarEmailBoasVindas } from './api.js'; // Importa a função da API
+import { enviarEmailBoasVindas } from './api.js';
 
 export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizados: 0, taxaAcerto: 0, textosCorrigidos: 0, }, savedPlans: [], sessoesExercicios: [], sessoesDiscursivas: [], userData: null };
 
@@ -69,12 +69,17 @@ export async function carregarDadosDoUsuario(userId) {
     try {
         const userDocRef = doc(db, "users", userId);
         const userDocSnap = await getDoc(userDocRef);
+        
+        if (!userDocSnap.exists()) {
+            console.log("Documento do usuário não encontrado no Firestore. Impossível prosseguir.");
+            return;
+        }
+
         state.userData = userDocSnap.data();
 
-        // **NOVA LÓGICA DE BOAS-VINDAS**
-        // Verifica se o e-mail de boas-vindas precisa ser enviado
-        if (state.userData && state.userData.boasVindasEnviado === false) {
-             console.log("Detectado primeiro acesso, enviando e-mail de boas-vindas...");
+        // LÓGICA DE BOAS-VINDAS NO PRIMEIRO LOGIN VERIFICADO
+        if (state.userData.boasVindasEnviado === false) {
+             console.log("Detectado primeiro acesso verificado. Enviando e-mail de boas-vindas...");
              await enviarEmailBoasVindas(state.userData.email, state.userData.nome);
              await updateDoc(userDocRef, { boasVindasEnviado: true });
              console.log("Flag de boas-vindas atualizada para true.");
@@ -112,7 +117,7 @@ function verificarAcessoUsuario() {
 
 function initializeApp() {
     onAuthStateChanged(auth, async (user) => {
-        if (user) {
+        if (user && user.emailVerified) { // Garante que só usuários verificados acessem o dashboard
             state.user = user;
             await carregarDadosDoUsuario(user.uid);
             updateUserInfo(user, state.userData);
@@ -133,6 +138,7 @@ function initializeApp() {
             document.dispatchEvent(new Event('userDataReady'));
 
         } else {
+            // Se o usuário não está logado ou não está verificado, redireciona para o login
             const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html'];
             const paginaAtual = window.location.pathname.split('/').pop();
             if (paginasProtegidas.includes(paginaAtual)) {

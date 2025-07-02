@@ -1,3 +1,5 @@
+// auth.js - Versão FINAL E CORRIGIDA
+
 import { auth, db } from './firebase-config.js';
 import { FRONTEND_URL } from './config.js'; // Importa a URL dinâmica
 import {
@@ -16,20 +18,9 @@ const actionCodeSettings = {
     handleCodeInApp: true
 };
 
-
 // --- PÁGINA DE LOGIN ---
 const formLogin = document.getElementById('form-login');
 if (formLogin) {
-    // (O código desta seção foi simplificado, pois a lógica de boas-vindas foi movida)
-    const params = new URLSearchParams(window.location.search);
-    const returnTo = params.get('returnTo');
-    if (returnTo) {
-        const linkCadastro = document.querySelector('a[href="cadastro.html"]');
-        if (linkCadastro) {
-            linkCadastro.href = `cadastro.html?returnTo=${encodeURIComponent(returnTo)}`;
-        }
-    }
-
     formLogin.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('login-email').value;
@@ -52,8 +43,8 @@ if (formLogin) {
                 errorMessage.style.display = 'block';
                 btnLogin.disabled = false;
                 btnLogin.textContent = 'Entrar';
-                auth.signOut(); 
-                return; // Impede o login
+                auth.signOut();
+                return;
             }
             
             const postLoginParams = new URLSearchParams(window.location.search);
@@ -88,7 +79,6 @@ if (formCadastro) {
             errorMessageDiv.style.display = 'block';
             return;
         }
-
         btnCadastro.disabled = true;
         btnCadastro.textContent = 'Criando conta...';
 
@@ -97,31 +87,26 @@ if (formCadastro) {
             const user = userCredential.user;
 
             if (user) {
-                // **LÓGICA ATUALIZADA: Envia verificação com as configurações de redirecionamento**
                 await sendEmailVerification(user, actionCodeSettings);
 
-                // Cria o perfil do usuário no Firestore com o campo de controle
                 const userDocRef = doc(db, "users", user.uid);
                 const dataExpiracao = new Date();
                 dataExpiracao.setDate(dataExpiracao.getDate() + 7);
-                const novoUserData = {
+                await setDoc(userDocRef, {
                     email: user.email,
                     nome: nome,
                     plano: "trial",
                     criadoEm: serverTimestamp(),
                     trialFim: Timestamp.fromDate(dataExpiracao),
-                    boasVindasEnviado: false // Controle do e-mail de boas-vindas
-                };
-                await setDoc(userDocRef, novoUserData);
+                    boasVindasEnviado: false
+                });
             }
             
-            // Redireciona para a página de verificação
             window.location.href = 'verificar-email.html';
 
         } catch (error) {
             errorMessageDiv.textContent = 'Ocorreu um erro. Este e-mail pode já estar em uso.';
             errorMessageDiv.style.display = 'block';
-            console.error("Erro detalhado no cadastro:", error);
             btnCadastro.disabled = false;
             btnCadastro.textContent = 'Criar Conta';
         }
@@ -129,7 +114,7 @@ if (formCadastro) {
 }
 
 
-// --- VIGIA GERAL DE AUTENTICAÇÃO (sem mudanças) ---
+// --- VIGIA GERAL DE AUTENTICAÇÃO ---
 onAuthStateChanged(auth, (user) => {
     const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html', 'discursivas.html', 'material-de-estudo.html'];
     const paginaAtual = window.location.pathname.split('/').pop();
@@ -141,7 +126,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 
-// --- LÓGICA DE LOGIN COM O GOOGLE (sem mudanças) ---
+// --- LÓGICA DE LOGIN COM O GOOGLE ---
 const btnGoogleLogin = document.getElementById('btn-google-login');
 if (btnGoogleLogin) {
     btnGoogleLogin.addEventListener('click', async () => {
@@ -156,20 +141,18 @@ if (btnGoogleLogin) {
             if (!userDocSnap.exists()) {
                 const dataExpiracao = new Date();
                 dataExpiracao.setDate(dataExpiracao.getDate() + 7);
-                const novoUserData = {
+                await setDoc(userDocRef, {
                     email: user.email,
                     nome: user.displayName,
                     plano: "trial",
                     criadoEm: serverTimestamp(),
                     trialFim: Timestamp.fromDate(dataExpiracao),
                     boasVindasEnviado: true 
-                };
-                await setDoc(userDocRef, novoUserData);
+                });
                 enviarEmailBoasVindas(user.email, user.displayName);
             }
             window.location.href = 'home.html';
         } catch (error) {
-            console.error("Erro no login com Google: ", error);
             const errorMessage = document.getElementById('error-message') || document.getElementById('error-message-cadastro');
             if (errorMessage) {
                 errorMessage.textContent = 'Falha no login com o Google. Tente novamente.';
