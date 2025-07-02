@@ -1,7 +1,7 @@
 // auth.js - Versão FINAL E CORRIGIDA
 
 import { auth, db } from './firebase-config.js';
-import { FRONTEND_URL } from './config.js'; // Importa a URL dinâmica
+import { FRONTEND_URL } from './config.js'; 
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
@@ -10,11 +10,10 @@ import {
     signInWithPopup,
     sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { doc, getDoc, setDoc, serverTimestamp, Timestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { enviarEmailBoasVindas } from './api.js';
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const actionCodeSettings = {
-    url: `${FRONTEND_URL}/home.html`, // Usa a URL dinâmica do config.js
+    url: `${FRONTEND_URL}/home.html`,
     handleCodeInApp: true
 };
 
@@ -33,17 +32,21 @@ if (formLogin) {
         errorMessage.style.display = 'none';
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, senha);
-            const user = userCredential.user;
+            await signInWithEmailAndPassword(auth, email, senha);
+            const user = auth.currentUser; // Pega o usuário do estado central do auth
 
-            await user.reload();
+            if (!user) { // Checagem de segurança
+                throw new Error("Usuário não encontrado após login.");
+            }
+
+            await user.reload(); // Força a sincronização
 
             if (!user.emailVerified) {
                 errorMessage.textContent = 'Sua conta ainda não foi verificada. Por favor, verifique o link enviado ao seu e-mail.';
                 errorMessage.style.display = 'block';
                 btnLogin.disabled = false;
                 btnLogin.textContent = 'Entrar';
-                auth.signOut();
+                await signOut(auth);
                 return;
             }
             
@@ -113,19 +116,6 @@ if (formCadastro) {
     });
 }
 
-
-// --- VIGIA GERAL DE AUTENTICAÇÃO ---
-onAuthStateChanged(auth, (user) => {
-    const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html', 'discursivas.html', 'material-de-estudo.html'];
-    const paginaAtual = window.location.pathname.split('/').pop();
-
-    if (!user && paginasProtegidas.includes(paginaAtual)) {
-        const returnUrl = `login.html?returnTo=${encodeURIComponent(paginaAtual)}`;
-        window.location.href = returnUrl;
-    }
-});
-
-
 // --- LÓGICA DE LOGIN COM O GOOGLE ---
 const btnGoogleLogin = document.getElementById('btn-google-login');
 if (btnGoogleLogin) {
@@ -149,7 +139,6 @@ if (btnGoogleLogin) {
                     trialFim: Timestamp.fromDate(dataExpiracao),
                     boasVindasEnviado: true 
                 });
-                enviarEmailBoasVindas(user.email, user.displayName);
             }
             window.location.href = 'home.html';
         } catch (error) {

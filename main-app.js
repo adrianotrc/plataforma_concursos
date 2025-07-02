@@ -1,4 +1,4 @@
-// main-app.js - Versão FINAL E CORRIGIDA
+// main-app.js - Versão com correção definitiva de sincronização
 
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -15,7 +15,6 @@ function controlarAcessoFuncionalidades(plano) {
         'premium': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas', 'estudo'],
         'anual': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas', 'estudo']
     };
-
     const todasFuncionalidades = ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas', 'estudo'];
     const funcionalidadesPermitidas = permissoes[plano] || [];
 
@@ -31,6 +30,7 @@ function controlarAcessoFuncionalidades(plano) {
     });
 }
 
+// ... (as funções de métricas permanecem as mesmas)
 function calcularMetricas() {
     const studyDates = new Set();
     [...state.savedPlans, ...state.sessoesExercicios, ...state.sessoesDiscursivas].forEach(item => {
@@ -65,24 +65,23 @@ function updateUserInfo(user, userData) {
     }
 }
 
-export async function carregarDadosDoUsuario(userId) {
+async function carregarDadosDoUsuario(userId) {
     try {
         const userDocRef = doc(db, "users", userId);
         const userDocSnap = await getDoc(userDocRef);
         
         if (!userDocSnap.exists()) {
-            console.log("Documento do usuário não encontrado no Firestore. Impossível prosseguir.");
+            console.error("Documento do usuário não encontrado. Deslogando.");
+            signOut(auth);
             return;
         }
 
         state.userData = userDocSnap.data();
 
-        // LÓGICA DE BOAS-VINDAS NO PRIMEIRO LOGIN VERIFICADO
         if (state.userData.boasVindasEnviado === false) {
              console.log("Detectado primeiro acesso verificado. Enviando e-mail de boas-vindas...");
              await enviarEmailBoasVindas(state.userData.email, state.userData.nome);
              await updateDoc(userDocRef, { boasVindasEnviado: true });
-             console.log("Flag de boas-vindas atualizada para true.");
         }
 
         const collectionsToLoad = {
@@ -103,6 +102,7 @@ export async function carregarDadosDoUsuario(userId) {
 }
 
 function verificarAcessoUsuario() {
+    // ... (esta função permanece a mesma)
     if (!state.userData) return;
     const plano = state.userData.plano;
     if (plano === 'premium' || plano === 'anual' || plano === 'intermediario' || plano === 'basico') return;
@@ -117,36 +117,47 @@ function verificarAcessoUsuario() {
 
 function initializeApp() {
     onAuthStateChanged(auth, async (user) => {
-        if (user && user.emailVerified) { // Garante que só usuários verificados acessem o dashboard
-            state.user = user;
-            await carregarDadosDoUsuario(user.uid);
-            updateUserInfo(user, state.userData);
-            controlarAcessoFuncionalidades(state.userData.plano);
-            verificarAcessoUsuario();
+        const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html', 'discursivas.html', 'material-de-estudo.html'];
+        const paginaAtual = window.location.pathname.split('/').pop();
 
-            const btnSair = document.getElementById('btn-sair');
-            if (btnSair) {
-                btnSair.addEventListener('click', () => {
-                    signOut(auth).then(() => {
-                        window.location.href = 'login.html';
-                    }).catch((error) => {
-                        console.error('Erro ao tentar fazer logout:', error);
-                    });
-                });
+        if (user) {
+            // ===== CORREÇÃO DEFINITIVA =====
+            // Força a atualização do estado do usuário ANTES de qualquer verificação.
+            await user.reload();
+            // Após o reload, pegamos o estado mais fresco do usuário.
+            const freshUser = auth.currentUser;
+
+            if (freshUser && freshUser.emailVerified) {
+                // Se o usuário está verificado, continue com o carregamento do app.
+                state.user = freshUser;
+                await carregarDadosDoUsuario(freshUser.uid);
+                updateUserInfo(freshUser, state.userData);
+                controlarAcessoFuncionalidades(state.userData.plano);
+                verificarAcessoUsuario();
+
+                const btnSair = document.getElementById('btn-sair');
+                if (btnSair) {
+                    btnSair.addEventListener('click', () => { signOut(auth).then(() => { window.location.href = 'login.html'; }); });
+                }
+                
+                document.dispatchEvent(new Event('userDataReady'));
+
+            } else {
+                // Se mesmo após o reload o usuário não está verificado, desloga e redireciona.
+                await signOut(auth);
+                if (paginasProtegidas.includes(paginaAtual)) {
+                    window.location.href = 'login.html';
+                }
             }
-            
-            document.dispatchEvent(new Event('userDataReady'));
-
         } else {
-            // Se o usuário não está logado ou não está verificado, redireciona para o login
-            const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html'];
-            const paginaAtual = window.location.pathname.split('/').pop();
+            // Se não há usuário, redireciona para o login se a página for protegida.
             if (paginasProtegidas.includes(paginaAtual)) {
                 window.location.href = 'login.html';
             }
         }
     });
 
+    // ... (o código da sidebar permanece o mesmo)
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
