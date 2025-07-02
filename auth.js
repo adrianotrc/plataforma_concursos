@@ -1,19 +1,20 @@
-// auth.js - Versão FINAL E CORRIGIDA
+// auth.js - Versão Definitiva
 
 import { auth, db } from './firebase-config.js';
-import { FRONTEND_URL } from './config.js'; 
+import { FRONTEND_URL } from './config.js';
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     onAuthStateChanged,
     GoogleAuthProvider,
     signInWithPopup,
-    sendEmailVerification
+    sendEmailVerification,
+    signOut
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const actionCodeSettings = {
-    url: `${FRONTEND_URL}/acao.html`,
+    url: `${FRONTEND_URL}/acao.html`, // CORREÇÃO: Aponta para a página de ação.
     handleCodeInApp: true
 };
 
@@ -32,14 +33,10 @@ if (formLogin) {
         errorMessage.style.display = 'none';
 
         try {
-            await signInWithEmailAndPassword(auth, email, senha);
-            const user = auth.currentUser; // Pega o usuário do estado central do auth
+            const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+            const user = userCredential.user;
 
-            if (!user) { // Checagem de segurança
-                throw new Error("Usuário não encontrado após login.");
-            }
-
-            await user.reload(); // Força a sincronização
+            await user.reload();
 
             if (!user.emailVerified) {
                 errorMessage.textContent = 'Sua conta ainda não foi verificada. Por favor, verifique o link enviado ao seu e-mail.';
