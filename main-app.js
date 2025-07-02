@@ -1,8 +1,9 @@
-// main-app.js - Versão COMPLETA E CORRIGIDA com dispatch de evento
+// main-app.js - Versão com envio de boas-vindas no primeiro acesso
 
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc, serverTimestamp, Timestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { enviarEmailBoasVindas } from './api.js'; // Importa a função da API
 
 export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizados: 0, taxaAcerto: 0, textosCorrigidos: 0, }, savedPlans: [], sessoesExercicios: [], sessoesDiscursivas: [], userData: null };
 
@@ -32,7 +33,6 @@ function controlarAcessoFuncionalidades(plano) {
 
 function calcularMetricas() {
     const studyDates = new Set();
-    // Adiciona verificação para toDate, prevenindo erros se o dado não for um Timestamp
     [...state.savedPlans, ...state.sessoesExercicios, ...state.sessoesDiscursivas].forEach(item => {
         const dateSource = item.criadoEm || item.resumo?.criadoEm;
         if (dateSource && typeof dateSource.toDate === 'function') {
@@ -71,6 +71,15 @@ export async function carregarDadosDoUsuario(userId) {
         const userDocSnap = await getDoc(userDocRef);
         state.userData = userDocSnap.data();
 
+        // **NOVA LÓGICA DE BOAS-VINDAS**
+        // Verifica se o e-mail de boas-vindas precisa ser enviado
+        if (state.userData && state.userData.boasVindasEnviado === false) {
+             console.log("Detectado primeiro acesso, enviando e-mail de boas-vindas...");
+             await enviarEmailBoasVindas(state.userData.email, state.userData.nome);
+             await updateDoc(userDocRef, { boasVindasEnviado: true });
+             console.log("Flag de boas-vindas atualizada para true.");
+        }
+
         const collectionsToLoad = {
             savedPlans: query(collection(db, `users/${userId}/plans`), orderBy("criadoEm", "desc"), limit(50)),
             sessoesExercicios: query(collection(db, `users/${userId}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50)),
@@ -85,7 +94,7 @@ export async function carregarDadosDoUsuario(userId) {
         if (document.getElementById('stat-dias-estudo')) {
             calcularMetricas();
         }
-    } catch (error) { console.error("Erro ao carregar dados de atividades do Firestore:", error); }
+    } catch (error) { console.error("Erro ao carregar dados do usuário:", error); }
 }
 
 function verificarAcessoUsuario() {
@@ -105,26 +114,6 @@ function initializeApp() {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             state.user = user;
-
-            const userDocRef = doc(db, "users", user.uid);
-            let userDocSnap = await getDoc(userDocRef);
-
-            if (!userDocSnap.exists()) {
-                console.log("Novo usuário ou documento não encontrado. Criando perfil de trial...");
-                const dataExpiracao = new Date();
-                dataExpiracao.setDate(dataExpiracao.getDate() + 7);
-                const novoUserData = {
-                    email: user.email,
-                    nome: user.email.split('@')[0],
-                    plano: "trial",
-                    criadoEm: serverTimestamp(),
-                    trialFim: Timestamp.fromDate(dataExpiracao)
-                };
-                await setDoc(userDocRef, novoUserData);
-                userDocSnap = await getDoc(userDocRef);
-            }
-            state.userData = userDocSnap.data();
-            
             await carregarDadosDoUsuario(user.uid);
             updateUserInfo(user, state.userData);
             controlarAcessoFuncionalidades(state.userData.plano);
@@ -141,7 +130,6 @@ function initializeApp() {
                 });
             }
             
-            // AQUI A MUDANÇA: Avisa que os dados estão prontos.
             document.dispatchEvent(new Event('userDataReady'));
 
         } else {

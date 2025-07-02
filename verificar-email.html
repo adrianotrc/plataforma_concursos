@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirme seu Cadastro - IAprovas</title>
+    <link rel="stylesheet" href="dashboard-lovable.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                     <a href="index.html" class="logo-link">
+                        <div class="logo"><i class="fas fa-book-open"></i><span>IAprovas</span></div>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content" style="margin-left: 0; display: flex; align-items: center; justify-content: center;">
+            <div class="content-wrapper" style="max-width: 500px; text-align: center;">
+                
+                <div class="feature-card">
+                    <div class="feature-header" style="justify-content: center;">
+                        <div class="feature-icon blue"><i class="fas fa-envelope-open-text"></i></div>
+                    </div>
+
+                    <h1>Confirme seu E-mail</h1>
+                    <p style="font-size: 18px; color: #374151; margin-bottom: 24px;">
+                        Cadastro realizado com sucesso! Enviamos um link de confirmação para <strong id="user-email-placeholder">seu e-mail</strong>. Por favor, clique no link para ativar sua conta.
+                    </p>
+                    <p style="font-size: 14px; color: #6b7280;">Não recebeu? Verifique sua caixa de spam ou clique abaixo para reenviar.</p>
+                    
+                    <button id="btn-reenviar-email" class="btn btn-primary" style="margin-bottom: 12px;">Reenviar E-mail de Confirmação</button>
+                    <a href="login.html" class="btn btn-ghost">Ir para o Login</a>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="module" src="verificar-email.js"></script>
+</body>
+</html>
