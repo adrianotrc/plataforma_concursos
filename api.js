@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './config.js'; // Importa a URL base
+import { API_BASE_URL } from './config.js'; // Importa a URL base do novo arquivo
 
 async function fetchApi(endpoint, options) {
     try {
@@ -107,8 +107,6 @@ export async function verificarStatusPlano(userId, jobId) {
         method: 'GET',
     });
 }
-
-// ADICIONE ESTAS DUAS FUNÇÕES NO FINAL DO ARQUIVO api.js
 
 export async function gerarEnunciadoDiscursivaAsync(criterios) {
     return fetchApi('/gerar-enunciado-discursiva-async', {

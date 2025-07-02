@@ -13,7 +13,7 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const actionCodeSettings = {
-    url: `${FRONTEND_URL}/home.html`,
+    url: `${FRONTEND_URL}/acao.html`,
     handleCodeInApp: true
 };
 
