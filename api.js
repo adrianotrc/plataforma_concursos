@@ -1,40 +1,21 @@
-// api.js - Versão final com URL dinâmica para desenvolvimento e produção
+import { API_BASE_URL } from './config.js'; // Importa a URL base
 
-// Esta função determina se estamos no ambiente local (desenvolvimento)
-function isLocalEnvironment() {
-    // Endereços comuns para desenvolvimento local
-    const localhosts = ['127.0.0.1', 'localhost'];
-    return localhosts.includes(window.location.hostname);
-}
-
-// Define a URL base da API dinamicamente
-const API_BASE_URL = isLocalEnvironment() 
-    ? 'http://127.0.0.1:5000' // URL para desenvolvimento local
-    : 'https://iaprovas-backend.onrender.com'; // URL para produção
-
-// Função auxiliar genérica para chamadas de API
 async function fetchApi(endpoint, options) {
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-        
-        // Se a resposta não for OK (ex: 429, 500), trata como erro
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({ 
                 message: `Erro ${response.status}: ${response.statusText}` 
             }));
-            // Lança um erro com a mensagem do servidor
             throw new Error(errorBody.message || 'Ocorreu um erro desconhecido.');
         }
-
-        // Se a resposta for OK, mas não houver conteúdo (ex: status 202 ou 204)
         if (response.status === 202 || response.status === 204) {
-            return {}; // Retorna um objeto vazio para não quebrar a cadeia de 'then'
+            return {};
         }
-
         return await response.json();
     } catch (error) {
         console.error(`Falha grave ao chamar o endpoint ${endpoint}:`, error.message);
-        throw error; // Propaga o erro para ser tratado pela função que chamou
+        throw error;
     }
 }
 

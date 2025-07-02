@@ -1,6 +1,5 @@
-// auth.js - Versão com fluxo de verificação via actionCodeSettings
-
 import { auth, db } from './firebase-config.js';
+import { FRONTEND_URL } from './config.js'; // Importa a URL dinâmica
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
@@ -12,15 +11,9 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { enviarEmailBoasVindas } from './api.js';
 
-function isLocalEnvironment() {
-    const localhosts = ['127.0.0.1', 'localhost'];
-    return localhosts.includes(window.location.hostname);
-}
-
-// Configurações para os links de e-mail (verificação, etc.)
 const actionCodeSettings = {
-    url: 'https://iaprovas.com.br/home.html', // URL DE PRODUÇÃO
-    handleCodeInApp: true 
+    url: `${FRONTEND_URL}/home.html`, // Usa a URL dinâmica do config.js
+    handleCodeInApp: true
 };
 
 

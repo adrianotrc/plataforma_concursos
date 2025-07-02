@@ -1,9 +1,11 @@
+// verificar-email.js - Versão FINAL com URL dinâmica
+
 import { auth } from './firebase-config.js';
+import { FRONTEND_URL } from './config.js'; // Importa a URL dinâmica
 import { sendEmailVerification, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// ATUALIZAÇÃO: Apontando para o site de produção
 const actionCodeSettings = {
-    url: 'https://iaprovas.com.br/home.html', 
+    url: `${FRONTEND_URL}/home.html`, // Usa a URL dinâmica
     handleCodeInApp: true
 };
 
@@ -16,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!user.emailVerified) {
                 emailPlaceholder.textContent = user.email;
             } else {
-                window.location.href = 'login.html';
+                window.location.href = 'login.html'; 
             }
         } else {
             emailPlaceholder.textContent = 'seu e-mail';
