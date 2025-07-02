@@ -16,20 +16,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             await applyActionCode(auth, actionCode);
             messageEl.textContent = 'E-mail verificado com sucesso!';
             detailsEl.textContent = 'Redirecionando para o seu dashboard...';
-            
-            setTimeout(() => {
-                window.location.href = '/home.html';
-            }, 2000);
-
+            setTimeout(() => { window.location.href = '/home.html'; }, 2000);
         } catch (error) {
-            console.error("Erro ao aplicar código de verificação:", error);
             messageEl.textContent = 'Falha na Verificação';
             detailsEl.textContent = '';
             errorEl.style.display = 'block';
-            errorEl.innerHTML = 'O link de verificação é inválido, pode ter expirado ou já foi utilizado. Por favor, tente fazer o login e solicitar um novo e-mail.';
+            errorEl.innerHTML = 'O link de verificação é inválido ou já foi utilizado. Tente fazer o login para reenviar o link.';
         }
     } else {
-        // Se a página for acessada sem os parâmetros corretos, redireciona para o login.
         window.location.href = '/login.html';
     }
 });
