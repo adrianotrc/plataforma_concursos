@@ -1,11 +1,26 @@
-// main-app.js - Versão Definitiva
+// main-app.js - Versão FINAL, COMPLETA e CORRIGIDA
+
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { collection, getDocs, query, orderBy, limit, doc, getDoc, updateDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { enviarEmailBoasVindas } from './api.js';
 
-export const state = { user: null, userData: null, metrics: { diasEstudo: 0, exerciciosRealizados: 0, taxaAcerto: 0, textosCorrigidos: 0, }, savedPlans: [], sessoesExercicios: [], sessoesDiscursivas: [] };
+// ESTADO GLOBAL COMPLETO (RESTAURADO)
+export const state = {
+    user: null,
+    userData: null,
+    metrics: {
+        diasEstudo: 0,
+        exerciciosRealizados: 0,
+        taxaAcerto: 0,
+        textosCorrigidos: 0,
+    },
+    savedPlans: [],
+    sessoesExercicios: [],
+    sessoesDiscursivas: []
+};
 
+// FUNÇÃO DE CONTROLE DE ACESSO (RESTAURADA)
 function controlarAcessoFuncionalidades(plano) {
     const permissoes = {
         'trial': ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas', 'estudo'],
@@ -24,6 +39,7 @@ function controlarAcessoFuncionalidades(plano) {
     });
 }
 
+// FUNÇÕES DE MÉTRICAS (RESTAURADAS)
 function calcularMetricas() {
     const studyDates = new Set();
     [...state.savedPlans, ...state.sessoesExercicios, ...state.sessoesDiscursivas].forEach(item => {
@@ -52,6 +68,7 @@ function atualizarMetricasDashboard() {
     }
 }
 
+// FUNÇÃO PARA ATUALIZAR INFORMAÇÕES DO USUÁRIO NA UI (RESTAURADA)
 function updateUserInfo(user, userData) {
     const userNameElement = document.getElementById('user-name');
     if (userNameElement) {
@@ -59,16 +76,22 @@ function updateUserInfo(user, userData) {
     }
 }
 
+// FUNÇÃO DE CARREGAMENTO DE DADOS (RESTAURADA E CORRIGIDA)
 async function carregarDadosIniciais(user) {
     try {
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (!userDocSnap.exists()) { await signOut(auth); return; }
+        
         state.userData = userDocSnap.data();
+
+        // Lógica de boas-vindas no primeiro acesso verificado
         if (state.userData.boasVindasEnviado === false) {
              await enviarEmailBoasVindas(state.userData.email, state.userData.nome);
              await updateDoc(userDocRef, { boasVindasEnviado: true });
         }
+
+        // Carrega todos os dados de atividades do usuário
         const collectionsToLoad = {
             savedPlans: query(collection(db, `users/${user.uid}/plans`), orderBy("criadoEm", "desc"), limit(50)),
             sessoesExercicios: query(collection(db, `users/${user.uid}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50)),
@@ -79,35 +102,44 @@ async function carregarDadosIniciais(user) {
             state[key] = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         });
         await Promise.all(promises);
+
+        // Dispara todas as atualizações de UI
         if (document.getElementById('stat-dias-estudo')) {
             calcularMetricas();
         }
         updateUserInfo(user, state.userData);
         controlarAcessoFuncionalidades(state.userData.plano);
+        
+        // Dispara o evento para que outras páginas saibam que os dados estão prontos
         document.dispatchEvent(new CustomEvent('userDataReady', { detail: state }));
+
     } catch (error) {
-        console.error("Erro ao carregar dados:", error);
+        console.error("Erro ao carregar dados do usuário:", error);
         await signOut(auth);
     }
 }
 
+// FUNÇÃO PRINCIPAL DA APLICAÇÃO (COM LÓGICA DE VERIFICAÇÃO ROBUSTA)
 function initializeApp() {
     onAuthStateChanged(auth, async (user) => {
         const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html', 'discursivas.html', 'material-de-estudo.html'];
         const paginaAtual = window.location.pathname.split('/').pop();
+
         if (user) {
+            // A verificação acontece aqui. Se o usuário chegou logado via link de verificação,
+            // a sessão já foi atualizada pela página `acao.html` e `user.emailVerified` será true.
             if (user.emailVerified) {
                 state.user = user;
                 await carregarDadosIniciais(user);
             } else {
-                if (!paginasProtegidas.includes(paginaAtual)) {
-                    // está ok, pode ficar em páginas públicas como login.html
-                } else {
-                    await signOut(auth);
+                // Se um usuário não verificado tentar acessar uma página protegida, ele é deslogado.
+                await signOut(auth);
+                if (paginasProtegidas.includes(paginaAtual)) {
                     window.location.href = 'login.html';
                 }
             }
         } else {
+            // Se não há usuário logado, redireciona para o login se a página for protegida.
             if (paginasProtegidas.includes(paginaAtual)) {
                 window.location.href = 'login.html';
             }
@@ -115,7 +147,7 @@ function initializeApp() {
     });
 
     document.getElementById('btn-sair')?.addEventListener('click', () => { signOut(auth).then(() => { window.location.href = 'login.html'; }); });
-
+    
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -128,4 +160,5 @@ function initializeApp() {
         sidebarOverlay.addEventListener('click', toggleSidebar);
     }
 }
+
 document.addEventListener('DOMContentLoaded', initializeApp);
