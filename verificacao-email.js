@@ -85,7 +85,13 @@ async function reenviarEmailVerificacao() {
         }
     } catch (error) {
         console.error('Erro ao reenviar e-mail:', error);
-        showMessage('Erro ao reenviar e-mail. Tente novamente.', 'error');
+        
+        // Tratamento específico para rate limiting
+        if (error.code === 'auth/too-many-requests') {
+            showMessage('❌ Muitas tentativas. Aguarde alguns minutos antes de reenviar.', 'error');
+        } else {
+            showMessage('Erro ao reenviar e-mail. Tente novamente.', 'error');
+        }
     } finally {
         btnReenviarEmail.disabled = false;
         btnReenviarEmail.innerHTML = '<i class="fas fa-paper-plane"></i> Reenviar e-mail de confirmação';

@@ -59,10 +59,8 @@ if (formLogin) {
 
             // Verifica se o e-mail foi confirmado
             if (!updatedUser.emailVerified) {
-                // Se não foi verificado, envia novo e-mail e redireciona
-                await sendEmailVerification(updatedUser, {
-                    url: window.location.origin + '/verificar-email.html'
-                });
+                // Se não foi verificado, redireciona para página de verificação
+                // NÃO envia novo e-mail automaticamente para evitar rate limiting
                 window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
                 return;
             }
@@ -91,7 +89,21 @@ if (formLogin) {
 
         } catch (error) {
             console.error('Erro detalhado no login:', error);
-            errorMessage.textContent = 'Falha na autenticação. Verifique seu e-mail e senha.';
+            
+            // Tratamento específico de erros
+            let errorMessageText = 'Falha na autenticação. Verifique seu e-mail e senha.';
+            
+            if (error.code === 'auth/too-many-requests') {
+                errorMessageText = 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.';
+            } else if (error.code === 'auth/user-not-found') {
+                errorMessageText = 'Usuário não encontrado. Verifique seu e-mail.';
+            } else if (error.code === 'auth/wrong-password') {
+                errorMessageText = 'Senha incorreta. Tente novamente.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessageText = 'E-mail inválido.';
+            }
+            
+            errorMessage.textContent = errorMessageText;
             errorMessage.style.display = 'block';
             btnLogin.disabled = false;
             btnLogin.textContent = 'Entrar';
