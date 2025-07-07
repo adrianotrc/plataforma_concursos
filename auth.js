@@ -6,7 +6,8 @@ import {
     createUserWithEmailAndPassword,
     onAuthStateChanged,
     GoogleAuthProvider,
-    signInWithPopup
+    signInWithPopup,
+    sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { enviarEmailBoasVindas } from './api.js';
@@ -14,8 +15,21 @@ import { enviarEmailBoasVindas } from './api.js';
 // --- PÁGINA DE LOGIN ---
 const formLogin = document.getElementById('form-login');
 if (formLogin) {
-    // Passa a "memória" do redirect para o link de cadastro.
+    // Verifica se veio da verificação de e-mail
     const params = new URLSearchParams(window.location.search);
+    const verified = params.get('verified');
+    const successMessage = document.getElementById('success-message');
+    
+    if (verified === 'true' && successMessage) {
+        successMessage.textContent = '✅ E-mail confirmado com sucesso! Agora você pode fazer login.';
+        successMessage.style.display = 'block';
+        
+        // Remove o parâmetro da URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+    }
+    
+    // Passa a "memória" do redirect para o link de cadastro.
     const returnTo = params.get('returnTo');
     if (returnTo) {
         const linkCadastro = document.querySelector('a[href="cadastro.html"]');
@@ -36,7 +50,30 @@ if (formLogin) {
         errorMessage.style.display = 'none';
 
         try {
-            await signInWithEmailAndPassword(auth, email, senha);
+            const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+            const user = userCredential.user;
+
+            // Verifica se o e-mail foi confirmado
+            if (!user.emailVerified) {
+                            // Se não foi verificado, envia novo e-mail e redireciona
+            await sendEmailVerification(user, {
+                url: window.location.origin + '/verificar-email.html'
+            });
+            window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
+                return;
+            }
+
+            // Se foi verificado, atualiza o status no Firestore
+            const userDocRef = doc(db, "users", user.uid);
+            await setDoc(userDocRef, { emailVerificado: true }, { merge: true });
+
+            // Envia e-mail de boas-vindas apenas se for a primeira vez
+            const userDoc = await getDoc(userDocRef);
+            const userData = userDoc.data();
+            if (userData && !userData.boasVindasEnviadas) {
+                enviarEmailBoasVindas(email, userData.nome || user.email);
+                await setDoc(userDocRef, { boasVindasEnviadas: true }, { merge: true });
+            }
 
             // Lógica de redirect inteligente para o LOGIN
             const postLoginParams = new URLSearchParams(window.location.search);
@@ -94,25 +131,18 @@ if (formCadastro) {
                     nome: nome,
                     plano: "trial",
                     criadoEm: serverTimestamp(),
-                    trialFim: Timestamp.fromDate(dataExpiracao)
+                    trialFim: Timestamp.fromDate(dataExpiracao),
+                    emailVerificado: false
                 };
                 await setDoc(userDocRef, novoUserData);
 
-                // *** CORREÇÃO APLICADA AQUI ***
-                // O `await` foi removido da linha abaixo.
-                // Isso faz com que o e-mail seja enviado em segundo plano,
-                // sem travar a navegação do usuário.
-                enviarEmailBoasVindas(email, nome);
-            }
+                // Envia e-mail de verificação
+                await sendEmailVerification(user, {
+                    url: window.location.origin + '/verificar-email.html'
+                });
 
-            // Redirecionamento explícito e garantido
-            const params = new URLSearchParams(window.location.search);
-            const returnTo = params.get('returnTo');
-
-            if (returnTo) {
-                window.location.href = returnTo;
-            } else {
-                window.location.href = 'home.html';
+                // Redireciona para página de verificação
+                window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
             }
 
         } catch (error) {

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificar E-mail - IAprovas</title>
+    <link rel="stylesheet" href="styles.css"> 
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="verificacao-page">
+        <div class="verificacao-container">
+            <div class="verificacao-card">
+                <div class="verificacao-header">
+                    <a href="index.html" class="logo-link">
+                        <div class="logo">
+                            <i class="fas fa-book-open"></i>
+                            <span>IAprovas</span>
+                        </div>
+                    </a>
+                    <div class="verificacao-icon">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    <h1>Verifique seu E-mail</h1>
+                    <p>Enviamos um link de confirmação para <span id="user-email" class="email-highlight"></span></p>
+                </div>
+                
+                <div class="verificacao-content">
+                    <div class="verificacao-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-text">Abra seu e-mail</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-text">Clique no link de confirmação</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-text">Volte aqui e faça login</div>
+                        </div>
+                    </div>
+                    
+                    <div class="verificacao-actions">
+                        <button id="btn-verificar-email" class="btn btn-primary btn-full">
+                            <i class="fas fa-sync-alt"></i>
+                            Verificar se foi confirmado
+                        </button>
+                        
+                        <button id="btn-reenviar-email" class="btn btn-outline btn-full">
+                            <i class="fas fa-paper-plane"></i>
+                            Reenviar e-mail de confirmação
+                        </button>
+                    </div>
+                    
+                    <div id="verificacao-message" class="verificacao-message" style="display: none;"></div>
+                </div>
+                
+                <div class="verificacao-footer">
+                    <p>Não recebeu o e-mail? Verifique sua pasta de spam.</p>
+                    <div class="verificacao-links">
+                        <a href="login.html">Já confirmei, fazer login</a>
+                        <span class="separator">•</span>
+                        <a href="index.html">Voltar para o início</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="verificacao-email.js"></script>
+    
+    <div id="cookie-banner" class="cookie-consent-banner">
+        <p>Nós utilizamos cookies essenciais e de preferência para garantir o melhor funcionamento da nossa plataforma. Ao continuar, você concorda com a nossa <a href="privacidade.html" target="_blank">Política de Privacidade</a>.</p>
+        <button id="accept-cookies-btn" class="btn btn-primary">Aceitar</button>
+    </div>
+    <script>
+        // Lógica do Banner de Cookies
+        document.addEventListener('DOMContentLoaded', () => {
+            const banner = document.getElementById('cookie-banner');
+            const acceptBtn = document.getElementById('accept-cookies-btn');
+    
+            if (!localStorage.getItem('cookieConsent')) {
+                banner.style.display = 'flex';
+            }
+    
+            acceptBtn.addEventListener('click', () => {
+                localStorage.setItem('cookieConsent', 'true');
+                banner.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html> 
