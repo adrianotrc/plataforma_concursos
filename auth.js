@@ -53,25 +53,29 @@ if (formLogin) {
             const userCredential = await signInWithEmailAndPassword(auth, email, senha);
             const user = userCredential.user;
 
+            // Recarrega o usuário para obter o status mais recente do e-mail
+            await user.reload();
+            const updatedUser = auth.currentUser;
+
             // Verifica se o e-mail foi confirmado
-            if (!user.emailVerified) {
-                            // Se não foi verificado, envia novo e-mail e redireciona
-            await sendEmailVerification(user, {
-                url: window.location.origin + '/verificar-email.html'
-            });
-            window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
+            if (!updatedUser.emailVerified) {
+                // Se não foi verificado, envia novo e-mail e redireciona
+                await sendEmailVerification(updatedUser, {
+                    url: window.location.origin + '/verificar-email.html'
+                });
+                window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
                 return;
             }
 
             // Se foi verificado, atualiza o status no Firestore
-            const userDocRef = doc(db, "users", user.uid);
+            const userDocRef = doc(db, "users", updatedUser.uid);
             await setDoc(userDocRef, { emailVerificado: true }, { merge: true });
 
             // Envia e-mail de boas-vindas apenas se for a primeira vez
             const userDoc = await getDoc(userDocRef);
             const userData = userDoc.data();
             if (userData && !userData.boasVindasEnviadas) {
-                enviarEmailBoasVindas(email, userData.nome || user.email);
+                enviarEmailBoasVindas(email, userData.nome || updatedUser.email);
                 await setDoc(userDocRef, { boasVindasEnviadas: true }, { merge: true });
             }
 
@@ -86,6 +90,7 @@ if (formLogin) {
             }
 
         } catch (error) {
+            console.error('Erro detalhado no login:', error);
             errorMessage.textContent = 'Falha na autenticação. Verifique seu e-mail e senha.';
             errorMessage.style.display = 'block';
             btnLogin.disabled = false;

@@ -110,13 +110,17 @@ function initializePage() {
     }
     
     // Verifica se há usuário logado
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
+            // Recarrega o usuário para obter o status mais recente
+            await user.reload();
+            const updatedUser = auth.currentUser;
+            
             // Se o usuário já está verificado, redireciona
-            if (user.emailVerified) {
+            if (updatedUser.emailVerified) {
                 showMessage('✅ E-mail já confirmado! Redirecionando...', 'success');
                 setTimeout(() => {
-                    window.location.href = 'home.html';
+                    window.location.href = 'login.html?verified=true';
                 }, 2000);
             }
         } else {
