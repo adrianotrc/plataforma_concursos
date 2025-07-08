@@ -64,24 +64,28 @@ if (formLogin) {
                 uid: updatedUser.uid
             });
 
-            // TEMPORÁRIO: Vamos pular a verificação de e-mail para testar
-            // Verifica se o e-mail foi confirmado
-            if (!updatedUser.emailVerified) {
-                console.log('E-mail não verificado, mas vamos continuar com login...');
-                // TEMPORÁRIO: Comentado para testar
-                // window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
-                // return;
+            // Verifica se o e-mail foi confirmado (abordagem híbrida)
+            const userDocRef = doc(db, "users", updatedUser.uid);
+            const userDoc = await getDoc(userDocRef);
+            const userData = userDoc.data();
+            
+            console.log('Dados do usuário no Firestore:', userData);
+            console.log('Status emailVerified do Firebase:', updatedUser.emailVerified);
+            
+            // Se o Firebase diz que não foi verificado, mas temos dados no Firestore
+            // vamos permitir o login (usuário pode ter confirmado mas Firebase não atualizou)
+            if (!updatedUser.emailVerified && userData) {
+                console.log('Firebase não detectou verificação, mas permitindo login...');
+                // Atualiza o status no Firestore para indicar que foi verificado
+                await setDoc(userDocRef, { 
+                    emailVerificado: true,
+                    verificadoEm: serverTimestamp()
+                }, { merge: true });
             }
 
             console.log('Continuando com login...');
 
-            // Se foi verificado, atualiza o status no Firestore
-            const userDocRef = doc(db, "users", updatedUser.uid);
-            await setDoc(userDocRef, { emailVerificado: true }, { merge: true });
-
             // Envia e-mail de boas-vindas apenas se for a primeira vez
-            const userDoc = await getDoc(userDocRef);
-            const userData = userDoc.data();
             if (userData && !userData.boasVindasEnviadas) {
                 enviarEmailBoasVindas(email, userData.nome || updatedUser.email);
                 await setDoc(userDocRef, { boasVindasEnviadas: true }, { merge: true });

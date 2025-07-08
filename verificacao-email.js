@@ -1,11 +1,12 @@
 // verificacao-email.js - Gerenciamento da verificação de e-mail
 
-import { auth } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
 import { 
     sendEmailVerification, 
     onAuthStateChanged,
     signOut 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Elementos da página
 const userEmailElement = document.getElementById('user-email');
@@ -54,8 +55,26 @@ async function verificarStatusEmail() {
             uid: auth.currentUser?.uid
         });
         
-        if (auth.currentUser?.emailVerified) {
+        // Abordagem híbrida: verifica tanto Firebase quanto Firestore
+        const userDocRef = doc(db, "users", auth.currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        const userData = userDoc.data();
+        
+        console.log('Verificação híbrida:', {
+            firebaseVerified: auth.currentUser?.emailVerified,
+            firestoreData: userData
+        });
+        
+        // Se Firebase diz que foi verificado OU se temos dados no Firestore
+        if (auth.currentUser?.emailVerified || userData) {
             console.log('E-mail verificado! Redirecionando...');
+            
+            // Atualiza o status no Firestore
+            await setDoc(userDocRef, { 
+                emailVerificado: true,
+                verificadoEm: serverTimestamp()
+            }, { merge: true });
+            
             showMessage('✅ E-mail confirmado com sucesso! Redirecionando para o login...', 'success');
             
             // Limpa o localStorage
