@@ -47,7 +47,15 @@ async function verificarStatusEmail() {
         // Recarrega o usuário para obter o status mais recente
         await auth.currentUser?.reload();
         
+        // Debug: mostra informações do usuário
+        console.log('Verificação de status - Usuário atual:', {
+            email: auth.currentUser?.email,
+            emailVerified: auth.currentUser?.emailVerified,
+            uid: auth.currentUser?.uid
+        });
+        
         if (auth.currentUser?.emailVerified) {
+            console.log('E-mail verificado! Redirecionando...');
             showMessage('✅ E-mail confirmado com sucesso! Redirecionando para o login...', 'success');
             
             // Limpa o localStorage
@@ -58,6 +66,7 @@ async function verificarStatusEmail() {
                 window.location.href = 'login.html?verified=true';
             }, 2000);
         } else {
+            console.log('E-mail ainda não verificado');
             showMessage('❌ E-mail ainda não foi confirmado. Verifique sua caixa de entrada e spam.', 'error');
         }
     } catch (error) {

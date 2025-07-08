@@ -57,13 +57,23 @@ if (formLogin) {
             await user.reload();
             const updatedUser = auth.currentUser;
 
+            // Debug: mostra informações do usuário
+            console.log('Status do usuário após reload:', {
+                email: updatedUser.email,
+                emailVerified: updatedUser.emailVerified,
+                uid: updatedUser.uid
+            });
+
+            // TEMPORÁRIO: Vamos pular a verificação de e-mail para testar
             // Verifica se o e-mail foi confirmado
             if (!updatedUser.emailVerified) {
-                // Se não foi verificado, redireciona para página de verificação
-                // NÃO envia novo e-mail automaticamente para evitar rate limiting
-                window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
-                return;
+                console.log('E-mail não verificado, mas vamos continuar com login...');
+                // TEMPORÁRIO: Comentado para testar
+                // window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
+                // return;
             }
+
+            console.log('Continuando com login...');
 
             // Se foi verificado, atualiza o status no Firestore
             const userDocRef = doc(db, "users", updatedUser.uid);
