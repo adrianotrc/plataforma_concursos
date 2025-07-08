@@ -78,6 +78,12 @@ function renderHistorico(sessoes) {
             statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
         }
 
+        const isProcessing = item.status === 'processing_enunciado' || item.status === 'processing_correcao';
+        const hasFailed = item.status === 'failed';
+        let buttonText = 'Rever';
+        if (isProcessing) buttonText = 'Gerando...';
+        else if (hasFailed) buttonText = 'Falhou';
+        
         return `
             <div class="tip-item">
                 <div class="tip-icon"><i class="fas fa-file-alt"></i></div>
@@ -85,7 +91,7 @@ function renderHistorico(sessoes) {
                     <div class="tip-title">${materia} ${statusIcon}</div>
                     <div class="tip-description">Nota: ${nota} | Em: ${data}</div>
                 </div>
-                <button class="btn btn-outline btn-rever-correcao" data-id="${item.id}" ${statusIcon ? 'disabled' : ''}>Rever</button>
+                <button class="btn btn-outline btn-rever-correcao" data-id="${item.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
             </div>
         `;
     }).join('');

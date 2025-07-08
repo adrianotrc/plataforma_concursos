@@ -1625,6 +1625,10 @@ body.dark-mode .materias-checkbox-grid {
 .materia-checkbox-item label {
     margin-bottom: 0;
     font-weight: normal;
+    font-size: 14px;
+    line-height: 1.4;
+    flex: 1;
+    word-wrap: break-word;
 }
 
 /* Caixa de Informação de Uso */
