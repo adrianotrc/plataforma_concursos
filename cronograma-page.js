@@ -297,6 +297,22 @@ formCronograma?.addEventListener('submit', async (e) => {
         }
     });
     if (Object.keys(disponibilidade).length === 0) { showToast("Selecione pelo menos um dia.", "error"); return; }
+
+    // --- INÍCIO DA CORREÇÃO DE DATAS ---
+    let dataInicio = document.getElementById('data-inicio').value;
+    let dataTermino = document.getElementById('data-termino').value;
+    // Se preenchido, converte para ISO (YYYY-MM-DD), senão envia null
+    function toISODateOrNull(dateStr) {
+        if (!dateStr) return null;
+        const d = new Date(dateStr);
+        // Verifica se a data é válida
+        if (isNaN(d.getTime())) return null;
+        return d.toISOString().slice(0, 10);
+    }
+    dataInicio = toISODateOrNull(dataInicio);
+    dataTermino = toISODateOrNull(dataTermino);
+    // --- FIM DA CORREÇÃO DE DATAS ---
+
     const dadosParaApi = {
         userId: currentUser.uid,
         concurso_objetivo: document.getElementById('concurso-objetivo').value,
@@ -304,8 +320,8 @@ formCronograma?.addEventListener('submit', async (e) => {
         materias: todasMaterias,
         disponibilidade_semanal_minutos: disponibilidade,
         duracao_sessao_minutos: parseInt(document.getElementById('duracao-sessao-estudo').value),
-        data_inicio: document.getElementById('data-inicio').value || null,
-        data_termino: document.getElementById('data-termino').value || null,
+        data_inicio: dataInicio,
+        data_termino: dataTermino,
         dificuldades_materias: document.getElementById('dificuldades-materias').value || 'Nenhuma informada.',
         outras_consideracoes: document.getElementById('outras-consideracoes').value || 'Nenhuma.',
     };
