@@ -55,16 +55,111 @@
 
     <section id="funcionalidades" class="features">
         <div class="container">
-            <div class="section-header"><h2>Funcionalidades Inteligentes</h2><p>Nossa IA trabalha para acelerar seus estudos e maximizar suas chances.</p></div>
-            <div class="features-grid">
-                <div class="feature-card"><div class="feature-icon blue"><i class="fas fa-calendar-alt"></i></div><h3>Cronogramas Personalizados</h3><p>IA cria cronogramas adaptados ao seu perfil e tempo.</p></div>
-                <div class="feature-card"><div class="feature-icon green"><i class="fas fa-brain"></i></div><h3>Exercícios Inteligentes</h3><p>Questões geradas com base nas suas dificuldades.</p></div>
-                <div class="feature-card"><div class="feature-icon purple"><i class="fas fa-file-alt"></i></div><h3>Correção de Redações</h3><p>Correção detalhada de textos com feedback específico.</p></div>
-                <div class="feature-card"><div class="feature-icon orange"><i class="fas fa-bullseye"></i></div><h3>Dicas Estratégicas</h3><p>Conselhos personalizados baseados na sua evolução.</p></div>
-                <div class="feature-card">
-                    <div class="feature-icon teal"><i class="fas fa-book-reader"></i></div>
-                    <h3>Material de Estudo</h3>
-                    <p>Acesse guias, videoaulas e outros materiais de apoio.</p>
+            <div class="section-header">
+                <h2>Funcionalidades Inteligentes</h2>
+                <p>Nossa IA trabalha para acelerar seus estudos e maximizar suas chances.</p>
+            </div>
+            
+            <!-- Carrossel de Funcionalidades -->
+            <div class="features-carousel">
+                <div class="carousel-container">
+                    <div class="carousel-track">
+                        <!-- Slide 1: Dashboard -->
+                        <div class="carousel-slide active">
+                            <div class="slide-content">
+                                <div class="slide-image">
+                                    <img src="outros_documentos/Imagens/Dashboard.png" alt="Dashboard IAprovas">
+                                </div>
+                                <div class="slide-text">
+                                    <h3>Dashboard Inteligente</h3>
+                                    <p>Visualize seu progresso em tempo real com métricas personalizadas. Acompanhe seu desempenho, tempo de estudo e evolução em cada matéria através de gráficos interativos e relatórios detalhados.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 2: Cronograma -->
+                        <div class="carousel-slide">
+                            <div class="slide-content">
+                                <div class="slide-image">
+                                    <img src="outros_documentos/Imagens/Cronograma.png" alt="Cronogramas Personalizados">
+                                </div>
+                                <div class="slide-text">
+                                    <h3>Cronogramas Personalizados</h3>
+                                    <p>Nossa IA cria cronogramas adaptados ao seu perfil, tempo disponível e objetivos. Baseado na metodologia comprovada, o sistema distribui suas matérias de forma inteligente, otimizando seu aprendizado.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 3: Exercícios -->
+                        <div class="carousel-slide">
+                            <div class="slide-content">
+                                <div class="slide-image">
+                                    <img src="outros_documentos/Imagens/Exercicios.png" alt="Exercícios Inteligentes">
+                                </div>
+                                <div class="slide-text">
+                                    <h3>Exercícios Inteligentes</h3>
+                                    <p>Questões geradas com base nas suas dificuldades e pontos fracos. O sistema RAG (Retrieval-Augmented Generation) utiliza um banco de dados vetorial para criar exercícios relevantes e desafiadores.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 4: Discursivas -->
+                        <div class="carousel-slide">
+                            <div class="slide-content">
+                                <div class="slide-image">
+                                    <img src="outros_documentos/Imagens/Discursivas.png" alt="Correção de Discursivas">
+                                </div>
+                                <div class="slide-text">
+                                    <h3>Correção de Discursivas</h3>
+                                    <p>Correção detalhada de textos com feedback específico. A IA analisa sua redação em múltiplos critérios: apresentação, argumentação e gramática, fornecendo sugestões práticas de melhoria.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 5: Dicas -->
+                        <div class="carousel-slide">
+                            <div class="slide-content">
+                                <div class="slide-image">
+                                    <img src="outros_documentos/Imagens/Dicas.png" alt="Dicas Estratégicas">
+                                </div>
+                                <div class="slide-text">
+                                    <h3>Dicas Estratégicas</h3>
+                                    <p>Conselhos personalizados baseados na sua evolução e desempenho. A IA identifica seus pontos fracos e sugere estratégias específicas para superar dificuldades e otimizar seu estudo.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 6: Material de Estudo -->
+                        <div class="carousel-slide">
+                            <div class="slide-content">
+                                <div class="slide-image">
+                                    <img src="outros_documentos/Imagens/Material_estudo.png" alt="Material de Estudo">
+                                </div>
+                                <div class="slide-text">
+                                    <h3>Material de Estudo</h3>
+                                    <p>Acesse guias especializados, videoaulas e outros materiais de apoio. Biblioteca completa com recursos baseados na metodologia do "Guia Definitivo de Aprovação em Concursos".</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controles do Carrossel -->
+                <div class="carousel-controls">
+                    <button class="carousel-btn prev" id="prevBtn">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="carousel-dots" id="carouselDots">
+                        <span class="dot active" data-slide="0"></span>
+                        <span class="dot" data-slide="1"></span>
+                        <span class="dot" data-slide="2"></span>
+                        <span class="dot" data-slide="3"></span>
+                        <span class="dot" data-slide="4"></span>
+                        <span class="dot" data-slide="5"></span>
+                    </div>
+                    <button class="carousel-btn next" id="nextBtn">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -191,6 +286,86 @@
                 // Esconde o banner com uma transição suave
                 banner.style.display = 'none';
             });
+        });
+    </script>
+
+    <!-- JavaScript do Carrossel -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slides = document.querySelectorAll('.carousel-slide');
+            const dots = document.querySelectorAll('.dot');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            let currentSlide = 0;
+            const totalSlides = slides.length;
+            
+            // Função para mostrar slide específico
+            function showSlide(index) {
+                console.log('Mostrando slide:', index); // Debug
+                
+                // Remove classe active de todos os slides e dots
+                slides.forEach(slide => {
+                    slide.classList.remove('active');
+                    slide.style.display = 'none';
+                });
+                dots.forEach(dot => dot.classList.remove('active'));
+                
+                // Adiciona classe active ao slide atual e mostra
+                slides[index].classList.add('active');
+                slides[index].style.display = 'block';
+                dots[index].classList.add('active');
+                
+                currentSlide = index;
+                
+                // Atualiza estado dos botões
+                prevBtn.disabled = index === 0;
+                nextBtn.disabled = index === totalSlides - 1;
+            }
+            
+            // Função para próximo slide
+            function nextSlide() {
+                const nextIndex = (currentSlide + 1) % totalSlides;
+                showSlide(nextIndex);
+            }
+            
+            // Função para slide anterior
+            function prevSlide() {
+                const prevIndex = currentSlide === 0 ? totalSlides - 1 : currentSlide - 1;
+                showSlide(prevIndex);
+            }
+            
+            // Event listeners para os botões
+            if (nextBtn) nextBtn.addEventListener('click', nextSlide);
+            if (prevBtn) prevBtn.addEventListener('click', prevSlide);
+            
+            // Event listeners para os dots
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => showSlide(index));
+            });
+            
+            // Navegação por teclado
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') {
+                    prevSlide();
+                } else if (e.key === 'ArrowRight') {
+                    nextSlide();
+                }
+            });
+            
+            // Inicializa o carrossel - esconde todos os slides exceto o primeiro
+            slides.forEach((slide, index) => {
+                if (index === 0) {
+                    slide.classList.add('active');
+                    slide.style.display = 'block';
+                } else {
+                    slide.classList.remove('active');
+                    slide.style.display = 'none';
+                }
+            });
+            
+            // Inicializa o primeiro slide
+            showSlide(0);
         });
     </script>
 </body>
