@@ -87,13 +87,10 @@ if (formLogin) {
 
             // Envia e-mail de boas-vindas apenas se for a primeira vez
             if (userData && !userData.boasVindasEnviadas) {
-                try {
-                    await enviarEmailBoasVindas(email, userData.nome || updatedUser.email);
-                    await setDoc(userDocRef, { boasVindasEnviadas: true }, { merge: true });
-                } catch (e) {
-                    console.error("Falha ao enviar e-mail de boas-vindas:", e);
-                    // Aqui você pode mostrar um alerta para o usuário, se quiser
-                }
+                // Envia o e-mail de boas-vindas de forma assíncrona, sem travar o login
+                enviarEmailBoasVindas(email, userData.nome || updatedUser.email)
+                    .then(() => setDoc(userDocRef, { boasVindasEnviadas: true }, { merge: true }))
+                    .catch(e => console.error("Falha ao enviar e-mail de boas-vindas:", e));
             }
 
             // Lógica de redirect inteligente para o LOGIN
