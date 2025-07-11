@@ -315,6 +315,7 @@ def enviar_email(para_email, nome_usuario, assunto, conteudo_html, conteudo_text
     }
     
     try:
+        print(f"DEBUG - Parâmetros enviados ao Resend: {params}")
         resend.Emails.send(params)
         print(f"E-mail enviado com sucesso para {para_email}")
         return True
