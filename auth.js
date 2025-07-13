@@ -157,20 +157,20 @@ if (formCadastro) {
                     plano: "trial",
                     criadoEm: serverTimestamp(),
                     trialFim: Timestamp.fromDate(dataExpiracao),
-                    emailVerificado: false, // O status inicial é não verificado
-                    boasVindasEnviadas: true // Marcamos como true AQUI, no momento da criação
+                    emailVerificado: false,
+                    boasVindasEnviadas: true
                 };
                 await setDoc(userDocRef, novoUserData);
-        
-                // 2. Dispara o nosso e-mail de boas-vindas imediatamente
-                enviarEmailBoasVindas(user.email, nome);
-        
-                // 3. Dispara o e-mail de VERIFICAÇÃO do Firebase
+            
+                // 2. AGUARDA o envio do nosso e-mail de boas-vindas
+                await enviarEmailBoasVindas(user.email, nome);
+            
+                // 3. AGUARDA o envio do e-mail de VERIFICAÇÃO do Firebase
                 await sendEmailVerification(user, {
-                    url: window.location.origin + '/verificar-email.html' // Página para onde o usuário volta após clicar no link
+                    url: window.location.origin + '/verificar-email.html'
                 });
-        
-                // 4. Redireciona o usuário para a página de "verifique seu e-mail"
+            
+                // 4. Redireciona o usuário
                 window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
             }
         
