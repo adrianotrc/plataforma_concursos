@@ -338,29 +338,33 @@ def enviar_email(para_email, nome_usuario, assunto, conteudo_html, conteudo_text
 
 @app.route("/enviar-email-boas-vindas", methods=['POST'])
 def enviar_email_boas_vindas():
+    print("--- ROTA /enviar-email-boas-vindas INICIADA ---")
     dados = request.get_json()
     email_destinatario = dados.get("email")
     nome_destinatario = dados.get("nome", "estudante")
+    
+    print(f"Recebido pedido para enviar e-mail para: {email_destinatario}")
 
     if not email_destinatario:
+        print("ERRO: E-mail não fornecido no pedido.")
         return jsonify({"erro": "E-mail do destinatário não fornecido."}), 400
 
-    # CORREÇÃO: Define a variável lendo do ambiente
     frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
-
-    assunto = "Bem-vindo(a) ao IAprovas! Sua jornada para a aprovação começa agora."
+    assunto = "Bem-vindo(a) ao IAprovas! Ação necessária para ativar sua conta."
     
     conteudo_html = f"""
     <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
         <h1 style="color: #1d4ed8;">Olá, {nome_destinatario}!</h1>
-        <p>Seja muito bem-vindo(a) à plataforma <strong>IAprovas</strong>!</p>
-        <p>Estamos muito felizes em ter você conosco. Nossa inteligência artificial está pronta para criar um plano de estudos personalizado e te ajudar a alcançar a tão sonhada aprovação.</p>
-        <p>Seus próximos passos recomendados:</p>
-        <ol>
-            <li>Acesse a área de <a href="{frontend_url}/cronograma.html" style="color: #1d4ed8;">Cronograma</a> para gerar seu primeiro plano de estudos.</li>
-            <li>Explore a seção de <a href="{frontend_url}/exercicios.html" style="color: #1d4ed8;">Exercícios</a> para testar seus conhecimentos.</li>
-            <li>Visite a página de <a href="{frontend_url}/dicas-estrategicas.html" style="color: #1d4ed8;">Dicas Estratégicas</a> para otimizar sua preparação.</li>
-        </ol>
+        <p>Seja muito bem-vindo(a) à plataforma <strong>IAprovas</strong>! Sua conta foi criada com sucesso.</p>
+        <p style="padding: 12px; background-color: #fffbeb; border-left: 4px solid #f59e0b;">
+            <strong>Ação importante:</strong> Para ativar sua conta e conseguir fazer login, você receberá um segundo e-mail com um link de confirmação. Por favor, encontre-o na sua caixa de entrada (verifique também a pasta de spam) e clique no link para validar seu endereço de e-mail.
+        </p>
+        <p>Após confirmar seu e-mail, você terá acesso total ao seu período de teste e poderá:</p>
+        <ul>
+            <li>Gerar seu primeiro plano de estudos na área de <a href="{frontend_url}/cronograma.html" style="color: #1d4ed8;">Cronograma</a>.</li>
+            <li>Praticar com questões na seção de <a href="{frontend_url}/exercicios.html" style="color: #1d4ed8;">Exercícios</a>.</li>
+            <li>Receber conselhos na página de <a href="{frontend_url}/dicas-estrategicas.html" style="color: #1d4ed8;">Dicas Estratégicas</a>.</li>
+        </ul>
         <p>Se tiver qualquer dúvida, basta responder a este e-mail.</p>
         <p>Bons estudos!</p>
         <p><strong>Equipe IAprovas</strong></p>
@@ -369,21 +373,25 @@ def enviar_email_boas_vindas():
 
     conteudo_texto = f"""
     Olá, {nome_destinatario}!
-    Seja muito bem-vindo(a) à plataforma IAprovas!
-    Estamos muito felizes em ter você conosco.
-    Seus próximos passos recomendados:
-    1. Cronograma: {frontend_url}/cronograma.html
-    2. Exercícios: {frontend_url}/exercicios.html
-    3. Dicas Estratégicas: {frontend_url}/dicas-estrategicas.html
+
+    Seja muito bem-vindo(a) à plataforma IAprovas! Sua conta foi criada com sucesso.
+
+    AÇÃO IMPORTANTE: Para ativar sua conta e conseguir fazer login, você receberá um segundo e-mail com um link de confirmação. Por favor, encontre-o e clique no link para validar seu endereço de e-mail.
+
+    Após a confirmação, explore a plataforma!
+
     Bons estudos!
     Equipe IAprovas
     """
     
+    print("Tentando chamar a função interna 'enviar_email'...")
     sucesso = enviar_email(email_destinatario, nome_destinatario, assunto, conteudo_html, conteudo_texto)
 
     if sucesso:
+        print(f"Sucesso no envio para {email_destinatario}. Retornando status 200.")
         return jsonify({"mensagem": "Solicitação de e-mail de boas-vindas processada."}), 200
     else:
+        print(f"FALHA no envio para {email_destinatario}. Retornando status 500.")
         return jsonify({"erro": "Falha interna ao tentar enviar o e-mail."}), 500
     
 @app.route("/enviar-email-alteracao-senha", methods=['POST'])
