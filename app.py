@@ -1026,30 +1026,45 @@ def create_portal_session():
 
 
 @app.route('/delete-user-account', methods=['POST'])
-@cross_origin(supports_credentials=True) # Adicionado para consistência
+@cross_origin(supports_credentials=True)
 def delete_user_account():
     data = request.get_json()
     user_id = data.get('userId')
-    if not user_id: return jsonify(error={'message': 'ID do usuário não fornecido.'}), 400
+    if not user_id:
+        return jsonify(error={'message': 'ID do usuário não fornecido.'}), 400
 
     try:
         # Passo 1: Obter dados do usuário ANTES de deletar
         user_ref = db.collection('users').document(user_id)
         user_doc = user_ref.get()
+
         if not user_doc.exists:
-            # Se não existe no Firestore, apenas tenta deletar do Auth
-            firebase_auth.delete_user(user_id)
-            return jsonify(success=True, message="Conta de autenticação excluída.")
+            # Se o usuário não está no Firestore, pode ser um erro ou um estado inconsistente.
+            # Mesmo assim, tentaremos deletá-lo da autenticação para garantir a limpeza.
+            try:
+                firebase_auth.delete_user(user_id)
+                print(f"Usuário {user_id} não encontrado no Firestore, mas removido da Autenticação.")
+                return jsonify(success=True, message="Conta de autenticação órfã foi excluída.")
+            except firebase_auth.UserNotFoundError:
+                # Se ele também não está no Auth, então não há nada a fazer.
+                return jsonify(error={'message': 'Usuário não encontrado em nenhum sistema.'}), 404
 
         user_data = user_doc.to_dict()
         user_email = user_data.get('email')
         user_nome = user_data.get('nome', 'Ex-usuário')
 
-        # Passo 2: Deletar do Firestore e Auth
-        user_ref.delete()
+        # --- NOVA LÓGICA DE EXCLUSÃO ---
+        # Passo 2: Deletar do Firebase Authentication PRIMEIRO. Esta é a etapa mais crítica.
+        print(f"Tentando excluir o usuário {user_id} do Firebase Auth...")
         firebase_auth.delete_user(user_id)
+        print(f"Usuário {user_id} excluído do Firebase Auth com sucesso.")
 
-        # Passo 3: Enviar e-mail de confirmação de exclusão
+        # Passo 3: Se a exclusão do Auth funcionou, deletar do Firestore.
+        print(f"Excluindo documento do usuário {user_id} do Firestore...")
+        user_ref.delete()
+        print("Documento do Firestore excluído com sucesso.")
+
+        # Passo 4: Se TUDO deu certo, enviar o e-mail de confirmação.
         if user_email:
             assunto = "Sua conta na IAprovas foi excluída"
             conteudo_html = f"<p>Olá, {user_nome},</p><p>Confirmamos que sua conta e todos os seus dados na plataforma IAprovas foram permanentemente excluídos, conforme sua solicitação.</p><p>Agradecemos pelo tempo que esteve conosco.</p>"
@@ -1059,10 +1074,19 @@ def delete_user_account():
         return jsonify(success=True, message="Conta e dados excluídos com sucesso.")
 
     except firebase_auth.UserNotFoundError:
-        return jsonify(error={'message': 'Usuário não encontrado na autenticação.'}), 404
+        # Este erro pode acontecer se, por algum motivo, o usuário já foi deletado do Auth
+        # mas ainda existe no Firestore. O código tentará limpar o Firestore.
+        print(f"AVISO: Usuário {user_id} não foi encontrado na Autenticação, mas o documento do Firestore existe. Limpando o documento.")
+        db.collection('users').document(user_id).delete()
+        return jsonify(error={'message': 'Usuário não encontrado na autenticação, mas os dados foram limpos.'}), 404
+    
     except Exception as e:
+        # Se qualquer outra exceção ocorrer (ex: permissão negada para excluir do Auth),
+        # ela será capturada aqui, e o e-mail de sucesso NÃO será enviado.
+        print(f"ERRO CRÍTICO ao excluir a conta {user_id}:")
         traceback.print_exc()
         return jsonify(error={'message': 'Ocorreu um erro interno ao excluir a conta.'}), 500
+
 
 @app.route("/get-usage-limits/<user_id>", methods=['GET'])
 @cross_origin(supports_credentials=True)
