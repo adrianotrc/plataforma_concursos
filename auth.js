@@ -85,14 +85,6 @@ if (formLogin) {
 
             console.log('Continuando com login...');
 
-            // Envia e-mail de boas-vindas apenas se for a primeira vez
-            if (userData && !userData.boasVindasEnviadas) {
-                // Envia o e-mail de boas-vindas de forma assíncrona, sem travar o login
-                enviarEmailBoasVindas(email, userData.nome || updatedUser.email)
-                    .then(() => setDoc(userDocRef, { boasVindasEnviadas: true }, { merge: true }))
-                    .catch(e => console.error("Falha ao enviar e-mail de boas-vindas:", e));
-            }
-
             // Lógica de redirect inteligente para o LOGIN
             const postLoginParams = new URLSearchParams(window.location.search);
             const postLoginReturnTo = postLoginParams.get('returnTo');
@@ -153,9 +145,9 @@ if (formCadastro) {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
             const user = userCredential.user;
-
+        
             if (user) {
-                // Cria o perfil do usuário no Firestore
+                // 1. Cria o perfil do usuário no Firestore
                 const userDocRef = doc(db, "users", user.uid);
                 const dataExpiracao = new Date();
                 dataExpiracao.setDate(dataExpiracao.getDate() + 7);
@@ -165,19 +157,23 @@ if (formCadastro) {
                     plano: "trial",
                     criadoEm: serverTimestamp(),
                     trialFim: Timestamp.fromDate(dataExpiracao),
-                    emailVerificado: false
+                    emailVerificado: false, // O status inicial é não verificado
+                    boasVindasEnviadas: true // Marcamos como true AQUI, no momento da criação
                 };
                 await setDoc(userDocRef, novoUserData);
-
-                // Envia e-mail de verificação
+        
+                // 2. Dispara o nosso e-mail de boas-vindas imediatamente
+                enviarEmailBoasVindas(user.email, nome);
+        
+                // 3. Dispara o e-mail de VERIFICAÇÃO do Firebase
                 await sendEmailVerification(user, {
-                    url: window.location.origin + '/verificar-email.html'
+                    url: window.location.origin + '/verificar-email.html' // Página para onde o usuário volta após clicar no link
                 });
-
-                // Redireciona para página de verificação
+        
+                // 4. Redireciona o usuário para a página de "verifique seu e-mail"
                 window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
             }
-
+        
         } catch (error) {
             errorMessageDiv.textContent = 'Ocorreu um erro. Este e-mail pode já estar em uso.';
             errorMessageDiv.style.display = 'block';

@@ -302,7 +302,7 @@ def gerar_plano_iniciar_job():
 # --- FUNÇÃO DE ENVIO DE E-MAIL ---
 def enviar_email(para_email, nome_usuario, assunto, conteudo_html, conteudo_texto):
     if not resend.api_key:
-        print("ERRO: Chave RESEND_API_KEY não configurada no ambiente.")
+        print("LOG DE ERRO: A chave da API do Resend (RESEND_API_KEY) não foi encontrada no ambiente.")
         return False
     
     email_remetente = "Equipe IAprovas <contato@iaprovas.com.br>" 
@@ -314,13 +314,23 @@ def enviar_email(para_email, nome_usuario, assunto, conteudo_html, conteudo_text
         "text": conteudo_texto,
     }
     
+    print(f"LOG INFO: Preparando para enviar e-mail para '{para_email}' com o assunto '{assunto}'.")
+
     try:
-        print(f"DEBUG - Parâmetros enviados ao Resend: {params}")
-        resend.Emails.send(params)
-        print(f"E-mail enviado com sucesso para {para_email}")
-        return True
+        response = resend.Emails.send(params)
+        # Verifica se a resposta da API contém um ID, indicando sucesso
+        if response.get("id"):
+            print(f"LOG SUCESSO: Resend aceitou o e-mail para '{para_email}'. ID da tarefa: {response.get('id')}")
+            return True
+        else:
+            # Caso a API responda 200 OK mas sem um ID (cenário inesperado)
+            print(f"LOG ERRO: Resposta do Resend para '{para_email}' não continha um ID de sucesso. Resposta: {response}")
+            return False
+            
     except Exception as e:
-        print(f"ERRO CRÍTICO ao enviar e-mail pelo Resend: {e}")
+        # Imprime a mensagem de erro exata que a biblioteca do Resend está nos dando
+        print(f"LOG ERRO CRÍTICO: A chamada para a API do Resend falhou para o e-mail '{para_email}'.")
+        print(f"MENSAGEM DE ERRO EXATA: {e}")
         traceback.print_exc()
         return False
     
