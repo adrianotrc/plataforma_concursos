@@ -479,6 +479,8 @@ def find_similar_questions(materia, topico, tipo_questao, limit=3):
     Busca no Firestore por questões semanticamente similares usando embeddings vetoriais.
     """
     try:
+        print(f"DEBUG: Buscando questões para matéria={materia}, tópico={topico}, tipo_questao={tipo_questao}")
+
         # Cria um texto de busca combinando os inputs do usuário
         search_text = f"{materia}: {topico}"
         query_embedding = get_embedding(search_text)
@@ -491,24 +493,26 @@ def find_similar_questions(materia, topico, tipo_questao, limit=3):
 
         # Busca candidatas no Firestore (filtrando por matéria para otimizar)
         docs = db.collection('banco_questoes').where('materia', '==', materia).stream()
+        docs_list = list(docs)
+        print(f"DEBUG: Total de questões encontradas no Firestore para a matéria '{materia}': {len(docs_list)}")
 
         similar_questions = []
-        for doc in docs:
+        for doc in docs_list:
             question_data = doc.to_dict()
             if 'embedding' in question_data and question_data.get('embedding'):
                 question_vector = np.array(question_data['embedding'])
-                
                 # Calcula a similaridade de cosseno (um valor entre -1 e 1, onde 1 é mais similar)
                 similarity = np.dot(question_vector, query_vector) / (np.linalg.norm(question_vector) * np.linalg.norm(query_vector))
-                
                 similar_questions.append((similarity, question_data))
+            else:
+                print(f"DEBUG: Questão sem embedding ou embedding vazio. ID: {doc.id}")
 
         # Ordena as questões pela similaridade, da maior para a menor
         similar_questions.sort(key=lambda x: x[0], reverse=True)
-        
+
         # Pega as 'limit' questões mais similares
         top_questions = [question for similarity, question in similar_questions[:limit]]
-        
+
         print(f"Busca vetorial encontrou {len(top_questions)} exemplos relevantes.")
         return top_questions
 
