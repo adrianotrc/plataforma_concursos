@@ -115,6 +115,35 @@ def enrich_and_save_question(raw_question):
         # Isso é uma simplificação. Uma abordagem mais robusta usaria um hash do conteúdo.
         question_id = str(hash(enunciado))
         doc_ref = db.collection('banco_questoes').document(question_id)
+
+        # Verifica se a questão já existe no Firestore
+        if doc_ref.get().exists:
+            print(f"Questão já existe no Firestore, pulando: {doc_ref.id}")
+            return
+
+        # Só calcula o embedding e salva se for nova
+        embedding_vector = get_embedding(enunciado)
+        if not embedding_vector:
+            print(f"Falha ao gerar o vetor para a questão. A questão não será salva.")
+            return
+        print("Vetor (embedding) gerado com sucesso.")
+
+        final_question = {
+            "enunciado": enunciado,
+            "opcoes": raw_question.get("alternativas", []),
+            "resposta_correta": raw_question.get("resposta_correta"),
+            "banca": raw_question.get("banca"),
+            "concurso_origem": raw_question.get("concurso"),
+            "ano": raw_question.get("ano"),
+            "tipo_questao": enriched_data.get("tipo_questao"),
+            "materia": enriched_data.get("materia"),
+            "topico": enriched_data.get("topico"),
+            "explicacao": enriched_data.get("explicacao"),
+            "embedding": embedding_vector, # <<< NOVO CAMPO SALVO
+            "avaliacoes": {"positivas": 0, "negativas": 0},
+            "status_revisao": "aprovado"
+        }
+
         doc_ref.set(final_question)
         print(f"SUCESSO: Questão enriquecida e salva no Firestore com ID: {doc_ref.id}")
     except Exception as e:
