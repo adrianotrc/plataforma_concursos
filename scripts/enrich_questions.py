@@ -7,6 +7,11 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 import numpy as np # Importa a biblioteca NumPy
+import re
+
+def clean_enunciado(enunciado):
+    # Remove prefixos como [DIREITO CONSTITUCIONAL] do início do enunciado
+    return re.sub(r"^\[.*?\]\s*", "", enunciado or "")
 
 # Carrega as variáveis de ambiente (chaves da API)
 load_dotenv()
@@ -85,7 +90,7 @@ def enrich_and_save_question(raw_question):
         return
 
     # 3. Gera o vetor de embedding para o enunciado
-    enunciado = raw_question.get("texto_enunciado")
+    enunciado = clean_enunciado(raw_question.get("texto_enunciado"))
     embedding_vector = get_embedding(enunciado)
     if not embedding_vector:
         print(f"Falha ao gerar o vetor para a questão. A questão não será salva.")

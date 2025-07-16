@@ -577,8 +577,11 @@ def processar_exercicios_em_background(user_id, job_id, dados_req):
         #### ESTRUTURA DETALHADA PARA CADA OBJETO NA LISTA "exercicios":
         {regras_de_formato_json}
 
+        ### RESTRIÇÃO CRÍTICA
+        NÃO repita nenhuma das questões dos exemplos de referência. Crie questões inéditas, mesmo que sejam sobre o mesmo tema. NÃO copie enunciados, alternativas ou explicações dos exemplos.
+
         ### VERIFICAÇÃO FINAL (OBRIGATÓRIO)
-        Antes de gerar a resposta, revise seu próprio trabalho para garantir que 100% das questões de múltipla escolha geradas possuem exatamente 5 alternativas.
+        Antes de gerar a resposta, revise seu próprio trabalho para garantir que 100% das questões de múltipla escolha geradas possuem exatamente 5 alternativas e que nenhuma questão é igual ou muito parecida com as dos exemplos de referência.
         """
         
         system_message = "Você é um assistente que gera conteúdo JSON e segue regras de formatação com precisão absoluta."
