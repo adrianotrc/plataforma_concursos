@@ -3,7 +3,6 @@
 import { auth, db } from './firebase-config.js';
 import { collection, onSnapshot, query, orderBy, limit, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { gerarEnunciadoDiscursivaAsync, corrigirDiscursivaAsync, getUsageLimits } from './api.js';
-import { processingUI } from './processing-ui.js';
 import { state } from './main-app.js';
 
 // --- ELEMENTOS DO DOM ---
@@ -174,7 +173,11 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
     };
 
     // Usa o novo sistema de processamento
-    processingUI.startProcessingWithConfirmation({
+    if (!window.processingUI) {
+        showToast("Erro: Sistema de processamento não disponível.", "error");
+        return;
+    }
+    window.processingUI.startProcessingWithConfirmation({
         confirmationTitle: 'Gerar Enunciado Discursivo',
         confirmationMessage: 'Nossa IA vai criar um enunciado discursivo personalizado baseado nos seus critérios. Este processo pode demorar 30-60 segundos. Deseja continuar?',
         confirmationIcon: 'fas fa-file-alt',

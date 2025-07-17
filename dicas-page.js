@@ -1,8 +1,7 @@
 // SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO dicas-page.js
 
 import { auth, db } from './firebase-config.js';
-import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada } from './api.js';
-import { processingUI } from './processing-ui.js'; 
+import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada } from './api.js'; 
 import { state } from './main-app.js';
 import { collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -129,7 +128,11 @@ geradorDicasForm?.addEventListener('submit', async (e) => {
     }
 
     // Usa o novo sistema de processamento
-    processingUI.startProcessingWithConfirmation({
+    if (!window.processingUI) {
+        showToast("Erro: Sistema de processamento não disponível.", "error");
+        return;
+    }
+    window.processingUI.startProcessingWithConfirmation({
         confirmationTitle: 'Gerar Dicas Estratégicas',
         confirmationMessage: 'Nossa IA vai criar dicas personalizadas baseadas na categoria selecionada. Este processo pode demorar 15-30 segundos. Deseja continuar?',
         confirmationIcon: 'fas fa-lightbulb',

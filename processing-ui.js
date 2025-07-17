@@ -293,8 +293,5 @@ class ProcessingUI {
     }
 }
 
-// Instância global
-const processingUI = new ProcessingUI();
-
-// Exporta para uso em outros arquivos
-export { processingUI, ProcessingUI }; 
+// Instância global - disponível para todos os scripts
+window.processingUI = new ProcessingUI(); 

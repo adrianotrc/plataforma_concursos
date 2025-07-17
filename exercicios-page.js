@@ -3,7 +3,6 @@
 import { auth, db } from './firebase-config.js';
 import { collection, serverTimestamp, query, orderBy, onSnapshot, doc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { gerarExerciciosAsync, getUsageLimits, avaliarQuestao } from './api.js';
-import { processingUI } from './processing-ui.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-exercicios');
@@ -238,7 +237,11 @@ formExercicios?.addEventListener('submit', async (e) => {
     };
 
     // Usa o novo sistema de processamento
-    processingUI.startProcessingWithConfirmation({
+    if (!window.processingUI) {
+        showToast("Erro: Sistema de processamento não disponível.", "error");
+        return;
+    }
+    window.processingUI.startProcessingWithConfirmation({
         confirmationTitle: 'Gerar Exercícios Personalizados',
         confirmationMessage: 'Nossa IA vai criar exercícios personalizados baseados nos seus critérios. Este processo pode demorar 30-60 segundos. Deseja continuar?',
         confirmationIcon: 'fas fa-question-circle',

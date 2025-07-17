@@ -1770,3 +1770,257 @@ body.dark-mode .video-playlist-item.active {
 .logo-link {
     text-decoration: none;
 }
+
+/* ============================================= */
+/* === MODAIS DE CONFIRMAÇÃO E PROCESSAMENTO === */
+/* ============================================= */
+
+/* Modal de Confirmação */
+.confirmation-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.confirmation-modal.show {
+    display: flex;
+}
+
+.confirmation-content {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.confirmation-icon {
+    font-size: 48px;
+    color: #3b82f6;
+    margin-bottom: 16px;
+}
+
+.confirmation-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 12px;
+}
+
+.confirmation-message {
+    font-size: 16px;
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.confirmation-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.confirmation-actions .btn {
+    min-width: 120px;
+}
+
+/* Indicador de Processamento */
+.processing-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    backdrop-filter: blur(4px);
+}
+
+.processing-indicator.show {
+    display: flex;
+}
+
+.processing-content {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: processingPulse 2s infinite;
+}
+
+@keyframes processingPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.3);
+    }
+}
+
+.processing-spinner {
+    font-size: 48px;
+    color: #3b82f6;
+    margin-bottom: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.processing-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 12px;
+}
+
+.processing-message {
+    font-size: 16px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.processing-progress {
+    width: 100%;
+    height: 6px;
+    background-color: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.processing-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    border-radius: 3px;
+    animation: progressAnimation 2s ease-in-out infinite;
+    width: 0%;
+}
+
+@keyframes progressAnimation {
+    0% { width: 0%; }
+    50% { width: 70%; }
+    100% { width: 100%; }
+}
+
+.processing-time {
+    font-size: 14px;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Destaque da Área de Resultado */
+.result-area-highlight {
+    position: relative;
+    border: 2px solid #3b82f6 !important;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+    animation: highlightPulse 2s ease-in-out infinite;
+}
+
+@keyframes highlightPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.2);
+    }
+}
+
+.result-area-highlight::before {
+    content: "⏳ Processando...";
+    position: absolute;
+    top: -12px;
+    left: 20px;
+    background: #3b82f6;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 10;
+}
+
+/* Dark Mode para Modais */
+body.dark-mode .confirmation-content,
+body.dark-mode .processing-content {
+    background: #1f2937;
+    color: #f9fafb;
+}
+
+body.dark-mode .confirmation-title,
+body.dark-mode .processing-title {
+    color: #f9fafb;
+}
+
+body.dark-mode .confirmation-message,
+body.dark-mode .processing-message {
+    color: #d1d5db;
+}
+
+body.dark-mode .processing-time {
+    color: #9ca3af;
+}
+
+body.dark-mode .result-area-highlight {
+    border-color: #3b82f6 !important;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Responsividade para Modais */
+@media (max-width: 768px) {
+    .confirmation-content,
+    .processing-content {
+        padding: 24px;
+        margin: 20px;
+    }
+
+    .confirmation-actions {
+        flex-direction: column;
+    }
+
+    .confirmation-actions .btn {
+        min-width: auto;
+        width: 100%;
+    }
+
+    .feedback-toast {
+        left: 20px;
+        right: 20px;
+        width: auto;
+    }
+}
