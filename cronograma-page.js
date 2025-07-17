@@ -327,45 +327,41 @@ formCronograma?.addEventListener('submit', async (e) => {
         outras_consideracoes: document.getElementById('outras-consideracoes').value || 'Nenhuma.',
     };
     // Usa o novo sistema de processamento
-    try {
-        await processingUI.startProcessingWithConfirmation({
-            confirmationTitle: 'Gerar Cronograma Personalizado',
-            confirmationMessage: 'Nossa IA vai criar um cronograma personalizado baseado nos seus dados. Este processo pode demorar 30-60 segundos. Deseja continuar?',
-            confirmationIcon: 'fas fa-calendar-alt',
-            processingTitle: 'Criando seu Cronograma...',
-            processingMessage: 'Nossa IA está analisando seus dados e criando um plano de estudos otimizado para você.',
-            estimatedTime: '30-60 segundos',
-            resultAreaSelector: '#historico-cronogramas',
-            onConfirm: async () => {
+    processingUI.startProcessingWithConfirmation({
+        confirmationTitle: 'Gerar Cronograma Personalizado',
+        confirmationMessage: 'Nossa IA vai criar um cronograma personalizado baseado nos seus dados. Este processo pode demorar 30-60 segundos. Deseja continuar?',
+        confirmationIcon: 'fas fa-calendar-alt',
+        processingTitle: 'Criando seu Cronograma...',
+        processingMessage: 'Nossa IA está analisando seus dados e criando um plano de estudos otimizado para você.',
+        estimatedTime: '30-60 segundos',
+        resultAreaSelector: '#historico-cronogramas',
+        onConfirm: async () => {
+            try {
                 // Esconde o formulário
                 containerForm.style.display = 'none';
                 
                 // Envia a solicitação
                 return await gerarPlanoDeEstudos(dadosParaApi);
-            },
-            onCancel: () => {
-                // Usuário cancelou, não faz nada
-            },
-            onComplete: (result) => {
-                // Limpa o formulário
-                formCronograma.reset();
-                document.querySelectorAll('#materias-container .materia-tag').forEach(tag => tag.remove());
-                renderUsageInfo();
-                
-                // Mostra mensagem de sucesso
-                showToast("✅ Cronograma solicitado com sucesso! Você será notificado quando estiver pronto.", 'success');
+            } catch (error) {
+                // Mostra erro e reabilita o formulário
+                showToast(error.message, 'error');
+                containerForm.style.display = 'block';
+                throw error; // Re-lança o erro para ser tratado pelo sistema
             }
-        });
-    } catch (error) {
-        if (error.message === 'Operação cancelada pelo usuário') {
-            // Usuário cancelou, não mostra erro
-            return;
+        },
+        onCancel: () => {
+            // Usuário cancelou, não faz nada
+        },
+        onComplete: (result) => {
+            // Limpa o formulário
+            formCronograma.reset();
+            document.querySelectorAll('#materias-container .materia-tag').forEach(tag => tag.remove());
+            renderUsageInfo();
+            
+            // Mostra mensagem de sucesso
+            showToast("✅ Cronograma solicitado com sucesso! Você será notificado quando estiver pronto.", 'success');
         }
-        
-        // Mostra erro e reabilita o formulário
-        showToast(error.message, 'error');
-        containerForm.style.display = 'block';
-    }
+    });
 });
 
 document.body.addEventListener('click', async (e) => {

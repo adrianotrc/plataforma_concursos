@@ -230,7 +230,7 @@ class ProcessingUI {
      * Função conveniente para iniciar processamento com confirmação
      * @param {Object} options - Opções completas
      */
-    async startProcessingWithConfirmation(options) {
+    startProcessingWithConfirmation(options) {
         const {
             confirmationTitle = 'Confirmar Geração',
             confirmationMessage = 'Esta ação pode demorar alguns segundos. Deseja continuar?',
@@ -244,56 +244,51 @@ class ProcessingUI {
             onComplete = () => {}
         } = options;
 
-        return new Promise((resolve, reject) => {
-            this.showConfirmationModal({
-                title: confirmationTitle,
-                message: confirmationMessage,
-                icon: confirmationIcon,
-                onConfirm: async () => {
-                    try {
-                        // Mostra indicador de processamento
-                        this.showProcessingIndicator({
-                            title: processingTitle,
-                            message: processingMessage,
-                            estimatedTime: estimatedTime
-                        });
+        this.showConfirmationModal({
+            title: confirmationTitle,
+            message: confirmationMessage,
+            icon: confirmationIcon,
+            onConfirm: async () => {
+                try {
+                    // Mostra indicador de processamento
+                    this.showProcessingIndicator({
+                        title: processingTitle,
+                        message: processingMessage,
+                        estimatedTime: estimatedTime
+                    });
 
-                        // Destaca área de resultado se especificada
-                        if (resultAreaSelector) {
-                            this.highlightResultArea(resultAreaSelector);
-                        }
-
-                        // Executa a função de processamento
-                        const result = await onConfirm();
-
-                        // Esconde indicador e remove destaque
-                        this.hideProcessingIndicator();
-                        if (resultAreaSelector) {
-                            this.removeResultAreaHighlight(resultAreaSelector);
-                        }
-
-                        // Executa callback de conclusão
-                        if (onComplete) {
-                            onComplete(result);
-                        }
-
-                        resolve(result);
-                    } catch (error) {
-                        // Esconde indicador em caso de erro
-                        this.hideProcessingIndicator();
-                        if (resultAreaSelector) {
-                            this.removeResultAreaHighlight(resultAreaSelector);
-                        }
-                        reject(error);
+                    // Destaca área de resultado se especificada
+                    if (resultAreaSelector) {
+                        this.highlightResultArea(resultAreaSelector);
                     }
-                },
-                onCancel: () => {
-                    if (onCancel) {
-                        onCancel();
+
+                    // Executa a função de processamento
+                    const result = await onConfirm();
+
+                    // Esconde indicador e remove destaque
+                    this.hideProcessingIndicator();
+                    if (resultAreaSelector) {
+                        this.removeResultAreaHighlight(resultAreaSelector);
                     }
-                    reject(new Error('Operação cancelada pelo usuário'));
+
+                    // Executa callback de conclusão
+                    if (onComplete) {
+                        onComplete(result);
+                    }
+                } catch (error) {
+                    // Esconde indicador em caso de erro
+                    this.hideProcessingIndicator();
+                    if (resultAreaSelector) {
+                        this.removeResultAreaHighlight(resultAreaSelector);
+                    }
+                    throw error; // Re-lança o erro para ser tratado pela função chamadora
                 }
-            });
+            },
+            onCancel: () => {
+                if (onCancel) {
+                    onCancel();
+                }
+            }
         });
     }
 }

@@ -23,6 +23,18 @@ let ultimoJobIdSolicitado = null;
 
 // --- FUNÇÕES DE UI ---
 
+function showToast(message, type = 'success', duration = 5000) {
+    const toast = document.createElement('div');
+    toast.className = `feedback-toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => document.body.removeChild(toast), 500);
+    }, duration);
+}
+
 function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsuario = {}) {
     exerciciosContainer.innerHTML = '';
     if (!exercicios || exercicios.length === 0) {
@@ -226,16 +238,16 @@ formExercicios?.addEventListener('submit', async (e) => {
     };
 
     // Usa o novo sistema de processamento
-    try {
-        await processingUI.startProcessingWithConfirmation({
-            confirmationTitle: 'Gerar Exercícios Personalizados',
-            confirmationMessage: 'Nossa IA vai criar exercícios personalizados baseados nos seus critérios. Este processo pode demorar 30-60 segundos. Deseja continuar?',
-            confirmationIcon: 'fas fa-question-circle',
-            processingTitle: 'Criando seus Exercícios...',
-            processingMessage: 'Nossa IA está analisando o banco de dados e criando questões relevantes para você.',
-            estimatedTime: '30-60 segundos',
-            resultAreaSelector: '#historico-exercicios',
-            onConfirm: async () => {
+    processingUI.startProcessingWithConfirmation({
+        confirmationTitle: 'Gerar Exercícios Personalizados',
+        confirmationMessage: 'Nossa IA vai criar exercícios personalizados baseados nos seus critérios. Este processo pode demorar 30-60 segundos. Deseja continuar?',
+        confirmationIcon: 'fas fa-question-circle',
+        processingTitle: 'Criando seus Exercícios...',
+        processingMessage: 'Nossa IA está analisando o banco de dados e criando questões relevantes para você.',
+        estimatedTime: '30-60 segundos',
+        resultAreaSelector: '#historico-exercicios',
+        onConfirm: async () => {
+            try {
                 // Limpa o container e esconde o formulário
                 exerciciosContainer.innerHTML = '';
                 exerciciosContainer.style.display = 'none';
@@ -243,29 +255,25 @@ formExercicios?.addEventListener('submit', async (e) => {
                 
                 // Envia a solicitação
                 return await gerarExerciciosAsync(dados);
-            },
-            onCancel: () => {
-                // Usuário cancelou, não faz nada
-            },
-            onComplete: (result) => {
-                // Limpa o formulário e atualiza contadores
-                formExercicios.reset();
-                renderUsageInfo();
-                
-                // Mostra mensagem de sucesso
-                showToast("✅ Exercícios solicitados com sucesso! Você será notificado quando estiverem prontos.", 'success');
+            } catch (error) {
+                // Mostra erro e reabilita o formulário
+                showToast(error.message, 'error');
+                formExercicios.style.display = 'block';
+                throw error; // Re-lança o erro para ser tratado pelo sistema
             }
-        });
-    } catch (error) {
-        if (error.message === 'Operação cancelada pelo usuário') {
-            // Usuário cancelou, não mostra erro
-            return;
+        },
+        onCancel: () => {
+            // Usuário cancelou, não faz nada
+        },
+        onComplete: (result) => {
+            // Limpa o formulário e atualiza contadores
+            formExercicios.reset();
+            renderUsageInfo();
+            
+            // Mostra mensagem de sucesso
+            showToast("✅ Exercícios solicitados com sucesso! Você será notificado quando estiverem prontos.", 'success');
         }
-        
-        // Mostra erro e reabilita o formulário
-        showToast(error.message, 'error');
-        formExercicios.style.display = 'block';
-    }
+    });
 });
 
 document.body.addEventListener('click', async (e) => {

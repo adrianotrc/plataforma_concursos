@@ -28,6 +28,18 @@ let unsubHistorico = null;
 
 // --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
 
+function showToast(message, type = 'success', duration = 5000) {
+    const toast = document.createElement('div');
+    toast.className = `feedback-toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => document.body.removeChild(toast), 500);
+    }, duration);
+}
+
 function renderEnunciado(enunciado) {
     enunciadoContainer.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -162,45 +174,41 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
     };
 
     // Usa o novo sistema de processamento
-    try {
-        await processingUI.startProcessingWithConfirmation({
-            confirmationTitle: 'Gerar Enunciado Discursivo',
-            confirmationMessage: 'Nossa IA vai criar um enunciado discursivo personalizado baseado nos seus critérios. Este processo pode demorar 30-60 segundos. Deseja continuar?',
-            confirmationIcon: 'fas fa-file-alt',
-            processingTitle: 'Criando seu Enunciado...',
-            processingMessage: 'Nossa IA está analisando os critérios e criando um enunciado relevante para você.',
-            estimatedTime: '30-60 segundos',
-            resultAreaSelector: '#historico-discursivas',
-            onConfirm: async () => {
+    processingUI.startProcessingWithConfirmation({
+        confirmationTitle: 'Gerar Enunciado Discursivo',
+        confirmationMessage: 'Nossa IA vai criar um enunciado discursivo personalizado baseado nos seus critérios. Este processo pode demorar 30-60 segundos. Deseja continuar?',
+        confirmationIcon: 'fas fa-file-alt',
+        processingTitle: 'Criando seu Enunciado...',
+        processingMessage: 'Nossa IA está analisando os critérios e criando um enunciado relevante para você.',
+        estimatedTime: '30-60 segundos',
+        resultAreaSelector: '#historico-discursivas',
+        onConfirm: async () => {
+            try {
                 // Esconde o formulário
                 containerGerador.style.display = 'none';
                 btnAbrirForm.style.display = 'block';
                 
                 // Envia a solicitação
                 return await gerarEnunciadoDiscursivaAsync(criterios);
-            },
-            onCancel: () => {
-                // Usuário cancelou, não faz nada
-            },
-            onComplete: (result) => {
-                // Atualiza contadores
-                renderUsageInfo();
-                
-                // Mostra mensagem de sucesso
-                showToast("✅ Enunciado solicitado com sucesso! Você será notificado quando estiver pronto.", 'success');
+            } catch (error) {
+                // Mostra erro e reabilita o formulário
+                showToast(error.message, 'error');
+                containerGerador.style.display = 'block';
+                btnAbrirForm.style.display = 'none';
+                throw error; // Re-lança o erro para ser tratado pelo sistema
             }
-        });
-    } catch (error) {
-        if (error.message === 'Operação cancelada pelo usuário') {
-            // Usuário cancelou, não mostra erro
-            return;
+        },
+        onCancel: () => {
+            // Usuário cancelou, não faz nada
+        },
+        onComplete: (result) => {
+            // Atualiza contadores
+            renderUsageInfo();
+            
+            // Mostra mensagem de sucesso
+            showToast("✅ Enunciado solicitado com sucesso! Você será notificado quando estiver pronto.", 'success');
         }
-        
-        // Mostra erro e reabilita o formulário
-        showToast(error.message, 'error');
-        containerGerador.style.display = 'block';
-        btnAbrirForm.style.display = 'none';
-    }
+    });
 });
 
 document.body.addEventListener('click', async (e) => {

@@ -15,6 +15,18 @@ const usageCounterDiv = document.getElementById('usage-counter');
 
 // --- FUNÇÕES ---
 
+function showToast(message, type = 'success', duration = 5000) {
+    const toast = document.createElement('div');
+    toast.className = `feedback-toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => document.body.removeChild(toast), 500);
+    }, duration);
+}
+
 function renderizarDicas(dicas) {
     if (!dicaGeradaContainer) return;
     dicaGeradaContainer.innerHTML = '';
@@ -117,16 +129,16 @@ geradorDicasForm?.addEventListener('submit', async (e) => {
     }
 
     // Usa o novo sistema de processamento
-    try {
-        await processingUI.startProcessingWithConfirmation({
-            confirmationTitle: 'Gerar Dicas Estratégicas',
-            confirmationMessage: 'Nossa IA vai criar dicas personalizadas baseadas na categoria selecionada. Este processo pode demorar 15-30 segundos. Deseja continuar?',
-            confirmationIcon: 'fas fa-lightbulb',
-            processingTitle: 'Criando suas Dicas...',
-            processingMessage: 'Nossa IA está analisando os dados e criando dicas estratégicas para você.',
-            estimatedTime: '15-30 segundos',
-            resultAreaSelector: '#dica-gerada-container',
-            onConfirm: async () => {
+    processingUI.startProcessingWithConfirmation({
+        confirmationTitle: 'Gerar Dicas Estratégicas',
+        confirmationMessage: 'Nossa IA vai criar dicas personalizadas baseadas na categoria selecionada. Este processo pode demorar 15-30 segundos. Deseja continuar?',
+        confirmationIcon: 'fas fa-lightbulb',
+        processingTitle: 'Criando suas Dicas...',
+        processingMessage: 'Nossa IA está analisando os dados e criando dicas estratégicas para você.',
+        estimatedTime: '15-30 segundos',
+        resultAreaSelector: '#dica-gerada-container',
+        onConfirm: async () => {
+            try {
                 // Esconde o container de resultado
                 dicaGeradaContainer.style.display = 'none';
                 
@@ -159,30 +171,26 @@ geradorDicasForm?.addEventListener('submit', async (e) => {
                 }
                 
                 return resultado;
-            },
-            onCancel: () => {
-                // Usuário cancelou, não faz nada
-            },
-            onComplete: async (result) => {
-                // Renderiza as dicas e salva no histórico
-                renderizarDicas(result.dicas_geradas);
-                await salvarDicaNoHistorico(categoria, result.dicas_geradas);
-                await carregarHistoricoDicas();
-                await renderUsageInfo();
-                
-                // Mostra mensagem de sucesso
-                showToast("✅ Dicas geradas com sucesso!", 'success');
+            } catch (error) {
+                // Mostra erro
+                showToast(error.message, 'error');
+                throw error; // Re-lança o erro para ser tratado pelo sistema
             }
-        });
-    } catch (error) {
-        if (error.message === 'Operação cancelada pelo usuário') {
-            // Usuário cancelou, não mostra erro
-            return;
+        },
+        onCancel: () => {
+            // Usuário cancelou, não faz nada
+        },
+        onComplete: async (result) => {
+            // Renderiza as dicas e salva no histórico
+            renderizarDicas(result.dicas_geradas);
+            await salvarDicaNoHistorico(categoria, result.dicas_geradas);
+            await carregarHistoricoDicas();
+            await renderUsageInfo();
+            
+            // Mostra mensagem de sucesso
+            showToast("✅ Dicas geradas com sucesso!", 'success');
         }
-        
-        // Mostra erro
-        showToast(error.message, 'error');
-    }
+    });
 });
 
 // --- INICIALIZAÇÃO ---
