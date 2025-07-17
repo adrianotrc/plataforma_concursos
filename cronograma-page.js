@@ -1,6 +1,7 @@
 import { auth, db } from './firebase-config.js';
 import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { gerarPlanoDeEstudos, getUsageLimits, refinarPlanoDeEstudosAsync } from './api.js';
+import { processingUI } from './processing-ui.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-cronograma');
@@ -325,22 +326,45 @@ formCronograma?.addEventListener('submit', async (e) => {
         dificuldades_materias: document.getElementById('dificuldades-materias').value || 'Nenhuma informada.',
         outras_consideracoes: document.getElementById('outras-consideracoes').value || 'Nenhuma.',
     };
-    btnGerar.disabled = true;
-    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-    containerForm.style.display = 'none';
+    // Usa o novo sistema de processamento
     try {
-        await gerarPlanoDeEstudos(dadosParaApi);
-        // **CORREÇÃO DO BUG:** Mostra uma mensagem de sucesso/info em vez de erro.
-        showToast("Solicitação enviada! Seu cronograma está sendo gerado.", 'info');
+        await processingUI.startProcessingWithConfirmation({
+            confirmationTitle: 'Gerar Cronograma Personalizado',
+            confirmationMessage: 'Nossa IA vai criar um cronograma personalizado baseado nos seus dados. Este processo pode demorar 30-60 segundos. Deseja continuar?',
+            confirmationIcon: 'fas fa-calendar-alt',
+            processingTitle: 'Criando seu Cronograma...',
+            processingMessage: 'Nossa IA está analisando seus dados e criando um plano de estudos otimizado para você.',
+            estimatedTime: '30-60 segundos',
+            resultAreaSelector: '#historico-cronogramas',
+            onConfirm: async () => {
+                // Esconde o formulário
+                containerForm.style.display = 'none';
+                
+                // Envia a solicitação
+                return await gerarPlanoDeEstudos(dadosParaApi);
+            },
+            onCancel: () => {
+                // Usuário cancelou, não faz nada
+            },
+            onComplete: (result) => {
+                // Limpa o formulário
+                formCronograma.reset();
+                document.querySelectorAll('#materias-container .materia-tag').forEach(tag => tag.remove());
+                renderUsageInfo();
+                
+                // Mostra mensagem de sucesso
+                showToast("✅ Cronograma solicitado com sucesso! Você será notificado quando estiver pronto.", 'success');
+            }
+        });
     } catch (error) {
-        // Isso agora só vai ser executado se o limite for excedido ou houver um erro real.
+        if (error.message === 'Operação cancelada pelo usuário') {
+            // Usuário cancelou, não mostra erro
+            return;
+        }
+        
+        // Mostra erro e reabilita o formulário
         showToast(error.message, 'error');
-    } finally {
-        btnGerar.disabled = false;
-        btnGerar.textContent = 'Gerar Cronograma';
-        formCronograma.reset();
-        document.querySelectorAll('#materias-container .materia-tag').forEach(tag => tag.remove());
-        renderUsageInfo(); // Atualiza a contagem após uma tentativa
+        containerForm.style.display = 'block';
     }
 });
 

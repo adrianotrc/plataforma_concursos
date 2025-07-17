@@ -2,7 +2,8 @@
 
 import { auth, db } from './firebase-config.js';
 import { collection, serverTimestamp, query, orderBy, onSnapshot, doc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarExerciciosAsync, getUsageLimits, avaliarQuestao } from './api.js'; // Importa a nova função
+import { gerarExerciciosAsync, getUsageLimits, avaliarQuestao } from './api.js';
+import { processingUI } from './processing-ui.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-exercicios');
@@ -214,29 +215,56 @@ formExercicios?.addEventListener('submit', async (e) => {
         alert('Por favor, insira uma quantidade de exercícios entre 1 e 10.');
         return;
     }
-    const btnGerar = formExercicios.querySelector('button[type="submit"]');
-    btnGerar.disabled = true;
-    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Solicitando...';
-    exerciciosContainer.innerHTML = '';
-    exerciciosContainer.style.display = 'none';
+    
     const dados = {
         userId: currentUser.uid,
         materia: document.getElementById('exercicio-materia').value,
         topico: document.getElementById('exercicio-topico').value,
         quantidade: quantidade,
         banca: document.getElementById('exercicio-banca').value,
-        tipo_questao: document.getElementById('exercicio-tipo').value // Enviando o novo campo
+        tipo_questao: document.getElementById('exercicio-tipo').value
     };
+
+    // Usa o novo sistema de processamento
     try {
-        await gerarExerciciosAsync(dados);
+        await processingUI.startProcessingWithConfirmation({
+            confirmationTitle: 'Gerar Exercícios Personalizados',
+            confirmationMessage: 'Nossa IA vai criar exercícios personalizados baseados nos seus critérios. Este processo pode demorar 30-60 segundos. Deseja continuar?',
+            confirmationIcon: 'fas fa-question-circle',
+            processingTitle: 'Criando seus Exercícios...',
+            processingMessage: 'Nossa IA está analisando o banco de dados e criando questões relevantes para você.',
+            estimatedTime: '30-60 segundos',
+            resultAreaSelector: '#historico-exercicios',
+            onConfirm: async () => {
+                // Limpa o container e esconde o formulário
+                exerciciosContainer.innerHTML = '';
+                exerciciosContainer.style.display = 'none';
+                formExercicios.style.display = 'none';
+                
+                // Envia a solicitação
+                return await gerarExerciciosAsync(dados);
+            },
+            onCancel: () => {
+                // Usuário cancelou, não faz nada
+            },
+            onComplete: (result) => {
+                // Limpa o formulário e atualiza contadores
+                formExercicios.reset();
+                renderUsageInfo();
+                
+                // Mostra mensagem de sucesso
+                showToast("✅ Exercícios solicitados com sucesso! Você será notificado quando estiverem prontos.", 'success');
+            }
+        });
     } catch (error) {
-        alert(error.message);
-    } finally {
-        btnGerar.disabled = false;
-        btnGerar.textContent = 'Gerar';
-        formExercicios.style.display = 'none';
-        formExercicios.reset();
-        await renderUsageInfo();
+        if (error.message === 'Operação cancelada pelo usuário') {
+            // Usuário cancelou, não mostra erro
+            return;
+        }
+        
+        // Mostra erro e reabilita o formulário
+        showToast(error.message, 'error');
+        formExercicios.style.display = 'block';
     }
 });
 

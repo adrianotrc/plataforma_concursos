@@ -1,7 +1,8 @@
 // SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO dicas-page.js
 
 import { auth, db } from './firebase-config.js';
-import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada } from './api.js'; 
+import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada } from './api.js';
+import { processingUI } from './processing-ui.js'; 
 import { state } from './main-app.js';
 import { collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -109,60 +110,78 @@ async function renderUsageInfo() {
 
 geradorDicasForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
     const categoria = categoriaSelect.value;
     if (!categoria) {
         alert("Por favor, selecione uma categoria.");
         return;
     }
 
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
-    dicaGeradaContainer.style.display = 'none';
-
+    // Usa o novo sistema de processamento
     try {
-        let resultado;
-        if (categoria === 'personalizada') {
-            const q = query(collection(db, `users/${state.user.uid}/sessoesExercicios`), limit(50));
-            const sessoesSnapshot = await getDocs(q);
-            const sessoes = sessoesSnapshot.docs.map(doc => doc.data());
-            const desempenhoPorMateria = sessoes.reduce((acc, sessao) => {
-                 const resumo = sessao.resumo;
-                 if(resumo && resumo.acertos !== undefined) {
-                     if (!acc[resumo.materia]) acc[resumo.materia] = { acertos: 0, total: 0 };
-                     acc[resumo.materia].acertos += resumo.acertos;
-                     acc[resumo.materia].total += resumo.total;
-                 }
-                 return acc;
-            }, {});
-            
-            const desempenhoParaApi = Object.entries(desempenhoPorMateria).map(([materia, dados]) => ({
-                materia,
-                taxa_acerto: dados.total > 0 ? Math.round((dados.acertos / dados.total) * 100) : 0
-            }));
-            
-            if (desempenhoParaApi.length === 0) {
-                renderizarDicas(["Não há dados de desempenho suficientes para uma dica personalizada."]);
-                return;
+        await processingUI.startProcessingWithConfirmation({
+            confirmationTitle: 'Gerar Dicas Estratégicas',
+            confirmationMessage: 'Nossa IA vai criar dicas personalizadas baseadas na categoria selecionada. Este processo pode demorar 15-30 segundos. Deseja continuar?',
+            confirmationIcon: 'fas fa-lightbulb',
+            processingTitle: 'Criando suas Dicas...',
+            processingMessage: 'Nossa IA está analisando os dados e criando dicas estratégicas para você.',
+            estimatedTime: '15-30 segundos',
+            resultAreaSelector: '#dica-gerada-container',
+            onConfirm: async () => {
+                // Esconde o container de resultado
+                dicaGeradaContainer.style.display = 'none';
+                
+                let resultado;
+                if (categoria === 'personalizada') {
+                    const q = query(collection(db, `users/${state.user.uid}/sessoesExercicios`), limit(50));
+                    const sessoesSnapshot = await getDocs(q);
+                    const sessoes = sessoesSnapshot.docs.map(doc => doc.data());
+                    const desempenhoPorMateria = sessoes.reduce((acc, sessao) => {
+                         const resumo = sessao.resumo;
+                         if(resumo && resumo.acertos !== undefined) {
+                             if (!acc[resumo.materia]) acc[resumo.materia] = { acertos: 0, total: 0 };
+                             acc[resumo.materia].acertos += resumo.acertos;
+                             acc[resumo.materia].total += resumo.total;
+                         }
+                         return acc;
+                    }, {});
+                    
+                    const desempenhoParaApi = Object.entries(desempenhoPorMateria).map(([materia, dados]) => ({
+                        materia,
+                        taxa_acerto: dados.total > 0 ? Math.round((dados.acertos / dados.total) * 100) : 0
+                    }));
+                    
+                    if (desempenhoParaApi.length === 0) {
+                        return { dicas_geradas: ["Não há dados de desempenho suficientes para uma dica personalizada."] };
+                    }
+                    resultado = await gerarDicaPersonalizada({ userId: state.user.uid, desempenho: desempenhoParaApi });
+                } else {
+                    resultado = await gerarDicasPorCategoria({ userId: state.user.uid, categoria: categoria });
+                }
+                
+                return resultado;
+            },
+            onCancel: () => {
+                // Usuário cancelou, não faz nada
+            },
+            onComplete: async (result) => {
+                // Renderiza as dicas e salva no histórico
+                renderizarDicas(result.dicas_geradas);
+                await salvarDicaNoHistorico(categoria, result.dicas_geradas);
+                await carregarHistoricoDicas();
+                await renderUsageInfo();
+                
+                // Mostra mensagem de sucesso
+                showToast("✅ Dicas geradas com sucesso!", 'success');
             }
-            // Chama a API com o payload correto
-            resultado = await gerarDicaPersonalizada({ userId: state.user.uid, desempenho: desempenhoParaApi });
-
-        } else {
-            // Chama a API com o payload correto
-            resultado = await gerarDicasPorCategoria({ userId: state.user.uid, categoria: categoria });
+        });
+    } catch (error) {
+        if (error.message === 'Operação cancelada pelo usuário') {
+            // Usuário cancelou, não mostra erro
+            return;
         }
         
-        renderizarDicas(resultado.dicas_geradas);
-        await salvarDicaNoHistorico(categoria, resultado.dicas_geradas);
-        await carregarHistoricoDicas();
-
-    } catch (error) {
-        alert(error.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = 'Gerar Dica';
-        await renderUsageInfo();
+        // Mostra erro
+        showToast(error.message, 'error');
     }
 });
 

@@ -3,6 +3,7 @@
 import { auth, db } from './firebase-config.js';
 import { collection, onSnapshot, query, orderBy, limit, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { gerarEnunciadoDiscursivaAsync, corrigirDiscursivaAsync, getUsageLimits } from './api.js';
+import { processingUI } from './processing-ui.js';
 import { state } from './main-app.js';
 
 // --- ELEMENTOS DO DOM ---
@@ -147,9 +148,6 @@ btnCancelarGeracao?.addEventListener('click', () => { containerGerador.style.dis
 
 formGerarEnunciado?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = formGerarEnunciado.querySelector('button[type="submit"]');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
     
     const criterios = {
         userId: state.user.uid,
@@ -163,16 +161,45 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
         foco_correcao: document.getElementById('discursiva-foco').value,
     };
 
+    // Usa o novo sistema de processamento
     try {
-        await gerarEnunciadoDiscursivaAsync(criterios);
+        await processingUI.startProcessingWithConfirmation({
+            confirmationTitle: 'Gerar Enunciado Discursivo',
+            confirmationMessage: 'Nossa IA vai criar um enunciado discursivo personalizado baseado nos seus critérios. Este processo pode demorar 30-60 segundos. Deseja continuar?',
+            confirmationIcon: 'fas fa-file-alt',
+            processingTitle: 'Criando seu Enunciado...',
+            processingMessage: 'Nossa IA está analisando os critérios e criando um enunciado relevante para você.',
+            estimatedTime: '30-60 segundos',
+            resultAreaSelector: '#historico-discursivas',
+            onConfirm: async () => {
+                // Esconde o formulário
+                containerGerador.style.display = 'none';
+                btnAbrirForm.style.display = 'block';
+                
+                // Envia a solicitação
+                return await gerarEnunciadoDiscursivaAsync(criterios);
+            },
+            onCancel: () => {
+                // Usuário cancelou, não faz nada
+            },
+            onComplete: (result) => {
+                // Atualiza contadores
+                renderUsageInfo();
+                
+                // Mostra mensagem de sucesso
+                showToast("✅ Enunciado solicitado com sucesso! Você será notificado quando estiver pronto.", 'success');
+            }
+        });
     } catch (error) {
-        alert(error.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-cogs"></i> Gerar Enunciado';
-        containerGerador.style.display = 'none';
-        btnAbrirForm.style.display = 'block';
-        await renderUsageInfo();
+        if (error.message === 'Operação cancelada pelo usuário') {
+            // Usuário cancelou, não mostra erro
+            return;
+        }
+        
+        // Mostra erro e reabilita o formulário
+        showToast(error.message, 'error');
+        containerGerador.style.display = 'block';
+        btnAbrirForm.style.display = 'none';
     }
 });
 
