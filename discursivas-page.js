@@ -211,8 +211,8 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
             // Atualiza contadores
             renderUsageInfo();
             
-            // Mostra mensagem de sucesso
-            showToast("✅ Enunciado solicitado com sucesso! Você será notificado quando estiver pronto.", 'success');
+            // Mostra aviso curto de que a solicitação foi aceita
+            showToast("Enunciado solicitado! Gerando...", 'info', 3000);
         }
     });
 });
