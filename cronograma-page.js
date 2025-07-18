@@ -123,7 +123,7 @@ function exibirPlanoNaTela(plano) {
                     <p style="white-space: pre-wrap;">${plano.resumo_estrategico || 'Sem resumo estratégico.'}</p>
                 </div>
                 <div class="header-actions">
-                    <button id="btn-refinar-plano" class="btn btn-outline"><i class="fas fa-magic"></i> Refinar este Plano</button>
+                    <button id="btn-refinar-plano" class="btn btn-primary"><i class="fas fa-magic"></i> Refinar este Plano</button>
                     <button id="btn-exportar-excel" class="btn btn-primary"><i class="fas fa-file-excel"></i> Exportar</button>
                     <button id="btn-fechar-plano" class="btn btn-outline">Fechar</button>
                 </div>

@@ -161,7 +161,7 @@ function renderizarHistorico(sessoes) {
                 ${scoreHtml}
                 <div class="exercise-time">
                     <p>${resumo.criadoEm?.toDate().toLocaleDateString('pt-BR')}</p>
-                    <button class="btn btn-outline btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
+                    <button class="btn btn-primary btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
                 </div>
             </div>
         `;
@@ -248,7 +248,7 @@ formExercicios?.addEventListener('submit', async (e) => {
         processingTitle: 'Criando seus Exercícios...',
         processingMessage: 'Nossa IA está analisando o banco de dados e criando questões relevantes para você.',
         estimatedTime: '30-60 segundos',
-        resultAreaSelector: '#historico-exercicios',
+        resultAreaSelector: '#exercicios-gerados',
         onConfirm: async () => {
             try {
                 // Limpa o container e esconde o formulário

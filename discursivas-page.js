@@ -103,7 +103,7 @@ function renderHistorico(sessoes) {
                     <div class="tip-title">${materia} ${statusIcon}</div>
                     <div class="tip-description">Nota: ${nota} | Em: ${data}</div>
                 </div>
-                <button class="btn btn-outline btn-rever-correcao" data-id="${item.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
+                <button class="btn btn-primary btn-rever-correcao" data-id="${item.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
             </div>
         `;
     }).join('');
