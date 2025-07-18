@@ -2050,6 +2050,7 @@ body.dark-mode .result-area-highlight {
 .btn-quality[data-q="5"] { background:#d1fae5; color:#065f46; }
 .btn-quality:hover:not(:disabled) { filter: brightness(0.95); }
 
+.flashcard{max-width:480px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.05);}
 .flashcard-flip {
   transition: transform 0.6s;
   transform-style: preserve-3d;

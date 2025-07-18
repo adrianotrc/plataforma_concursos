@@ -60,7 +60,7 @@ async function renderUsageInfo(){
 }
 
 function mostrarFormDeck(){
-  containerFormDeck.innerHTML=`<form id="form-deck"><div class="form-field-group"><label>Matéria</label><input type="text" id="deck-materia" required></div><div class="form-field-group"><label>Tópico</label><input type="text" id="deck-topico" required></div><div class="form-field-group"><label>Quantidade de cards</label><input type="number" id="deck-quantidade" min="5" max="50" value="20"></div><div class="form-actions"><button type="submit" class="btn btn-primary">Gerar Flashcards</button><button type="button" id="btn-cancelar-deck" class="btn btn-ghost">Cancelar</button></div></form>`;
+  containerFormDeck.innerHTML=`<form id="form-deck"><div class="form-field-group"><label>Matéria</label><input type="text" id="deck-materia" placeholder="Ex: Direito Administrativo" required></div><div class="form-field-group"><label>Tópico</label><input type="text" id="deck-topico" placeholder="Ex: Controle de Constitucionalidade" required></div><div class="form-field-group"><label>Quantidade de cards</label><input type="number" id="deck-quantidade" min="5" max="50" value="20"></div><div class="form-actions"><button type="submit" class="btn btn-primary">Gerar Flashcards</button><button type="button" id="btn-cancelar-deck" class="btn btn-ghost">Cancelar</button></div></form>`;
   containerFormDeck.style.display='block';
 }
 
@@ -89,10 +89,10 @@ containerFormDeck?.addEventListener('submit',async e=>{
     estimatedTime:'15-30 segundos',
     resultAreaSelector:'#historico-decks',
     onConfirm:async()=>{
+      showToast('Deck solicitado! Gerando...','info',3000);
       return await gerarFlashcardsAsync({userId:auth.currentUser.uid,materia,topico,quantidade});
     },
     onComplete:()=>{
-      showToast('Deck solicitado! Gerando...','info',3000);
       containerFormDeck.style.display='none';
       containerFormDeck.innerHTML='';
       renderUsageInfo();
@@ -116,7 +116,7 @@ function mostrarCartao(){
 estudoContainer?.addEventListener('click',async e=>{
   if(e.target.id==='btn-mostrar-resposta'){
     const card=filaCartoes[0];
-    estudoContainer.innerHTML=`<div class="feature-card"><h4>Resposta</h4><p>${card.verso}</p><div class="form-actions"><button class="btn btn-outline btn-quality" data-q="0">0</button><button class="btn btn-outline btn-quality" data-q="1">1</button><button class="btn btn-outline btn-quality" data-q="2">2</button><button class="btn btn-outline btn-quality" data-q="3">3</button><button class="btn btn-outline btn-quality" data-q="4">4</button><button class="btn btn-outline btn-quality" data-q="5">5</button></div></div>`;
+    estudoContainer.innerHTML=`<div class="feature-card flashcard"><h4>Resposta</h4><p>${card.verso}</p><p style="font-size:0.85rem;color:#6b7280;margin-top:12px;">Avalie sua lembrança: 0 = Errei &nbsp; … &nbsp; 5 = Muito fácil</p><div class="form-actions"><button class="btn btn-outline btn-quality" data-q="0">0</button><button class="btn btn-outline btn-quality" data-q="1">1</button><button class="btn btn-outline btn-quality" data-q="2">2</button><button class="btn btn-outline btn-quality" data-q="3">3</button><button class="btn btn-outline btn-quality" data-q="4">4</button><button class="btn btn-outline btn-quality" data-q="5">5</button></div></div>`;
   }
   if(e.target.classList.contains('btn-quality')){
     const qualidade=parseInt(e.target.dataset.q,10);
