@@ -11,6 +11,10 @@ class ProcessingUI {
         this.confirmationModal = null;
         this.processingStartTime = null;
         this.processingTimer = null;
+        // Se algo der errado e o indicador não for fechado por código,
+        // este timer de segurança garante que ele seja ocultado após
+        // um período máximo configurável (padrão: 2 min).
+        this.autoHideTimer = null;
     }
 
     /**
@@ -152,6 +156,15 @@ class ProcessingUI {
         // Inicia o timer
         this.processingStartTime = Date.now();
         this.updateProcessingTime();
+
+        // --- Fallback de segurança ---
+        // Se por alguma razão o fluxo normal não chamar hideProcessingIndicator,
+        // este timer fechará o popup após 2 min (120 000 ms).
+        if (this.autoHideTimer) clearTimeout(this.autoHideTimer);
+        this.autoHideTimer = setTimeout(() => {
+            console.warn('[ProcessingUI] Auto-hide acionado após tempo limite.');
+            this.hideProcessingIndicator();
+        }, 120000);
     }
 
     /**
@@ -163,6 +176,12 @@ class ProcessingUI {
             setTimeout(() => {
                 this.removeProcessingIndicator();
             }, 300);
+        }
+
+        // Cancela o timer de auto-hide se ainda estiver ativo
+        if (this.autoHideTimer) {
+            clearTimeout(this.autoHideTimer);
+            this.autoHideTimer = null;
         }
     }
 
