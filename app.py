@@ -172,32 +172,44 @@ def processar_refinamento_em_background(user_id, job_id, original_plan, feedback
         original_plan.pop('jobId', None)
         original_plan.pop('criadoEm', None)
 
-        prompt = (
-            "Você é um coach especialista em otimizar planos de estudo para concursos. Sua tarefa é ajustar um plano de estudos JSON existente com base no feedback de um aluno.\n\n"
-            f"### PLANO ORIGINAL (JSON):\n{json.dumps(original_plan, indent=2)}\n\n"
-            f"### PEDIDO DE AJUSTE DO ALUNO:\n'{feedback_text}'\n\n"
-            "### REGRAS CRÍTICAS (SEGUIR EXATAMENTE):\n"
-            "1. **SE o aluno pedir mudanças de tempo de estudo (ex: '2 horas aos domingos', '45 minutos nas terças'):**\n"
-            "   - REESCREVA COMPLETAMENTE o plano com os novos tempos\n"
-            "   - Cada atividade deve ter 25 minutos de duração\n"
-            "   - 2 horas = 4 atividades de 25 min (100 min total)\n"
-            "   - 45 minutos = 2 atividades de 25 min (50 min total)\n"
-            "   - Redistribua TODAS as matérias do plano original nos novos dias\n"
-            "   - NÃO duplique matérias no mesmo dia\n"
-            "   - NÃO mantenha atividades em dias que o aluno não mencionou\n\n"
-            "2. **SE o aluno pedir outras mudanças (método, matéria específica):**\n"
-            "   - Modifique apenas as atividades mencionadas\n"
-            "   - Mantenha o resto do plano igual\n\n"
-            "3. **ATUALIZE O RESUMO:** Adicione uma linha no final do 'resumo_estrategico' começando com 'Ajuste realizado:'\n\n"
-            "### EXEMPLO CONCRETO:\n"
-            "Se o aluno pedir '2 horas aos domingos e 45 minutos nas terças':\n"
-            "- Domingo: 4 atividades de 25 min cada (100 min total)\n"
-            "- Terça: 2 atividades de 25 min cada (50 min total)\n"
-            "- Remova atividades de outros dias\n"
-            "- Redistribua todas as matérias originais nesses dois dias\n\n"
-            "### FORMATO DE SAÍDA:\n"
-            "Retorne um único objeto JSON com a chave 'plano_de_estudos' contendo o plano atualizado."
-        )
+        prompt = f'''Você é um coach especialista em otimizar planos de estudo para concursos. Sua tarefa é ajustar um plano de estudos em formato JSON existente, seguindo fielmente o pedido do aluno.
+
+### PLANO ORIGINAL (JSON):
+{json.dumps(original_plan, indent=2)}
+
+### PEDIDO DE AJUSTE DO ALUNO:
+"""
+{feedback_text}
+"""
+
+### REGRAS CRÍTICAS (OBRIGATÓRIO CUMPRIR TODAS):
+1. SE o aluno pedir MUDANÇA DE TEMPO (ex.: "2 horas aos domingos", "45 minutos nas terças"):
+   • Reescreva completamente o cronograma aplicando os novos tempos.
+   • Cada atividade deve ter 25 min. 2 h = 4 atividades; 45 min = 2 atividades.
+   • Redistribua TODAS as matérias originais somente nos dias solicitados.
+
+2. SE o aluno pedir MUDANÇA DE DIA (ex.: "mover tudo de segunda para terça"):
+   • Copie todas as atividades do(s) dia(s) de origem e cole no(s) novo(s) dia(s).
+   • Preserve duração, método e ordem relativa.
+   • Deixe vazio o dia que ficou sem atividades.
+
+3. SE o aluno pedir outra alteração (mudar método, matéria específica, etc.):
+   • Modifique APENAS as atividades mencionadas.
+   • Mantenha todo o resto exatamente igual.
+
+4. NÃO crie matérias nem atividades extras.
+5. NÃO altere dias ou tempos não solicitados.
+6. Atualize 'resumo_estrategico' adicionando ao final uma linha iniciada por "Ajuste realizado:" explicando a mudança.
+
+Lista oficial de nomes de dias (use exatamente estes): Domingo, Segunda-feira, Terça-feira, Quarta-feira, Quinta-feira, Sexta-feira, Sábado.
+
+### EXEMPLO RÁPIDO:
+Pedido: "Quero estudar Português às quartas em vez de terças".
+→ Copie TODAS as atividades de Terça-feira para Quarta-feira, mantenha horários e métodos, deixe Terça-feira vazia.
+
+### FORMATO DE SAÍDA
+Retorne UM ÚNICO objeto JSON com a chave 'plano_de_estudos'. Nenhum texto fora do JSON.
+'''
         system_message = "Você é um assistente especializado em ajustar planos de estudo. Quando o usuário pedir mudanças de tempo, reescreva completamente o plano. Quando pedir mudanças específicas, modifique apenas o necessário. Sempre retorne JSON válido."
 
         resultado_ia = call_openai_api(prompt, system_message)
