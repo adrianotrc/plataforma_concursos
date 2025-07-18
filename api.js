@@ -183,3 +183,19 @@ export async function avaliarQuestao(questionId, evaluation) {
         body: JSON.stringify({ questionId, evaluation }),
     });
 }
+
+export async function gerarFlashcardsAsync(params) {
+    return fetchApi('/gerar-flashcards-async', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+    });
+}
+
+export async function responderFlashcard(params) {
+    return fetchApi('/responder-flashcard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+    });
+}

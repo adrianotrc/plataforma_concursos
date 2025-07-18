@@ -2,7 +2,7 @@
 
 import os
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import math
 import traceback
 import threading
@@ -49,8 +49,12 @@ PLAN_LIMITS = {
     'basico': {'cronogramas': 10, 'exercicios': 10, 'discursivas': 10, 'dicas': 10},
     'intermediario': {'cronogramas': 15, 'exercicios': 15, 'discursivas': 15, 'dicas': 15},
     'premium': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'dicas': 20},
-    'anual': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'dicas': 20}
+    'anual': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'dicas': 20, 'flashcards': 30}
 }
+
+# Adiciona limite para flashcards nos demais planos
+for plano in ['trial', 'basico', 'intermediario', 'premium']:
+    PLAN_LIMITS[plano]['flashcards'] = 10 if plano == 'trial' else 30
 
 def check_usage_and_update(user_id, feature):
     try:
@@ -1133,6 +1137,147 @@ def get_usage_limits(user_id):
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# --- FUNÇÃO DE BACKGROUND PARA GERAR FLASHCARDS ---
+
+def processar_flashcards_em_background(user_id, deck_id, dados_req):
+    """Gera flashcards via OpenAI em segundo plano e grava no Firestore."""
+    print(f"BACKGROUND (FLASHCARDS) deck {deck_id} para usuário {user_id}")
+    deck_ref = db.collection('users').document(user_id).collection('flashcards').document(deck_id)
+    try:
+        materia = dados_req.get('materia')
+        topico = dados_req.get('topico')
+        quantidade = int(dados_req.get('quantidade', 10))
+        formato = dados_req.get('formato', 'pergunta_resposta')
+
+        prompt = (
+            "Você é um professor especialista em criar flashcards para concursos. \n"
+            f"Crie {quantidade} flashcards no formato {formato} sobre {materia} – tópico {topico}.\n"
+            "Saída obrigatória em JSON com a chave 'flashcards': lista de objetos {frente, verso}.\n"
+        )
+        system_msg = "Gere flashcards curtos e diretos; retorne somente JSON válido."
+
+        resultado = call_openai_api(prompt, system_msg)
+        if 'flashcards' not in resultado or not isinstance(resultado['flashcards'], list):
+            raise ValueError("Resposta da IA sem lista de flashcards")
+
+        flashcards = resultado['flashcards']
+
+        batch = db.batch()
+        for card in flashcards:
+            card_ref = deck_ref.collection('cards').document()
+            batch.set(card_ref, {
+                'frente': card.get('frente'),
+                'verso': card.get('verso'),
+                'createdAt': firestore.SERVER_TIMESTAMP,
+                'nextReview': firestore.SERVER_TIMESTAMP,
+                'interval': 0,
+                'ease': 2.5,
+                'reps': 0,
+                'lapses': 0
+            })
+        batch.update(deck_ref, {
+            'status': 'completed',
+            'cardCount': len(flashcards)
+        })
+        batch.commit()
+        print(f"FLASHCARDS GERADOS: deck {deck_id}")
+    except Exception as e:
+        print(f"!!! ERRO FLASHCARDS deck {deck_id}: {e}")
+        traceback.print_exc()
+        deck_ref.update({'status': 'failed', 'error': str(e)})
+
+# --- ROTA PARA GERAR FLASHCARDS ---
+
+@app.route('/gerar-flashcards-async', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def gerar_flashcards_async():
+    dados_req = request.json
+    user_id = dados_req.get('userId')
+
+    is_allowed, message = check_usage_and_update(user_id, 'flashcards')
+    if not is_allowed:
+        return jsonify({'error': 'limit_exceeded', 'message': message}), 429
+
+    if not user_id:
+        return jsonify({'erro': 'ID do usuário não fornecido.'}), 400
+
+    deck_ref = db.collection('users').document(user_id).collection('flashcards').document()
+    deck_id = deck_ref.id
+
+    placeholder = {
+        'status': 'processing',
+        'criadoEm': firestore.SERVER_TIMESTAMP,
+        'materia': dados_req.get('materia'),
+        'topico': dados_req.get('topico'),
+        'geradoPor': 'ia',
+        'cardCount': 0,
+        'deckId': deck_id
+    }
+    deck_ref.set(placeholder)
+
+    thr = threading.Thread(target=processar_flashcards_em_background, args=(user_id, deck_id, dados_req))
+    thr.start()
+
+    return jsonify({'status': 'processing', 'deckId': deck_id}), 202
+
+# --- UTILIDADE SRS (SM-2) ---
+
+def srs_update(card_doc, quality):
+    """Atualiza campos do cartão baseado no SM-2. quality: 0-5"""
+    ease = card_doc.get('ease', 2.5)
+    interval = card_doc.get('interval', 0)
+    reps = card_doc.get('reps', 0)
+    lapses = card_doc.get('lapses', 0)
+
+    if quality >= 3:
+        if reps == 0:
+            interval = 1
+        elif reps == 1:
+            interval = 6
+        else:
+            interval = round(interval * ease)
+        ease = max(1.3, ease + 0.1 - (5 - quality) * 0.08)
+        reps += 1
+    else:
+        reps = 0
+        interval = 1
+        ease = max(1.3, ease - 0.2)
+        lapses += 1
+
+    next_review = datetime.utcnow() + timedelta(days=interval)
+    return {
+        'ease': ease,
+        'interval': interval,
+        'reps': reps,
+        'lapses': lapses,
+        'nextReview': next_review
+    }
+
+# --- ROTA PARA RESPONDER FLASHCARD ---
+
+@app.route('/responder-flashcard', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def responder_flashcard():
+    dados = request.json
+    user_id = dados.get('userId')
+    deck_id = dados.get('deckId')
+    card_id = dados.get('cardId')
+    quality = int(dados.get('quality', 0))
+
+    if not all([user_id, deck_id, card_id]):
+        return jsonify({'erro': 'Dados insuficientes.'}), 400
+
+    card_ref = db.collection('users').document(user_id).collection('flashcards').document(deck_id).collection('cards').document(card_id)
+    card_doc = card_ref.get().to_dict()
+    if not card_doc:
+        return jsonify({'erro': 'Card não encontrado'}), 404
+
+    updates = srs_update(card_doc, quality)
+    updates['ultimaRevisao'] = firestore.SERVER_TIMESTAMP
+    card_ref.update(updates)
+
+    return jsonify({'status': 'updated', 'nextReview': updates['nextReview'].isoformat()})
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=True)

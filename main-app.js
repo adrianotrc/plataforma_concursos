@@ -4,7 +4,7 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizados: 0, taxaAcerto: 0, textosCorrigidos: 0, }, savedPlans: [], sessoesExercicios: [], sessoesDiscursivas: [], userData: null };
+export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizados: 0, taxaAcerto: 0, textosCorrigidos: 0, flashcardsRevisados: 0 }, savedPlans: [], sessoesExercicios: [], sessoesDiscursivas: [], userData: null };
 
 function controlarAcessoFuncionalidades(plano) {
     const permissoes = {
@@ -45,6 +45,7 @@ function calcularMetricas() {
     state.metrics.exerciciosRealizados = totalExercicios;
     state.metrics.taxaAcerto = totalExercicios > 0 ? (totalAcertos / totalExercicios) * 100 : 0;
     state.metrics.textosCorrigidos = state.sessoesDiscursivas.length;
+    // Flashcards revisados já é incrementado via eventos em tempo real
     atualizarMetricasDashboard();
 }
 
@@ -55,6 +56,10 @@ function atualizarMetricasDashboard() {
         document.getElementById('stat-exercicios').textContent = state.metrics.exerciciosRealizados;
         document.getElementById('stat-acertos').textContent = `${state.metrics.taxaAcerto.toFixed(0)}%`;
         document.getElementById('stat-redacoes').textContent = state.metrics.textosCorrigidos;
+    }
+    const elFlash = document.getElementById('stat-flashcards');
+    if (elFlash) {
+        elFlash.textContent = state.metrics.flashcardsRevisados;
     }
 }
 
@@ -164,6 +169,12 @@ function initializeApp() {
         sidebarToggle.addEventListener('click', toggleSidebar);
         sidebarOverlay.addEventListener('click', toggleSidebar);
     }
+
+    // Ouvinte para revisões de flashcards
+    document.addEventListener('flashcardReviewed', () => {
+        state.metrics.flashcardsRevisados++;
+        atualizarMetricasDashboard();
+    });
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);

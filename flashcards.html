@@ -3,17 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dicas Estratégicas - IAprovas</title>
+    <title>Flashcards - IAprovas</title>
     <link rel="stylesheet" href="dashboard-lovable.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FCHSYJJ7FB"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-FCHSYJJ7FB');
-    </script>
 </head>
 <body>
     <div class="dashboard-layout">
@@ -25,9 +17,9 @@
                         <div class="logo"><i class="fas fa-book-open"></i><span>IAprovas</span></div>
                     </a>
                 </div>
-                </div>
+            </div>
         </header>
-        
+
         <aside id="sidebar" class="sidebar">
             <div class="sidebar-content">
                 <nav class="sidebar-nav">
@@ -35,11 +27,11 @@
                     <a id="nav-cronograma" href="cronograma.html" class="nav-item"><i class="fas fa-calendar-alt"></i><span>Cronograma</span></a>
                     <a id="nav-exercicios" href="exercicios.html" class="nav-item"><i class="fas fa-book-open"></i><span>Exercícios</span></a>
                     <a id="nav-discursivas" href="discursivas.html" class="nav-item"><i class="fas fa-file-signature"></i><span>Questões Discursivas</span></a>
-                    <a id="nav-dicas" href="dicas-estrategicas.html" class="nav-item active"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
-                    <a id="nav-flashcards" href="flashcards.html" class="nav-item"><i class="fas fa-clone"></i><span>Flashcards</span></a>
+                    <a id="nav-dicas" href="dicas-estrategicas.html" class="nav-item"><i class="fas fa-bullseye"></i><span>Dicas Estratégicas</span></a>
+                    <a id="nav-flashcards" href="flashcards.html" class="nav-item active"><i class="fas fa-clone"></i><span>Flashcards</span></a>
                     <a id="nav-estudo" href="material-de-estudo.html" class="nav-item"><i class="fas fa-book-reader"></i><span>Material de Estudo</span></a>
                 </nav>
-        
+
                 <div class="sidebar-footer">
                     <a href="meu-perfil.html" class="nav-item">
                         <i class="fas fa-user-cog"></i>
@@ -57,33 +49,23 @@
         <main class="main-content">
             <div class="content-wrapper">
                 <section class="welcome-section">
-                    <h1>Dicas Estratégicas</h1>
-                    <p>Receba orientações personalizadas baseadas na metodologia de aprovação.</p>
+                    <h1>Flashcards</h1>
+                    <p>Crie decks personalizados e estude com repetição espaçada.</p>
                     <div id="usage-counter" class="usage-info-box"></div>
                 </section>
 
-                <form id="gerador-dicas-form" class="gerador-dicas-container">
-                    <div class="form-field-group">
-                        <label for="dica-categoria-select">Selecione uma categoria para receber dicas:</label>
-                        <select id="dica-categoria-select" required>
-                            <option value="" disabled selected>Escolha uma área...</option>
-                            <option value="personalizada">✨ Dica Personalizada (do seu Coach IA)</option>
-                            <option value="gestao_de_tempo">Gestão de Tempo</option>
-                            <option value="metodos_de_estudo">Métodos de Estudo</option>
-                            <option value="motivacao">Motivação e Disciplina</option>
-                            <option value="redacao">Técnicas de Redação</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Gerar Dica</button>
-                </form>
-                
-                <div id="dica-gerada-container" style="display: none;"></div>
+                <button id="btn-criar-deck" class="btn btn-primary" style="margin-bottom:24px;">
+                    <i class="fas fa-plus"></i> Novo Deck
+                </button>
 
-                <div class="historico-dicas-container">
-                    <h2 style="margin-bottom: 16px;">Dicas Recentes</h2>
-                    <div id="historico-dicas">
-                        </div>
+                <div id="container-form-deck" class="feature-card" style="display:none;margin-bottom:24px;"></div>
+
+                <h2>Seus Decks</h2>
+                <div id="historico-decks" class="historico-grid">
+                    <p>Carregando seus decks...</p>
                 </div>
+
+                <div id="flashcard-estudo" style="display:none;margin-top:32px;"></div>
             </div>
         </main>
     </div>
@@ -91,6 +73,6 @@
     <script type="module" src="main-app.js"></script>
     <script type="module" src="api.js"></script>
     <script src="processing-ui.js"></script>
-    <script type="module" src="dicas-page.js"></script>
+    <script type="module" src="flashcards-page.js"></script>
 </body>
-</html>
+</html> 
