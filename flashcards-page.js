@@ -2,7 +2,7 @@
 
 import { auth, db } from './firebase-config.js';
 import { collection, doc, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarFlashcardsAsync, responderFlashcard } from './api.js';
+import { gerarFlashcardsAsync, responderFlashcard, getUsageLimits } from './api.js';
 import { state } from './main-app.js';
 
 // ELEMENTOS DOM
@@ -44,8 +44,23 @@ function ouvirDecks(){
   });
 }
 
+async function renderUsageInfo(){
+  if(!auth.currentUser||!usageCounterDiv)return;
+  try{
+     const data=await getUsageLimits(auth.currentUser.uid);
+     const uso=data.usage.flashcards||0;
+     const limite=data.limits.flashcards||0;
+     const restantes=limite-uso;
+     const plano=data.plan;
+     const msg= plano==='trial'?`Você ainda pode gerar ${restantes} de ${limite} decks de flashcards durante o teste.`:`Hoje, você ainda pode gerar ${restantes} de ${limite} decks de flashcards.`;
+     usageCounterDiv.textContent=msg;
+     usageCounterDiv.style.display='block';
+     if(btnCriarDeck)btnCriarDeck.disabled=restantes<=0;
+  }catch(e){console.error('Erro usage flashcards',e);usageCounterDiv.style.display='none';}
+}
+
 function mostrarFormDeck(){
-  containerFormDeck.innerHTML=`<form id="form-deck"><div class="form-field-group"><label>Matéria</label><input type="text" id="deck-materia" required></div><div class="form-field-group"><label>Tópico</label><input type="text" id="deck-topico" required></div><div class="form-field-group"><label>Quantidade de cards</label><input type="number" id="deck-quantidade" min="5" max="50" value="20"></div><div class="form-actions"><button type="submit" class="btn btn-primary">Gerar por IA</button><button type="button" id="btn-cancelar-deck" class="btn btn-ghost">Cancelar</button></div></form>`;
+  containerFormDeck.innerHTML=`<form id="form-deck"><div class="form-field-group"><label>Matéria</label><input type="text" id="deck-materia" required></div><div class="form-field-group"><label>Tópico</label><input type="text" id="deck-topico" required></div><div class="form-field-group"><label>Quantidade de cards</label><input type="number" id="deck-quantidade" min="5" max="50" value="20"></div><div class="form-actions"><button type="submit" class="btn btn-primary">Gerar Flashcards</button><button type="button" id="btn-cancelar-deck" class="btn btn-ghost">Cancelar</button></div></form>`;
   containerFormDeck.style.display='block';
 }
 
@@ -80,12 +95,13 @@ containerFormDeck?.addEventListener('submit',async e=>{
       showToast('Deck solicitado! Gerando...','info',3000);
       containerFormDeck.style.display='none';
       containerFormDeck.innerHTML='';
+      renderUsageInfo();
     }
   });
 });
 
 document.addEventListener('DOMContentLoaded',()=>{
-  auth.onAuthStateChanged(user=>{if(user){ouvirDecks();}});
+  auth.onAuthStateChanged(user=>{if(user){ouvirDecks();renderUsageInfo();}});
 });
 
 function mostrarCartao(){

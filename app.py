@@ -1190,7 +1190,7 @@ def processar_flashcards_em_background(user_id, deck_id, dados_req):
 # --- ROTA PARA GERAR FLASHCARDS ---
 
 @app.route('/gerar-flashcards-async', methods=['POST'])
-@cross_origin(supports_credentials=True)
+@cross_origin(supports_credentials=True, origins=["https://iaprovas.com.br","https://www.iaprovas.com.br","http://localhost:5500","http://127.0.0.1:5500"])
 def gerar_flashcards_async():
     dados_req = request.json
     user_id = dados_req.get('userId')
