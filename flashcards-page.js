@@ -52,8 +52,7 @@ function ouvirDecks(){
          if(d.status==='completed' && d.deckId===ultimoDeckSolicitado){
             showToast('✅ Deck de flashcards pronto!','success',6000);
             ultimoDeckSolicitado=null;
-            const btn=document.querySelector(`.btn-abrir-deck[data-id="${d.deckId}"]`);
-            if(btn) btn.textContent='Rever';
+            // O botão já será renderizado com "Estudar" pela função renderHistorico
          }
        }
     });
@@ -164,10 +163,19 @@ historicoDecks?.addEventListener('click',async e=>{
 // helper to render card html
 function cardHtml(deck){
   const s=deck.stats||{};
-  const total=(s.q0||0)+(s.q1||0)+(s.q2||0)+(s.q3||0)+(s.q4||0)+(s.q5||0);
-  const perc= total? Math.round(((s.q4||0)+(s.q5||0))*100/total):0;
-  const percHtml= total? `<span class='badge-accuracy'>${perc}% fácil</span>`:'';
+  const totalStats=(s.q0||0)+(s.q1||0)+(s.q2||0)+(s.q3||0)+(s.q4||0)+(s.q5||0);
+  const perc= totalStats? Math.round(((s.q4||0)+(s.q5||0))*100/totalStats):0;
+  const percHtml= totalStats? `<span class='badge-accuracy'>${perc}% fácil</span>`:'';
   const statusIcon= deck.status==='processing'?'<i class="fas fa-spinner fa-spin"></i>':deck.status==='failed'?'<i class="fas fa-exclamation-triangle" style="color:#ef4444"></i>':'';
-  const btnLabel= deck.status==='processing'? 'Gerando...' : deck.status==='failed'? 'Falhou' : 'Estudar';
+  
+  let btnLabel = 'Estudar';
+  if (deck.status === 'processing') {
+      btnLabel = 'Gerando...';
+  } else if (deck.status === 'failed') {
+      btnLabel = 'Falhou';
+  } else if (totalStats > 0) {
+      btnLabel = 'Rever';
+  }
+
   return `<div class="plano-item"><div><h3>${deck.materia||'Deck'} ${statusIcon} ${percHtml}</h3><p>${deck.topico||''} • ${deck.cardCount||0} cards</p></div><button class="btn btn-primary btn-abrir-deck" data-id="${deck.deckId}" ${deck.status!=='completed'?'disabled':''}>${btnLabel}</button></div>`;
 } 
