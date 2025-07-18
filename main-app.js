@@ -66,6 +66,10 @@ function atualizarMetricasDashboard() {
         const percEasy = state.metrics.flashcardsRevisados>0? Math.round(state.metrics.flashcardsFaceis*100/state.metrics.flashcardsRevisados):0;
         elFlashEasy.textContent = `${percEasy}% fácil`;
     }
+    const elFlashDetail=document.getElementById('stat-flash-detail');
+    if(elFlashDetail){
+        elFlashDetail.textContent=`${state.metrics.flashcardsFaceis}/${state.metrics.flashcardsRevisados}`;
+    }
 }
 
 function updateUserInfo(user, userData) {

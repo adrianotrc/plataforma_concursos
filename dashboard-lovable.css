@@ -191,14 +191,14 @@ body {
 /* Stats Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat( auto-fit, minmax(160px, 1fr) );
+    gap: 16px;
     margin-bottom: 32px;
 }
 
 .stat-card {
     background: white;
-    padding: 24px;
+    padding: 16px;
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e5e7eb;
