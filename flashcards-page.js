@@ -52,7 +52,6 @@ function ouvirDecks(){
          if(d.status==='completed' && d.deckId===ultimoDeckSolicitado){
             showToast('✅ Deck de flashcards pronto!','success',6000);
             ultimoDeckSolicitado=null;
-            if(window.processingUI){window.processingUI.removeResultAreaHighlight('#historico-decks');}
             const btn=document.querySelector(`.btn-abrir-deck[data-id="${d.deckId}"]`);
             if(btn) btn.textContent='Rever';
          }
@@ -110,7 +109,6 @@ containerFormDeck?.addEventListener('submit',async e=>{
       const resp=await gerarFlashcardsAsync({userId:auth.currentUser.uid,materia,topico,quantidade});
       ultimoDeckSolicitado=resp.deckId;
       estudoContainer.innerHTML=cardHtml({materia,topico,cardCount:quantidade,deckId:'placeholder',status:'processing'});
-      estudoContainer.classList.add('result-area-highlight');
       return resp;
     },
     onComplete:()=>{

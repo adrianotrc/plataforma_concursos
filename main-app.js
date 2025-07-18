@@ -88,13 +88,21 @@ export async function carregarDadosDoUsuario(userId) {
         const collectionsToLoad = {
             savedPlans: query(collection(db, `users/${userId}/plans`), orderBy("criadoEm", "desc"), limit(50)),
             sessoesExercicios: query(collection(db, `users/${userId}/sessoesExercicios`), orderBy("resumo.criadoEm", "desc"), limit(50)),
-            sessoesDiscursivas: query(collection(db, `users/${userId}/discursivasCorrigidas`), orderBy("criadoEm", "desc"), limit(50))
+            sessoesDiscursivas: query(collection(db, `users/${userId}/discursivasCorrigidas`), orderBy("criadoEm", "desc"), limit(50)),
+            decksFlashcards: collection(db, `users/${userId}/flashcards`)
         };
         const promises = Object.entries(collectionsToLoad).map(async ([key, q]) => {
             const snapshot = await getDocs(q);
             state[key] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         });
         await Promise.all(promises);
+
+        // calcular métricas flashcards
+        const easy = state.decksFlashcards? state.decksFlashcards.reduce((acc,d)=>acc+((d.stats?.q4||0)+(d.stats?.q5||0)),0):0;
+        const totalF = state.decksFlashcards? state.decksFlashcards.reduce((acc,d)=>acc+((d.stats?.q0||0)+(d.stats?.q1||0)+(d.stats?.q2||0)+(d.stats?.q3||0)+(d.stats?.q4||0)+(d.stats?.q5||0)),0):0;
+        state.metrics.flashcardsFaceis=easy;
+        state.metrics.flashcardsRevisados=totalF;
+        atualizarMetricasDashboard();
 
         if (document.getElementById('stat-dias-estudo')) {
             calcularMetricas();
