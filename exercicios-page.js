@@ -248,7 +248,7 @@ formExercicios?.addEventListener('submit', async (e) => {
         processingTitle: 'Criando seus Exercícios...',
         processingMessage: 'Nossa IA está analisando o banco de dados e criando questões relevantes para você.',
         estimatedTime: '30-60 segundos',
-        resultAreaSelector: '#exercicios-gerados',
+        resultAreaSelector: '#historico-exercicios',
         onConfirm: async () => {
             try {
                 // Limpa o container e esconde o formulário
@@ -357,7 +357,7 @@ function ouvirHistoricoDeExercicios() {
                 // Feedback para o usuário
                 showToast('✅ Seus exercícios estão prontos!', 'success', 7000);
                 if (window.processingUI) {
-                    window.processingUI.removeResultAreaHighlight('#exercicios-gerados');
+                    window.processingUI.removeResultAreaHighlight('#historico-exercicios');
                 }
                 ultimoJobIdSolicitado = null;
             }

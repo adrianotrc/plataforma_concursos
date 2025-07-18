@@ -26,9 +26,10 @@ async function fetchApi(endpoint, options) {
             throw new Error(errorBody.message || 'Ocorreu um erro desconhecido.');
         }
 
-        // Se a resposta for OK, mas não houver conteúdo (ex: status 202 ou 204)
-        if (response.status === 202 || response.status === 204) {
-            return {}; // Retorna um objeto vazio para não quebrar a cadeia de 'then'
+        // Mesmo que a API responda 202 (processamento assíncrono), normalmente enviamos um JSON
+        // com informações como jobId. 204 continua sem corpo.
+        if (response.status === 204) {
+            return {};
         }
 
         return await response.json();
