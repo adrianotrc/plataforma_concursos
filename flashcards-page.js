@@ -11,7 +11,6 @@ const containerFormDeck = document.getElementById('container-form-deck');
 const historicoDecks = document.getElementById('historico-decks');
 const usageCounterDiv = document.getElementById('usage-counter');
 const estudoContainer = document.getElementById('flashcard-estudo');
-const recentContainer=document.getElementById('flashcard-recente');
 
 let unsubDecks = null;
 let filaCartoes = [];
@@ -54,6 +53,8 @@ function ouvirDecks(){
             showToast('✅ Deck de flashcards pronto!','success',6000);
             ultimoDeckSolicitado=null;
             if(window.processingUI){window.processingUI.removeResultAreaHighlight('#historico-decks');}
+            const btn=document.querySelector(`.btn-abrir-deck[data-id="${d.deckId}"]`);
+            if(btn) btn.textContent='Rever';
          }
        }
     });
@@ -108,8 +109,8 @@ containerFormDeck?.addEventListener('submit',async e=>{
       showToast('Deck solicitado! Gerando...','info',3000);
       const resp=await gerarFlashcardsAsync({userId:auth.currentUser.uid,materia,topico,quantidade});
       ultimoDeckSolicitado=resp.deckId;
-      recentContainer.innerHTML=cardHtml({materia,topico,cardCount:quantidade,deckId:'placeholder',status:'processing'});
-      recentContainer.classList.add('result-area-highlight');
+      estudoContainer.innerHTML=cardHtml({materia,topico,cardCount:quantidade,deckId:'placeholder',status:'processing'});
+      estudoContainer.classList.add('result-area-highlight');
       return resp;
     },
     onComplete:()=>{
