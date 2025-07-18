@@ -141,7 +141,7 @@ class ProcessingUI {
                 <div class="processing-progress">
                     <div class="processing-bar"></div>
                 </div>
-                <p class="processing-time">Tempo estimado: ${estimatedTime}</p>
+                <p class="processing-time" style="opacity: 0.8; font-style: italic;">Tempo estimado: ${estimatedTime}</p>
             </div>
         `;
 
@@ -153,9 +153,7 @@ class ProcessingUI {
             this.processingIndicator.classList.add('show');
         }, 10);
 
-        // Inicia o timer
-        this.processingStartTime = Date.now();
-        this.updateProcessingTime();
+        // Removido contador dinâmico para reduzir ansiedade do usuário.
 
         // --- Fallback de segurança ---
         // Se por alguma razão o fluxo normal não chamar hideProcessingIndicator,

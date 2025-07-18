@@ -257,7 +257,9 @@ formExercicios?.addEventListener('submit', async (e) => {
                 formExercicios.style.display = 'none';
                 
                 // Envia a solicitação
-                return await gerarExerciciosAsync(dados);
+                const resposta = await gerarExerciciosAsync(dados);
+                ultimoJobIdSolicitado = resposta.jobId;
+                return resposta;
             } catch (error) {
                 // Mostra erro e reabilita o formulário
                 showToast(error.message, 'error');
@@ -352,6 +354,11 @@ function ouvirHistoricoDeExercicios() {
             if (change.type === "modified" && sessao.status === 'completed' && sessao.jobId === ultimoJobIdSolicitado) {
                 sessaoAberta = sessao.id;
                 exibirSessaoDeExercicios(sessao.exercicios);
+                // Feedback para o usuário
+                showToast('✅ Seus exercícios estão prontos!', 'success', 7000);
+                if (window.processingUI) {
+                    window.processingUI.removeResultAreaHighlight('#exercicios-gerados');
+                }
                 ultimoJobIdSolicitado = null;
             }
         });

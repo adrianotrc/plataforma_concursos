@@ -19,6 +19,7 @@ const materiasInput = document.getElementById('materias-input');
 let currentUser = null;
 let unsubHistorico = null;
 let planoAbertoAtual = null;
+let ultimoJobIdSolicitado = null; // Acompanhar o job mais recente
 
 const materiasPreDefinidas = [
     "Língua Portuguesa", "Raciocínio Lógico", "Matemática", "Informática (Noções ou Conhecimentos Básicos de TI)",
@@ -345,7 +346,10 @@ formCronograma?.addEventListener('submit', async (e) => {
                 containerForm.style.display = 'none';
                 
                 // Envia a solicitação
-                return await gerarPlanoDeEstudos(dadosParaApi);
+                const resposta = await gerarPlanoDeEstudos(dadosParaApi);
+                // Guarda o jobId para identificar quando ficar pronto
+                ultimoJobIdSolicitado = resposta.jobId;
+                return resposta;
             } catch (error) {
                 // Mostra erro e reabilita o formulário
                 showToast(error.message, 'error');
@@ -412,6 +416,21 @@ function ouvirHistoricoDePlanos() {
     unsubHistorico = onSnapshot(q, (querySnapshot) => {
         const planos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderizarHistorico(planos);
+
+        // Verifica se algum plano recém-solicitado foi concluído
+        querySnapshot.docChanges().forEach((change) => {
+            if (change.type === 'modified') {
+                const dado = change.doc.data();
+                if (dado.status === 'completed' && change.doc.id === ultimoJobIdSolicitado) {
+                    showToast('✅ Seu novo cronograma está pronto! Clique em "Abrir" no histórico.', 'success', 7000);
+                    // Remove destaque da área de resultado se ainda existir
+                    if (window.processingUI) {
+                        window.processingUI.removeResultAreaHighlight('#historico-cronogramas');
+                    }
+                    ultimoJobIdSolicitado = null;
+                }
+            }
+        });
     });
 }
 

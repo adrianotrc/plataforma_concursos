@@ -24,6 +24,7 @@ const usageCounterDiv = document.getElementById('usage-counter');
 // --- ESTADO LOCAL ---
 let sessaoAberta = null;
 let unsubHistorico = null;
+let ultimoJobIdSolicitado = null;
 
 // --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
 
@@ -192,7 +193,9 @@ formGerarEnunciado?.addEventListener('submit', async (e) => {
                 btnAbrirForm.style.display = 'block';
                 
                 // Envia a solicitação
-                return await gerarEnunciadoDiscursivaAsync(criterios);
+                const resposta = await gerarEnunciadoDiscursivaAsync(criterios);
+                ultimoJobIdSolicitado = resposta.jobId;
+                return resposta;
             } catch (error) {
                 // Mostra erro e reabilita o formulário
                 showToast(error.message, 'error');
@@ -274,6 +277,14 @@ function ouvirHistoricoDiscursivas() {
         snapshot.docChanges().forEach((change) => {
             if (change.type === 'modified') {
                 const data = change.doc.data();
+                if (data.status === 'enunciado_pronto' && change.doc.id === ultimoJobIdSolicitado) {
+                    // Aviso ao usuário
+                    showToast('✅ Seu enunciado discursivo está pronto!', 'success', 7000);
+                    if (window.processingUI) {
+                        window.processingUI.removeResultAreaHighlight('#historico-discursivas');
+                    }
+                    ultimoJobIdSolicitado = null;
+                }
                 if (data.status === 'enunciado_pronto' && (!sessaoAberta || sessaoAberta.id === change.doc.id)) {
                     sessaoAberta = { id: change.doc.id, ...data };
                     renderEnunciado(data.enunciado);
