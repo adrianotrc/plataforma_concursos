@@ -275,8 +275,8 @@ formExercicios?.addEventListener('submit', async (e) => {
             formExercicios.reset();
             renderUsageInfo();
             
-            // Mostra mensagem de sucesso
-            showToast("✅ Exercícios solicitados com sucesso! Você será notificado quando estiverem prontos.", 'success');
+            // Aviso curto
+            showToast("Exercícios solicitados! Gerando...", 'info', 3000);
         }
     });
 });

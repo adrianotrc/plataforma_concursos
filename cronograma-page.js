@@ -366,8 +366,8 @@ formCronograma?.addEventListener('submit', async (e) => {
             document.querySelectorAll('#materias-container .materia-tag').forEach(tag => tag.remove());
             renderUsageInfo();
             
-            // Mostra mensagem de sucesso
-            showToast("✅ Cronograma solicitado com sucesso! Você será notificado quando estiver pronto.", 'success');
+            // Toast informativo curto
+            showToast("Cronograma solicitado! Gerando...", 'info', 3000);
         }
     });
 });

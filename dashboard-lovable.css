@@ -693,6 +693,18 @@ body {
     padding: 10px;
 }
 
+/* Aplicar o mesmo layout aos históricos de Exercícios e Discursivas */
+#historico-exercicios,
+#historico-discursivas {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #fff;
+    padding: 10px;
+}
+
 .plano-item {
     display: flex;
     justify-content: space-between;
