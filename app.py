@@ -1277,6 +1277,10 @@ def responder_flashcard():
     updates['ultimaRevisao'] = firestore.SERVER_TIMESTAMP
     card_ref.update(updates)
 
+    # increment stats in deck
+    deck_ref = db.collection('users').document(user_id).collection('flashcards').document(deck_id)
+    deck_ref.update({f'stats.q{quality}': firestore.Increment(1)})
+
     return jsonify({'status': 'updated', 'nextReview': updates['nextReview'].isoformat()})
 
 if __name__ == "__main__":

@@ -2056,3 +2056,5 @@ body.dark-mode .result-area-highlight {
   transform-style: preserve-3d;
 }
 .flashcard-flip.is-flipped { transform: rotateY(180deg); }
+
+.badge-accuracy{background:#ecfdf5;color:#065f46;padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;}

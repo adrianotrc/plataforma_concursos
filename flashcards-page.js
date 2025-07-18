@@ -15,6 +15,7 @@ const estudoContainer = document.getElementById('flashcard-estudo');
 let unsubDecks = null;
 let filaCartoes = [];
 let deckAberto = null;
+let ultimoDeckSolicitado=null;
 
 function showToast(message, type='success', duration=5000){
   const toast=document.createElement('div');
@@ -31,7 +32,11 @@ function renderHistorico(decks){
   historicoDecks.innerHTML=decks.map(deck=>{
     const statusIcon = deck.status==='processing'?'<i class="fas fa-spinner fa-spin"></i>':deck.status==='failed'?'<i class="fas fa-exclamation-triangle" style="color:#ef4444"></i>':'';
     const btnLabel = deck.status==='processing'? 'Gerando...' : deck.status==='failed'? 'Falhou' : 'Estudar';
-    return `<div class="plano-item"><div><h3>${deck.materia||'Deck'} ${statusIcon}</h3><p>${deck.topico||''} • ${deck.cardCount||0} cards</p></div><button class="btn btn-primary btn-abrir-deck" data-id="${deck.deckId}" ${deck.status!=='completed'?'disabled':''}>${btnLabel}</button></div>`;
+    const s=deck.stats||{};
+    const totalStats=(s.q0||0)+(s.q1||0)+(s.q2||0)+(s.q3||0)+(s.q4||0)+(s.q5||0);
+    const perc= totalStats? Math.round(((s.q4||0)+(s.q5||0))*100/totalStats):0;
+    const percHtml= totalStats? `<span class='badge-accuracy'>${perc}% fácil</span>`:'';
+    return `<div class="plano-item"><div><h3>${deck.materia||'Deck'} ${statusIcon} ${percHtml}</h3><p>${deck.topico||''} • ${deck.cardCount||0} cards</p></div><button class="btn btn-primary btn-abrir-deck" data-id="${deck.deckId}" ${deck.status!=='completed'?'disabled':''}>${btnLabel}</button></div>`;
   }).join('');
 }
 
@@ -41,6 +46,16 @@ function ouvirDecks(){
   unsubDecks = onSnapshot(q,snap=>{
     const decks=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderHistorico(decks);
+    snap.docChanges().forEach(change=>{
+       if(change.type==='modified'){
+         const d=change.doc.data();
+         if(d.status==='completed' && d.deckId===ultimoDeckSolicitado){
+            showToast('✅ Deck de flashcards pronto!','success',6000);
+            ultimoDeckSolicitado=null;
+            if(window.processingUI){window.processingUI.removeResultAreaHighlight('#historico-decks');}
+         }
+       }
+    });
   });
 }
 
@@ -90,7 +105,9 @@ containerFormDeck?.addEventListener('submit',async e=>{
     resultAreaSelector:'#historico-decks',
     onConfirm:async()=>{
       showToast('Deck solicitado! Gerando...','info',3000);
-      return await gerarFlashcardsAsync({userId:auth.currentUser.uid,materia,topico,quantidade});
+      const resp=await gerarFlashcardsAsync({userId:auth.currentUser.uid,materia,topico,quantidade});
+      ultimoDeckSolicitado=resp.deckId;
+      return resp;
     },
     onComplete:()=>{
       containerFormDeck.style.display='none';
@@ -122,7 +139,7 @@ estudoContainer?.addEventListener('click',async e=>{
     const qualidade=parseInt(e.target.dataset.q,10);
     const card=filaCartoes.shift();
     await responderFlashcard({userId:auth.currentUser.uid,deckId:deckAberto,cardId:card.id,quality:qualidade});
-    document.dispatchEvent(new Event('flashcardReviewed'));
+    document.dispatchEvent(new CustomEvent('flashcardReviewed',{detail:{quality:qualidade}}));
     mostrarCartao();
   }
 });

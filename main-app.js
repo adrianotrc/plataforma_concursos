@@ -4,7 +4,7 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizados: 0, taxaAcerto: 0, textosCorrigidos: 0, flashcardsRevisados: 0 }, savedPlans: [], sessoesExercicios: [], sessoesDiscursivas: [], userData: null };
+export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizados: 0, taxaAcerto: 0, textosCorrigidos: 0, flashcardsRevisados: 0, flashcardsFaceis:0 }, savedPlans: [], sessoesExercicios: [], sessoesDiscursivas: [], userData: null };
 
 function controlarAcessoFuncionalidades(plano) {
     const permissoes = {
@@ -60,6 +60,11 @@ function atualizarMetricasDashboard() {
     const elFlash = document.getElementById('stat-flashcards');
     if (elFlash) {
         elFlash.textContent = state.metrics.flashcardsRevisados;
+    }
+    const elFlashEasy = document.getElementById('stat-flash-easy');
+    if(elFlashEasy){
+        const percEasy = state.metrics.flashcardsRevisados>0? Math.round(state.metrics.flashcardsFaceis*100/state.metrics.flashcardsRevisados):0;
+        elFlashEasy.textContent = `${percEasy}% fácil`;
     }
 }
 
@@ -171,8 +176,9 @@ function initializeApp() {
     }
 
     // Ouvinte para revisões de flashcards
-    document.addEventListener('flashcardReviewed', () => {
+    document.addEventListener('flashcardReviewed', (e) => {
         state.metrics.flashcardsRevisados++;
+        if(e.detail && e.detail.quality>=4) state.metrics.flashcardsFaceis++;
         atualizarMetricasDashboard();
     });
 }
