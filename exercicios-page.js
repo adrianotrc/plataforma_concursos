@@ -136,11 +136,10 @@ function renderizarHistorico(sessoes) {
         const isCompleted = sessao.status === 'completed';
         const isAttempted = isCompleted && resumo.acertos !== undefined;
 
-        let scoreHtml = '';
+        let percHtml = '';
         if (isAttempted) {
             const score = resumo.total > 0 ? (resumo.acertos / resumo.total) * 100 : 0;
-            let scoreClass = score >= 70 ? 'bom' : (score >= 50 ? 'medio' : 'ruim');
-            scoreHtml = `<div class="exercise-score ${scoreClass}">${score.toFixed(0)}%</div>`;
+            percHtml = `<span class='badge-accuracy'>${score.toFixed(0)}% acertos</span>`;
         }
 
         let statusIcon = '';
@@ -155,10 +154,9 @@ function renderizarHistorico(sessoes) {
         return `
             <div class="exercise-history-item">
                 <div class="exercise-info">
-                    <span class="exercise-subject">${resumo.materia || 'Sessão'} - ${resumo.topico || 'Geral'} ${statusIcon}</span>
+                    <span class="exercise-subject">${resumo.materia || 'Sessão'} - ${resumo.topico || 'Geral'} ${statusIcon} ${percHtml}</span>
                     <span class="exercise-details">${resumo.total || 0} questões</span>
                 </div>
-                ${scoreHtml}
                 <div class="exercise-time">
                     <p>${resumo.criadoEm?.toDate().toLocaleDateString('pt-BR')}</p>
                     <button class="btn btn-primary btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>

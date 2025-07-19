@@ -824,6 +824,10 @@ body {
 .exercise-subject {
     font-weight: 500;
     color: #1f2937;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
 }
 .exercise-details {
     font-size: 12px;
