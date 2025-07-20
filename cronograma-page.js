@@ -895,18 +895,57 @@ function gerarGraficoProgresso(planoId) {
     
     let graficoHtml = '';
     
+    // Calcula progresso geral primeiro
+    const totalGeral = metricasProgresso?.totalSessoes || 0;
+    const concluidasGeral = metricasProgresso?.sessoesCompletadas || 0;
+    const modificadasGeral = metricasProgresso?.sessoesModificadas || 0;
+    const incompletasGeral = metricasProgresso?.sessoesIncompletas || 0;
+    
+    const pctConcluidaGeral = totalGeral > 0 ? (concluidasGeral / totalGeral) * 100 : 0;
+    const pctModificadaGeral = totalGeral > 0 ? (modificadasGeral / totalGeral) * 100 : 0;
+    const pctIncompletaGeral = totalGeral > 0 ? (incompletasGeral / totalGeral) * 100 : 0;
+    
+    // Adiciona barra de progresso geral
+    graficoHtml += `
+        <div class="semana-progresso progresso-geral">
+            <div class="semana-label">Progresso Geral</div>
+            <div class="semana-barras">
+                ${pctConcluidaGeral > 0 ? `<div class="barra-progresso barra-concluida" style="width: ${pctConcluidaGeral}%"></div>` : ''}
+                ${pctModificadaGeral > 0 ? `<div class="barra-progresso barra-modificada" style="width: ${pctModificadaGeral}%"></div>` : ''}
+                ${pctIncompletaGeral > 0 ? `<div class="barra-progresso barra-incompleta" style="width: ${pctIncompletaGeral}%"></div>` : ''}
+            </div>
+            <div class="semana-stats">
+                <div class="stat-barra stat-concluida">
+                    <i></i>
+                    <span>${concluidasGeral}/${totalGeral}</span>
+                </div>
+                <div class="stat-barra stat-modificada">
+                    <i></i>
+                    <span>${modificadasGeral}</span>
+                </div>
+                <div class="stat-barra stat-incompleta">
+                    <i></i>
+                    <span>${incompletasGeral}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Calcula progresso por semana individual
+    let sessaoIndexGlobal = 0;
     semanas.forEach((semana, index) => {
         const semanaNum = semana.semana_numero || (index + 1);
         const totalSessoes = semana.dias_de_estudo?.reduce((total, dia) => {
             return total + (dia.atividades?.length || 0);
         }, 0) || 0;
         
-        // Conta progresso por status para esta semana
+        // Conta progresso por status para esta semana específica
         const sessoesSemana = [];
         semana.dias_de_estudo?.forEach(dia => {
             dia.atividades?.forEach((atividade, atvIndex) => {
-                const sessaoId = `sessao_${planoId}_${sessoesSemana.length}`;
+                const sessaoId = `sessao_${planoId}_${sessaoIndexGlobal}`;
                 sessoesSemana.push(sessaoId);
+                sessaoIndexGlobal++;
             });
         });
         
@@ -923,7 +962,6 @@ function gerarGraficoProgresso(planoId) {
         ).length;
         
         // Calcula porcentagens para as barras
-        const totalRegistrado = concluidas + modificadas + incompletas;
         const pctConcluida = totalSessoes > 0 ? (concluidas / totalSessoes) * 100 : 0;
         const pctModificada = totalSessoes > 0 ? (modificadas / totalSessoes) * 100 : 0;
         const pctIncompleta = totalSessoes > 0 ? (incompletas / totalSessoes) * 100 : 0;
@@ -939,7 +977,7 @@ function gerarGraficoProgresso(planoId) {
                 <div class="semana-stats">
                     <div class="stat-barra stat-concluida">
                         <i></i>
-                        <span>${concluidas}</span>
+                        <span>${concluidas}/${totalSessoes}</span>
                     </div>
                     <div class="stat-barra stat-modificada">
                         <i></i>
@@ -1043,8 +1081,14 @@ document.body.addEventListener('click', (e) => {
     const cancelarRefinamentoBtn = e.target.closest('#btn-cancelar-refinamento');
 
     if (refinarBtn) {
+        console.log('Botão refinar clicado!'); // Debug
         const container = document.getElementById('container-refinamento');
-        if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        if (container) {
+            console.log('Container encontrado, alterando display'); // Debug
+            container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        } else {
+            console.log('Container não encontrado!'); // Debug
+        }
     } else if (cancelarRefinamentoBtn) {
         const container = document.getElementById('container-refinamento');
         if (container) container.style.display = 'none';

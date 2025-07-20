@@ -1609,6 +1609,40 @@ body.dark-mode .modal-content p {
     gap: 8px;
 }
 
+.grafico-legenda {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background-color: #f9fafb;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.legenda-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.legenda-item i {
+    font-size: 0.75rem;
+}
+
+.legenda-concluida {
+    color: #10b981;
+}
+
+.legenda-modificada {
+    color: #f59e0b;
+}
+
+.legenda-incompleta {
+    color: #ef4444;
+}
+
 .grafico-container {
     display: flex;
     flex-direction: column;
@@ -1623,6 +1657,13 @@ body.dark-mode .modal-content p {
     background-color: #f9fafb;
     border-radius: 6px;
     border: 1px solid #e5e7eb;
+}
+
+.progresso-geral {
+    background-color: #f0f9ff;
+    border-color: #3b82f6;
+    border-width: 2px;
+    font-weight: 600;
 }
 
 .semana-label {
