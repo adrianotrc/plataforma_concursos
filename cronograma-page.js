@@ -80,7 +80,10 @@ function showToast(message, type = 'success', duration = 5000) {
 // --- FUNÇÕES PARA MÉTRICAS DO CRONOGRAMA ---
 
 function calcularMetricasPlano(plano) {
+    console.log('Calculando métricas para plano:', plano);
+    
     if (!plano || !plano.cronograma_semanal_detalhado) {
+        console.log('Plano inválido ou sem cronograma detalhado');
         return null;
     }
 
@@ -116,12 +119,11 @@ function calcularMetricasPlano(plano) {
     }
 
     // Calcular tempo semanal
-    const tempoSemanal = Object.values(plano.disponibilidade_semanal_minutos || {}).reduce((total, minutos) => total + minutos, 0);
-    const horasSemanais = Math.floor(tempoSemanal / 60);
-    const minutosSemanais = tempoSemanal % 60;
-    const tempoSemanalTexto = `${tempoSemanal} min (${horasSemanais}h ${minutosSemanais}min)`;
+    const tempoSemanalTexto = calcularTempoSemanal(plano.disponibilidade_semanal_minutos);
+    console.log('Tempo semanal calculado:', tempoSemanalTexto);
 
     // Calcular sessões por semana
+    const tempoSemanal = Object.values(plano.disponibilidade_semanal_minutos || {}).reduce((total, minutos) => total + (parseInt(minutos) || 0), 0);
     const sessoesPorSemana = Math.floor(tempoSemanal / (plano.duracao_sessao_minutos || 25));
 
     return {
@@ -147,6 +149,21 @@ function obterTextoFase(fase) {
         'pos_edital_publicado': 'Pós-edital publicado'
     };
     return fases[fase] || 'Não especificada';
+}
+
+function calcularTempoSemanal(disponibilidade) {
+    if (!disponibilidade || typeof disponibilidade !== 'object') {
+        return '0 min (0h 0min)';
+    }
+    
+    const totalMinutos = Object.values(disponibilidade).reduce((total, minutos) => {
+        return total + (parseInt(minutos) || 0);
+    }, 0);
+    
+    const horas = Math.floor(totalMinutos / 60);
+    const minutos = totalMinutos % 60;
+    
+    return `${totalMinutos} min (${horas}h ${minutos}min)`;
 }
 
 function renderizarMetricasPlano(plano) {
