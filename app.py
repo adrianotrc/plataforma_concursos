@@ -1284,4 +1284,18 @@ def responder_flashcard():
     return jsonify({'status': 'updated', 'nextReview': updates['nextReview'].isoformat()})
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=True)
+    import sys
+    
+    # Verificar se foi passada uma porta como argumento
+    port = 5000
+    if len(sys.argv) > 1 and sys.argv[1] == '--port':
+        if len(sys.argv) > 2:
+            port = int(sys.argv[2])
+        else:
+            print("Erro: --port requer um número de porta")
+            sys.exit(1)
+    else:
+        port = int(os.environ.get("PORT", 5000))
+    
+    print(f"Iniciando servidor Flask na porta {port}")
+    app.run(host='0.0.0.0', port=port, debug=True)

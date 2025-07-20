@@ -81,6 +81,7 @@ function showToast(message, type = 'success', duration = 5000) {
 
 function calcularMetricasPlano(plano) {
     console.log('Calculando métricas para plano:', plano);
+    console.log('Disponibilidade semanal:', plano.disponibilidade_semanal_minutos);
     
     if (!plano || !plano.cronograma_semanal_detalhado) {
         console.log('Plano inválido ou sem cronograma detalhado');
@@ -152,18 +153,27 @@ function obterTextoFase(fase) {
 }
 
 function calcularTempoSemanal(disponibilidade) {
+    console.log('Calculando tempo semanal para:', disponibilidade);
+    
     if (!disponibilidade || typeof disponibilidade !== 'object') {
+        console.log('Disponibilidade inválida, retornando 0');
         return '0 min (0h 0min)';
     }
     
     const totalMinutos = Object.values(disponibilidade).reduce((total, minutos) => {
-        return total + (parseInt(minutos) || 0);
+        const minutosInt = parseInt(minutos) || 0;
+        console.log(`Dia: ${minutos} -> ${minutosInt} minutos`);
+        return total + minutosInt;
     }, 0);
+    
+    console.log('Total de minutos calculado:', totalMinutos);
     
     const horas = Math.floor(totalMinutos / 60);
     const minutos = totalMinutos % 60;
     
-    return `${totalMinutos} min (${horas}h ${minutos}min)`;
+    const resultado = `${totalMinutos} min (${horas}h ${minutos}min)`;
+    console.log('Resultado final:', resultado);
+    return resultado;
 }
 
 function renderizarMetricasPlano(plano) {
