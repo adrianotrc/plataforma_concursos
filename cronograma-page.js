@@ -82,17 +82,26 @@ function showToast(message, type = 'success', duration = 5000) {
 function calcularMetricasPlano(plano) {
     console.log('=== DEBUG MÉTRICAS ===');
     console.log('Plano completo:', plano);
-    console.log('Fase do concurso:', plano.fase_concurso);
-    console.log('Disponibilidade semanal:', plano.disponibilidade_semanal_minutos);
-    console.log('Tipo da disponibilidade:', typeof plano.disponibilidade_semanal_minutos);
-    console.log('Chaves da disponibilidade:', Object.keys(plano.disponibilidade_semanal_minutos || {}));
-    console.log('Valores da disponibilidade:', plano.disponibilidade_semanal_minutos);
     
-    // Debug específico para fase
+    // Debug para encontrar os dados corretos
+    console.log('=== TODAS AS CHAVES DO PLANO ===');
+    Object.keys(plano).forEach(key => {
+        console.log(`${key}:`, plano[key]);
+    });
+    
+    // Debug específico para fase - tentar diferentes possibilidades
     console.log('=== DEBUG FASE ===');
     console.log('fase_concurso:', plano.fase_concurso);
-    console.log('Tipo de fase_concurso:', typeof plano.fase_concurso);
-    console.log('Fase mapeada:', obterTextoFase(plano.fase_concurso));
+    console.log('fase:', plano.fase);
+    console.log('fase_do_concurso:', plano.fase_do_concurso);
+    console.log('estagio:', plano.estagio);
+    
+    // Debug específico para disponibilidade - tentar diferentes possibilidades
+    console.log('=== DEBUG DISPONIBILIDADE ===');
+    console.log('disponibilidade_semanal_minutos:', plano.disponibilidade_semanal_minutos);
+    console.log('disponibilidade_semanal:', plano.disponibilidade_semanal);
+    console.log('tempo_semanal:', plano.tempo_semanal);
+    console.log('horas_semanais:', plano.horas_semanais);
     
     if (!plano || !plano.cronograma_semanal_detalhado) {
         console.log('Plano inválido ou sem cronograma detalhado');
