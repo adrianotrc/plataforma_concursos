@@ -1,6 +1,6 @@
 import { auth, db } from './firebase-config.js';
 import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarPlanoDeEstudos, getUsageLimits, refinarPlanoDeEstudosAsync } from './api.js';
+import { gerarPlanoDeEstudos, getUsageLimits, refinarPlanoDeEstudosAsync, registrarProgresso, obterProgresso, calcularMetricasProgresso } from './api.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-cronograma');
@@ -736,6 +736,224 @@ document.body.addEventListener('submit', async (e) => {
             btnAjustar.disabled = false;
             btnAjustar.innerHTML = 'Ajustar com IA';
             renderUsageInfo(); // Atualiza a contagem de uso
+        }
+    }
+});
+
+// --- SISTEMA DE ACOMPANHAMENTO DE PROGRESSO ---
+
+// Elementos do DOM para progresso
+const progressoContainer = document.getElementById('progresso-container');
+const progressoConcluidas = document.getElementById('progresso-concluidas');
+const progressoStreak = document.getElementById('progresso-streak');
+const progressoPorcentagem = document.getElementById('progresso-porcentagem');
+
+// Estado do progresso
+let progressoAtual = null;
+let metricasProgresso = null;
+
+// Função para adicionar botões de ação nas sessões
+function adicionarBotoesAcao(sessaoElement, sessaoId, planoId) {
+    const acoesDiv = document.createElement('div');
+    acoesDiv.className = 'sessao-acoes';
+    
+    const btnConcluido = document.createElement('button');
+    btnConcluido.className = 'btn-acao btn-concluido';
+    btnConcluido.innerHTML = '<i class="fas fa-check"></i> Concluído';
+    btnConcluido.onclick = () => registrarProgressoSessao(sessaoId, planoId, 'completed');
+    
+    const btnModificado = document.createElement('button');
+    btnModificado.className = 'btn-acao btn-modificado';
+    btnModificado.innerHTML = '<i class="fas fa-edit"></i> Modificado';
+    btnModificado.onclick = () => registrarProgressoSessao(sessaoId, planoId, 'modified');
+    
+    const btnIncompleto = document.createElement('button');
+    btnIncompleto.className = 'btn-acao btn-incompleto';
+    btnIncompleto.innerHTML = '<i class="fas fa-times"></i> Incompleto';
+    btnIncompleto.onclick = () => registrarProgressoSessao(sessaoId, planoId, 'incomplete');
+    
+    acoesDiv.appendChild(btnConcluido);
+    acoesDiv.appendChild(btnModificado);
+    acoesDiv.appendChild(btnIncompleto);
+    
+    sessaoElement.appendChild(acoesDiv);
+}
+
+// Função para registrar progresso de uma sessão
+async function registrarProgressoSessao(sessaoId, planoId, status) {
+    if (!currentUser) {
+        showToast('Usuário não autenticado', 'error');
+        return;
+    }
+    
+    try {
+        const dados = {
+            userId: currentUser.uid,
+            planoId: planoId,
+            sessaoId: sessaoId,
+            status: status,
+            observacoes: '',
+            tempoReal: 0
+        };
+        
+        await registrarProgresso(dados);
+        
+        // Atualiza o status visual da sessão
+        atualizarStatusSessao(sessaoId, status);
+        
+        // Atualiza as métricas de progresso
+        await carregarMetricasProgresso(planoId);
+        
+        const statusText = {
+            'completed': 'concluída',
+            'modified': 'modificada', 
+            'incomplete': 'marcada como incompleta'
+        };
+        
+        showToast(`Sessão ${statusText[status]} com sucesso!`, 'success');
+        
+    } catch (error) {
+        console.error('Erro ao registrar progresso:', error);
+        showToast('Erro ao registrar progresso', 'error');
+    }
+}
+
+// Função para atualizar o status visual de uma sessão
+function atualizarStatusSessao(sessaoId, status) {
+    const sessaoElement = document.querySelector(`[data-sessao-id="${sessaoId}"]`);
+    if (!sessaoElement) return;
+    
+    // Remove status anteriores
+    sessaoElement.classList.remove('status-concluido', 'status-modificado', 'status-incompleto');
+    
+    // Adiciona novo status
+    const statusClass = `status-${status}`;
+    sessaoElement.classList.add(statusClass);
+    
+    // Adiciona badge de status
+    let statusBadge = sessaoElement.querySelector('.sessao-status');
+    if (!statusBadge) {
+        statusBadge = document.createElement('span');
+        statusBadge.className = 'sessao-status';
+        sessaoElement.appendChild(statusBadge);
+    }
+    
+    const statusText = {
+        'completed': '✅ Concluído',
+        'modified': '⚠️ Modificado',
+        'incomplete': '❌ Incompleto'
+    };
+    
+    statusBadge.textContent = statusText[status];
+    statusBadge.className = `sessao-status status-${status}`;
+}
+
+// Função para carregar métricas de progresso
+async function carregarMetricasProgresso(planoId) {
+    if (!currentUser || !planoId) return;
+    
+    try {
+        const response = await calcularMetricasProgresso(currentUser.uid, planoId);
+        metricasProgresso = response;
+        
+        // Atualiza os elementos da interface
+        if (progressoConcluidas) {
+            progressoConcluidas.textContent = metricasProgresso.sessoesCompletadas;
+        }
+        if (progressoStreak) {
+            progressoStreak.textContent = metricasProgresso.diasConsecutivos;
+        }
+        if (progressoPorcentagem) {
+            progressoPorcentagem.textContent = `${metricasProgresso.porcentagemConclusao}%`;
+        }
+        
+        // Mostra o container de progresso
+        if (progressoContainer) {
+            progressoContainer.style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar métricas de progresso:', error);
+    }
+}
+
+// Função para carregar progresso existente
+async function carregarProgressoExistente(planoId) {
+    if (!currentUser || !planoId) return;
+    
+    try {
+        const response = await obterProgresso(currentUser.uid, planoId);
+        progressoAtual = response.progresso;
+        
+        // Aplica os status visuais para sessões já registradas
+        progressoAtual.forEach(registro => {
+            atualizarStatusSessao(registro.sessaoId, registro.status);
+        });
+        
+    } catch (error) {
+        console.error('Erro ao carregar progresso existente:', error);
+    }
+}
+
+// Função para modificar a exibição do plano para incluir botões de ação
+function exibirPlanoComProgresso(plano) {
+    // Chama a função original de exibição
+    exibirPlanoNaTela(plano);
+    
+    // Aguarda um pouco para o DOM ser renderizado
+    setTimeout(() => {
+        // Adiciona botões de ação em todas as sessões
+        const sessoes = document.querySelectorAll('.atividade-item');
+        sessoes.forEach((sessao, index) => {
+            const sessaoId = `sessao_${plano.jobId || plano.id}_${index}`;
+            sessao.setAttribute('data-sessao-id', sessaoId);
+            adicionarBotoesAcao(sessao, sessaoId, plano.jobId || plano.id);
+        });
+        
+        // Carrega progresso existente
+        carregarProgressoExistente(plano.jobId || plano.id);
+        
+        // Carrega métricas de progresso
+        carregarMetricasProgresso(plano.jobId || plano.id);
+    }, 100);
+}
+
+// Modifica o event listener para usar a nova função
+document.body.addEventListener('click', async (e) => {
+    const abrirBtn = e.target.closest('.btn-abrir-plano');
+    const fecharBtn = e.target.closest('#btn-fechar-plano');
+    const exportarBtn = e.target.closest('#btn-exportar-excel');
+    const refinarBtn = e.target.closest('#btn-refinar-plano');
+    const cancelarRefinamentoBtn = e.target.closest('#btn-cancelar-refinamento');
+
+    if (abrirBtn && !abrirBtn.disabled) {
+        const planoId = abrirBtn.dataset.id;
+        const user = auth.currentUser;
+        if (planoId && user) {
+            const docRef = doc(db, 'users', user.uid, 'plans', planoId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                // Usa a nova função que inclui progresso
+                exibirPlanoComProgresso(docSnap.data());
+            } else {
+                showToast("Não foi possível encontrar este plano.", "error");
+            }
+        }
+    } else if (refinarBtn) {
+        const container = document.getElementById('container-refinamento');
+        if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
+    } else if (cancelarRefinamentoBtn) {
+        const container = document.getElementById('container-refinamento');
+        if (container) container.style.display = 'none';
+    } else if (exportarBtn) {
+        exportarPlanoParaExcel();
+    } else if (fecharBtn) {
+        containerExibicao.style.display = 'none';
+        containerExibicao.innerHTML = '';
+        planoAbertoAtual = null;
+        // Esconde o container de progresso
+        if (progressoContainer) {
+            progressoContainer.style.display = 'none';
         }
     }
 });
