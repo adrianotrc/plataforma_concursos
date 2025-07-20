@@ -1314,8 +1314,8 @@ def registrar_progresso():
         if status not in ['completed', 'modified', 'incomplete']:
             return jsonify({"erro": "Status inválido"}), 400
         
-        # Cria o documento de progresso
-        progresso_ref = db.collection('users').document(user_id).collection('progresso').document()
+        # Verifica se já existe um registro para esta sessão
+        progresso_existente = db.collection('users').document(user_id).collection('progresso').where('sessaoId', '==', sessao_id).where('planoId', '==', plano_id).limit(1).stream()
         
         progresso_data = {
             'userId': user_id,
@@ -1327,9 +1327,20 @@ def registrar_progresso():
             'dataRegistro': firestore.SERVER_TIMESTAMP
         }
         
-        progresso_ref.set(progresso_data)
+        # Se já existe um registro, atualiza ele. Senão, cria um novo
+        registros_existentes = list(progresso_existente)
+        if registros_existentes:
+            # Atualiza o registro existente
+            doc_ref = registros_existentes[0].reference
+            doc_ref.update(progresso_data)
+            progresso_id = doc_ref.id
+        else:
+            # Cria um novo registro
+            progresso_ref = db.collection('users').document(user_id).collection('progresso').document()
+            progresso_ref.set(progresso_data)
+            progresso_id = progresso_ref.id
         
-        return jsonify({"sucesso": True, "progressoId": progresso_ref.id}), 200
+        return jsonify({"sucesso": True, "progressoId": progresso_id}), 200
         
     except Exception as e:
         print(f"Erro ao registrar progresso: {e}")
@@ -1344,10 +1355,21 @@ def obter_progresso(user_id, plano_id):
         progresso_refs = db.collection('users').document(user_id).collection('progresso').where('planoId', '==', plano_id).stream()
         
         progresso_lista = []
+        sessoes_por_id = {}  # Dicionário para armazenar o último status de cada sessão
+        
+        # Agrupa registros por sessão e pega o mais recente
         for doc in progresso_refs:
             data = doc.to_dict()
             data['id'] = doc.id
-            progresso_lista.append(data)
+            sessao_id = data['sessaoId']
+            data_registro = data.get('dataRegistro')
+            
+            # Se não existe registro para esta sessão ou se é mais recente
+            if sessao_id not in sessoes_por_id or (data_registro and sessoes_por_id[sessao_id]['dataRegistro'] < data_registro):
+                sessoes_por_id[sessao_id] = data
+        
+        # Retorna apenas o último status de cada sessão
+        progresso_lista = list(sessoes_por_id.values())
         
         return jsonify({"progresso": progresso_lista}), 200
         
@@ -1393,9 +1415,21 @@ def calcular_metricas_progresso(user_id, plano_id):
                     for atividade in dia.get('atividades', []):
                         total_sessoes += 1
         
-        # Analisa progresso
+        # Analisa progresso - considera apenas o último status de cada sessão
         datas_estudo = set()
+        sessoes_por_id = {}  # Dicionário para armazenar o último status de cada sessão
+        
+        # Agrupa registros por sessão e pega o mais recente
         for registro in progresso_lista:
+            sessao_id = registro['sessaoId']
+            data_registro = registro.get('dataRegistro')
+            
+            # Se não existe registro para esta sessão ou se é mais recente
+            if sessao_id not in sessoes_por_id or (data_registro and sessoes_por_id[sessao_id]['dataRegistro'] < data_registro):
+                sessoes_por_id[sessao_id] = registro
+        
+        # Conta apenas o último status de cada sessão
+        for sessao_id, registro in sessoes_por_id.items():
             if registro['status'] == 'completed':
                 sessoes_completadas += 1
             elif registro['status'] == 'modified':
