@@ -1030,6 +1030,22 @@ function exibirPlanoComProgresso(plano) {
         console.log('Container refinamento após exibir plano:', containerRefinamento); // Debug
         if (containerRefinamento) {
             console.log('Display inicial do container:', containerRefinamento.style.display); // Debug
+            
+            // Monitora mudanças no display do container
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        console.log('MUDANÇA DETECTADA no container-refinamento!');
+                        console.log('Novo style:', containerRefinamento.getAttribute('style'));
+                        console.log('Stack trace:', new Error().stack);
+                    }
+                });
+            });
+            
+            observer.observe(containerRefinamento, {
+                attributes: true,
+                attributeFilter: ['style']
+            });
         }
         
         // Adiciona botões de ação em todas as sessões
@@ -1088,10 +1104,18 @@ document.body.addEventListener('click', (e) => {
     const cancelarRefinamentoBtn = e.target.closest('#btn-cancelar-refinamento');
 
     if (refinarBtn) {
-        console.log('Botão refinar clicado!'); // Debug
+        console.log('=== BOTÃO REFINAR CLICADO ==='); // Debug
         const container = document.getElementById('container-refinamento');
         if (container) {
             console.log('Container encontrado, display atual:', container.style.display); // Debug
+            console.log('Style completo:', container.getAttribute('style')); // Debug
+            
+            // Força o container a estar fechado inicialmente
+            if (!container.style.display || container.style.display === '') {
+                container.style.display = 'none';
+                console.log('Display forçado para none'); // Debug
+            }
+            
             const novoDisplay = container.style.display === 'none' ? 'block' : 'none';
             container.style.display = novoDisplay;
             console.log('Display alterado para:', novoDisplay); // Debug
@@ -1099,6 +1123,7 @@ document.body.addEventListener('click', (e) => {
             
             // Debug visual - adiciona borda colorida temporária
             if (novoDisplay === 'block') {
+                console.log('ADICIONANDO BORDA VERMELHA!'); // Debug
                 container.style.border = '3px solid red';
                 setTimeout(() => {
                     container.style.border = '';
