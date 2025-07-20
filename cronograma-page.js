@@ -379,7 +379,7 @@ function exibirPlanoNaTela(plano) {
             cronogramaHtml += '<td><ul>';
             if (atividades.length > 0) {
                 atividades.forEach(atividade => {
-                    cronogramaHtml += `<li><strong>${atividade.materia || ''}</strong><p class="topico">${atividade.topico_sugerido || ''}</p><p class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</p></li>`;
+                    cronogramaHtml += `<li class="atividade-item"><strong>${atividade.materia || ''}</strong><p class="topico">${atividade.topico_sugerido || ''}</p><p class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</p></li>`;
                 });
             }
             cronogramaHtml += '</ul></td>';
@@ -674,7 +674,12 @@ function initCronogramaPage() {
     if (currentUser) {
         popularMaterias();
         ouvirHistoricoDePlanos();
-        renderUsageInfo(); 
+        renderUsageInfo();
+        
+        // Esconde a seção de progresso inicialmente
+        if (progressoContainer) {
+            progressoContainer.style.display = 'none';
+        }
     }
 }
 
@@ -897,6 +902,11 @@ async function carregarProgressoExistente(planoId) {
 
 // Função para modificar a exibição do plano para incluir botões de ação
 function exibirPlanoComProgresso(plano) {
+    // Esconde a seção de progresso inicialmente
+    if (progressoContainer) {
+        progressoContainer.style.display = 'none';
+    }
+    
     // Chama a função original de exibição
     exibirPlanoNaTela(plano);
     
