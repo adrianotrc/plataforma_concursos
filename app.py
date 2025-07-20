@@ -153,6 +153,11 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
 
         plano_final = resultado_ia['plano_de_estudos']
         plano_final['status'] = 'completed'
+        
+        # Adiciona os dados originais do usuário que são necessários para as métricas
+        plano_final['fase_concurso'] = dados_usuario.get('fase_concurso')
+        plano_final['disponibilidade_semanal_minutos'] = dados_usuario.get('disponibilidade_semanal_minutos')
+        plano_final['duracao_sessao_minutos'] = dados_usuario.get('duracao_sessao_minutos', 25)
 
         job_ref.update(plano_final)
         print(f"BACKGROUND JOB CONCLUÍDO: {job_id}")
@@ -224,6 +229,11 @@ Retorne UM ÚNICO objeto JSON com a chave 'plano_de_estudos'. Nenhum texto fora 
         plano_refinado = resultado_ia['plano_de_estudos']
         plano_refinado['status'] = 'completed' # Marca como completo novamente
         plano_refinado['criadoEm'] = firestore.SERVER_TIMESTAMP # Atualiza o timestamp
+        
+        # Preserva os dados originais do usuário que são necessários para as métricas
+        plano_refinado['fase_concurso'] = original_plan.get('fase_concurso')
+        plano_refinado['disponibilidade_semanal_minutos'] = original_plan.get('disponibilidade_semanal_minutos')
+        plano_refinado['duracao_sessao_minutos'] = original_plan.get('duracao_sessao_minutos', 25)
 
         job_ref.update(plano_refinado)
         print(f"BACKGROUND JOB (REFINAMENTO) CONCLUÍDO: {job_id}")

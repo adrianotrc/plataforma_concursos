@@ -80,31 +80,7 @@ function showToast(message, type = 'success', duration = 5000) {
 // --- FUNÇÕES PARA MÉTRICAS DO CRONOGRAMA ---
 
 function calcularMetricasPlano(plano) {
-    console.log('=== DEBUG MÉTRICAS ===');
-    console.log('Plano completo:', plano);
-    
-    // Debug para encontrar os dados corretos
-    console.log('=== TODAS AS CHAVES DO PLANO ===');
-    Object.keys(plano).forEach(key => {
-        console.log(`${key}:`, plano[key]);
-    });
-    
-    // Debug específico para fase - tentar diferentes possibilidades
-    console.log('=== DEBUG FASE ===');
-    console.log('fase_concurso:', plano.fase_concurso);
-    console.log('fase:', plano.fase);
-    console.log('fase_do_concurso:', plano.fase_do_concurso);
-    console.log('estagio:', plano.estagio);
-    
-    // Debug específico para disponibilidade - tentar diferentes possibilidades
-    console.log('=== DEBUG DISPONIBILIDADE ===');
-    console.log('disponibilidade_semanal_minutos:', plano.disponibilidade_semanal_minutos);
-    console.log('disponibilidade_semanal:', plano.disponibilidade_semanal);
-    console.log('tempo_semanal:', plano.tempo_semanal);
-    console.log('horas_semanais:', plano.horas_semanais);
-    
     if (!plano || !plano.cronograma_semanal_detalhado) {
-        console.log('Plano inválido ou sem cronograma detalhado');
         return null;
     }
 
@@ -151,8 +127,7 @@ function calcularMetricasPlano(plano) {
     const minutos = tempoSemanalTotal % 60;
     const tempoSemanalTexto = `${tempoSemanalTotal} min (${horas}h ${minutos}min)`;
     
-    console.log('Tempo semanal total:', tempoSemanalTotal, 'minutos');
-    console.log('Tempo semanal formatado:', tempoSemanalTexto);
+
 
     // Calcular sessões por semana
     const sessoesPorSemana = Math.floor(tempoSemanalTotal / (plano.duracao_sessao_minutos || 25));
@@ -174,13 +149,7 @@ function calcularMetricasPlano(plano) {
 }
 
 function obterTextoFase(fase) {
-    console.log('=== DEBUG obterTextoFase ===');
-    console.log('Fase recebida:', fase);
-    console.log('Tipo da fase:', typeof fase);
-    
-    // Se fase for null, undefined ou string vazia
     if (!fase) {
-        console.log('Fase vazia, retornando padrão');
         return 'Não especificada';
     }
     
@@ -190,12 +159,7 @@ function obterTextoFase(fase) {
         'pos_edital_publicado': 'Pós-edital publicado'
     };
     
-    console.log('Fases disponíveis:', Object.keys(fases));
-    console.log('Fase encontrada:', fases[fase]);
-    
-    const resultado = fases[fase] || 'Não especificada';
-    console.log('Resultado final:', resultado);
-    return resultado;
+    return fases[fase] || 'Não especificada';
 }
 
 
