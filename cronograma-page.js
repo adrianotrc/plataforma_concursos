@@ -347,7 +347,7 @@ function exibirPlanoNaTela(plano) {
                     <button id="btn-fechar-plano" class="btn btn-outline">Fechar</button>
                 </div>
             </div>
-            <div id="container-refinamento" class="feature-card" style="display: none; margin-top: 20px;">
+            <div id="container-refinamento" class="feature-card" style="display: none; margin-top: 20px;" data-debug="container-criado">
                 <form id="form-refinamento">
                     <div class="form-field-group">
                         <label for="feedback-input">Que ajustes você gostaria de fazer neste plano?</label>
@@ -390,6 +390,15 @@ function exibirPlanoNaTela(plano) {
     cronogramaHtml += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial.</small></div>`;
     containerExibicao.innerHTML = cronogramaHtml;
     containerExibicao.style.display = 'block';
+    
+    // Debug: verifica se o container foi criado corretamente
+    setTimeout(() => {
+        const containerRefinamento = document.getElementById('container-refinamento');
+        if (containerRefinamento) {
+            console.log('Container criado, display inicial:', containerRefinamento.style.display);
+            console.log('Container tem data-debug?', containerRefinamento.hasAttribute('data-debug'));
+        }
+    }, 50);
 }
 
 function exportarPlanoParaExcel() {
@@ -610,11 +619,11 @@ document.body.addEventListener('click', async (e) => {
             }
         }
     } else if (refinarBtn) {
-        const container = document.getElementById('container-refinamento');
-        if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        // Removido - conflito com o event listener separado
+        console.log('Event listener duplicado detectado - ignorando');
     } else if (cancelarRefinamentoBtn) {
-        const container = document.getElementById('container-refinamento');
-        if (container) container.style.display = 'none';
+        // Removido - conflito com o event listener separado
+        console.log('Event listener duplicado detectado - ignorando');
     } else if (exportarBtn) {
         exportarPlanoParaExcel();
     } else if (fecharBtn) {
@@ -1031,13 +1040,15 @@ function exibirPlanoComProgresso(plano) {
         if (containerRefinamento) {
             console.log('Display inicial do container:', containerRefinamento.style.display); // Debug
             
-            // Monitora mudanças no display do container
+            // Monitora mudanças no display do container (debug temporário)
             const observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
                     if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                        console.log('MUDANÇA DETECTADA no container-refinamento!');
-                        console.log('Novo style:', containerRefinamento.getAttribute('style'));
-                        console.log('Stack trace:', new Error().stack);
+                        const newStyle = containerRefinamento.getAttribute('style');
+                        if (newStyle && newStyle.includes('display: block')) {
+                            console.log('🚨 CONTAINER ABERTO AUTOMATICAMENTE!');
+                            console.trace();
+                        }
                     }
                 });
             });
@@ -1104,33 +1115,10 @@ document.body.addEventListener('click', (e) => {
     const cancelarRefinamentoBtn = e.target.closest('#btn-cancelar-refinamento');
 
     if (refinarBtn) {
-        console.log('=== BOTÃO REFINAR CLICADO ==='); // Debug
         const container = document.getElementById('container-refinamento');
         if (container) {
-            console.log('Container encontrado, display atual:', container.style.display); // Debug
-            console.log('Style completo:', container.getAttribute('style')); // Debug
-            
-            // Força o container a estar fechado inicialmente
-            if (!container.style.display || container.style.display === '') {
-                container.style.display = 'none';
-                console.log('Display forçado para none'); // Debug
-            }
-            
             const novoDisplay = container.style.display === 'none' ? 'block' : 'none';
             container.style.display = novoDisplay;
-            console.log('Display alterado para:', novoDisplay); // Debug
-            console.log('Container visível?', container.offsetParent !== null); // Debug
-            
-            // Debug visual - adiciona borda colorida temporária
-            if (novoDisplay === 'block') {
-                console.log('ADICIONANDO BORDA VERMELHA!'); // Debug
-                container.style.border = '3px solid red';
-                setTimeout(() => {
-                    container.style.border = '';
-                }, 2000);
-            }
-        } else {
-            console.log('Container não encontrado!'); // Debug
         }
     } else if (cancelarRefinamentoBtn) {
         const container = document.getElementById('container-refinamento');
