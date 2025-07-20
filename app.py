@@ -1293,6 +1293,153 @@ def responder_flashcard():
 
     return jsonify({'status': 'updated', 'nextReview': updates['nextReview'].isoformat()})
 
+# --- SISTEMA DE ACOMPANHAMENTO DE PROGRESSO ---
+
+@app.route("/registrar-progresso", methods=['POST'])
+@cross_origin(supports_credentials=True)
+def registrar_progresso():
+    """Registra o progresso de uma sessão de estudo."""
+    try:
+        dados = request.json
+        user_id = dados.get('userId')
+        plano_id = dados.get('planoId')
+        sessao_id = dados.get('sessaoId')
+        status = dados.get('status')  # 'completed', 'modified', 'incomplete'
+        observacoes = dados.get('observacoes', '')
+        tempo_real = dados.get('tempoReal', 0)
+        
+        if not all([user_id, plano_id, sessao_id, status]):
+            return jsonify({"erro": "Dados insuficientes"}), 400
+            
+        if status not in ['completed', 'modified', 'incomplete']:
+            return jsonify({"erro": "Status inválido"}), 400
+        
+        # Cria o documento de progresso
+        progresso_ref = db.collection('users').document(user_id).collection('progresso').document()
+        
+        progresso_data = {
+            'userId': user_id,
+            'planoId': plano_id,
+            'sessaoId': sessao_id,
+            'status': status,
+            'observacoes': observacoes,
+            'tempoReal': tempo_real,
+            'dataRegistro': firestore.SERVER_TIMESTAMP
+        }
+        
+        progresso_ref.set(progresso_data)
+        
+        return jsonify({"sucesso": True, "progressoId": progresso_ref.id}), 200
+        
+    except Exception as e:
+        print(f"Erro ao registrar progresso: {e}")
+        return jsonify({"erro": "Erro interno do servidor"}), 500
+
+@app.route("/obter-progresso/<user_id>/<plano_id>", methods=['GET'])
+@cross_origin(supports_credentials=True)
+def obter_progresso(user_id, plano_id):
+    """Obtém o progresso de um plano específico."""
+    try:
+        # Busca todos os registros de progresso do plano
+        progresso_refs = db.collection('users').document(user_id).collection('progresso').where('planoId', '==', plano_id).stream()
+        
+        progresso_lista = []
+        for doc in progresso_refs:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            progresso_lista.append(data)
+        
+        return jsonify({"progresso": progresso_lista}), 200
+        
+    except Exception as e:
+        print(f"Erro ao obter progresso: {e}")
+        return jsonify({"erro": "Erro interno do servidor"}), 500
+
+@app.route("/calcular-metricas-progresso/<user_id>/<plano_id>", methods=['GET'])
+@cross_origin(supports_credentials=True)
+def calcular_metricas_progresso(user_id, plano_id):
+    """Calcula métricas de progresso para um plano."""
+    try:
+        # Busca o plano
+        plano_ref = db.collection('users').document(user_id).collection('plans').document(plano_id)
+        plano_doc = plano_ref.get()
+        
+        if not plano_doc.exists:
+            return jsonify({"erro": "Plano não encontrado"}), 404
+            
+        plano_data = plano_doc.to_dict()
+        
+        # Busca o progresso
+        progresso_refs = db.collection('users').document(user_id).collection('progresso').where('planoId', '==', plano_id).stream()
+        
+        progresso_lista = []
+        for doc in progresso_refs:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            progresso_lista.append(data)
+        
+        # Calcula métricas
+        total_sessoes = 0
+        sessoes_completadas = 0
+        sessoes_modificadas = 0
+        sessoes_incompletas = 0
+        dias_consecutivos = 0
+        ultima_data = None
+        
+        # Conta sessões do plano
+        if 'cronograma_semanal_detalhado' in plano_data:
+            for semana in plano_data['cronograma_semanal_detalhado']:
+                for dia in semana.get('dias_de_estudo', []):
+                    for atividade in dia.get('atividades', []):
+                        total_sessoes += 1
+        
+        # Analisa progresso
+        datas_estudo = set()
+        for registro in progresso_lista:
+            if registro['status'] == 'completed':
+                sessoes_completadas += 1
+            elif registro['status'] == 'modified':
+                sessoes_modificadas += 1
+            elif registro['status'] == 'incomplete':
+                sessoes_incompletas += 1
+            
+            # Adiciona data ao conjunto
+            if 'dataRegistro' in registro:
+                data_str = registro['dataRegistro'].strftime('%Y-%m-%d')
+                datas_estudo.add(data_str)
+        
+        # Calcula dias consecutivos
+        if datas_estudo:
+            datas_ordenadas = sorted(list(datas_estudo))
+            dias_consecutivos = 1
+            for i in range(1, len(datas_ordenadas)):
+                data_anterior = datetime.strptime(datas_ordenadas[i-1], '%Y-%m-%d')
+                data_atual = datetime.strptime(datas_ordenadas[i], '%Y-%m-%d')
+                if (data_atual - data_anterior).days == 1:
+                    dias_consecutivos += 1
+                else:
+                    dias_consecutivos = 1
+        
+        # Calcula porcentagem
+        porcentagem = (sessoes_completadas / total_sessoes * 100) if total_sessoes > 0 else 0
+        
+        metricas = {
+            'totalSessoes': total_sessoes,
+            'sessoesCompletadas': sessoes_completadas,
+            'sessoesModificadas': sessoes_modificadas,
+            'sessoesIncompletas': sessoes_incompletas,
+            'porcentagemConclusao': round(porcentagem, 1),
+            'diasConsecutivos': dias_consecutivos,
+            'totalDiasEstudo': len(datas_estudo),
+            'progresso': progresso_lista
+        }
+        
+        return jsonify(metricas), 200
+        
+    except Exception as e:
+        print(f"Erro ao calcular métricas: {e}")
+        return jsonify({"erro": "Erro interno do servidor"}), 500
+
 if __name__ == "__main__":
     import sys
     

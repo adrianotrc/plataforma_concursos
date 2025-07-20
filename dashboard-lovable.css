@@ -1474,6 +1474,121 @@ body.dark-mode .modal-content p {
     margin-left: 4px;
 }
 
+/* Estilos para a seção de progresso */
+.progresso-card {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.progresso-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.progresso-header h3 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.progresso-stats {
+    display: flex;
+    gap: 16px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.stat-item i {
+    color: #3b82f6;
+}
+
+/* Estilos para botões de ação nas sessões */
+.sessao-acoes {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-acao {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-concluido {
+    background-color: #10b981;
+    color: white;
+}
+
+.btn-concluido:hover {
+    background-color: #059669;
+}
+
+.btn-modificado {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.btn-modificado:hover {
+    background-color: #d97706;
+}
+
+.btn-incompleto {
+    background-color: #ef4444;
+    color: white;
+}
+
+.btn-incompleto:hover {
+    background-color: #dc2626;
+}
+
+.sessao-status {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.status-concluido {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-modificado {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-incompleto {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
     .metricas-header {

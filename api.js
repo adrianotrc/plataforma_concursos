@@ -199,3 +199,25 @@ export async function responderFlashcard(params) {
         body: JSON.stringify(params),
     });
 }
+
+// --- FUNÇÕES DO SISTEMA DE ACOMPANHAMENTO DE PROGRESSO ---
+
+export async function registrarProgresso(params) {
+    return fetchApi('/registrar-progresso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+    });
+}
+
+export async function obterProgresso(userId, planoId) {
+    return fetchApi(`/obter-progresso/${userId}/${planoId}`, {
+        method: 'GET',
+    });
+}
+
+export async function calcularMetricasProgresso(userId, planoId) {
+    return fetchApi(`/calcular-metricas-progresso/${userId}/${planoId}`, {
+        method: 'GET',
+    });
+}
