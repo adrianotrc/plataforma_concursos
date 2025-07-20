@@ -1272,6 +1272,140 @@ body.dark-mode .modal-content {
 body.dark-mode .modal-content p {
     color: #9ca3af;
 }
+/* === ESTILOS PARA MÉTRICAS DO CRONOGRAMA === */
+
+.metricas-cronograma-card {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 24px;
+}
+
+.metricas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.metricas-header h3 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cronograma-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cronograma-selector label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+}
+
+.cronograma-selector select {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background-color: #fff;
+    font-size: 0.875rem;
+    color: #374151;
+    min-width: 200px;
+}
+
+.metricas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.metrica-item {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.metrica-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: #fff;
+}
+
+.metrica-icon.concurso { background-color: #3b82f6; }
+.metrica-icon.fase { background-color: #10b981; }
+.metrica-icon.periodo { background-color: #f59e0b; }
+.metrica-icon.materias { background-color: #8b5cf6; }
+.metrica-icon.dias { background-color: #ef4444; }
+.metrica-icon.tempo { background-color: #06b6d4; }
+.metrica-icon.sessoes { background-color: #84cc16; }
+.metrica-icon.progresso { background-color: #f97316; }
+
+.metrica-content {
+    flex: 1;
+}
+
+.metrica-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.metrica-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.2;
+}
+
+.metrica-subtitle {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .metricas-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .cronograma-selector {
+        width: 100%;
+    }
+    
+    .cronograma-selector select {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .metricas-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* === ESTILOS PARA O CRONOGRAMA EM TABELA === */
 
 .plano-header {

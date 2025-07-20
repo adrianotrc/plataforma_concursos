@@ -15,11 +15,18 @@ const materiasCheckboxContainer = document.getElementById('materias-checkbox-con
 const materiasContainer = document.getElementById('materias-container');
 const materiasInput = document.getElementById('materias-input');
 
+// --- NOVOS ELEMENTOS PARA MÉTRICAS ---
+const metricasContainer = document.getElementById('metricas-cronograma-container');
+const metricasContent = document.getElementById('metricas-content');
+const seletorCronograma = document.getElementById('seletor-cronograma');
+
 // --- ESTADO LOCAL ---
 let currentUser = null;
 let unsubHistorico = null;
 let planoAbertoAtual = null;
 let ultimoJobIdSolicitado = null; // Acompanhar o job mais recente
+let planosDisponiveis = []; // Lista de planos para o seletor
+let planoSelecionado = null; // Plano atualmente selecionado para métricas
 
 const materiasPreDefinidas = [
     "Língua Portuguesa", "Raciocínio Lógico", "Matemática", "Informática (Noções ou Conhecimentos Básicos de TI)",
@@ -70,8 +77,219 @@ function showToast(message, type = 'success', duration = 5000) {
     }, duration);
 }
 
+// --- FUNÇÕES PARA MÉTRICAS DO CRONOGRAMA ---
+
+function calcularMetricasPlano(plano) {
+    if (!plano || !plano.cronograma_semanal_detalhado) {
+        return null;
+    }
+
+    const semanas = plano.cronograma_semanal_detalhado;
+    const totalSemanas = semanas.length;
+    
+    // Calcular dias de estudo únicos
+    const diasEstudo = new Set();
+    let totalSessoes = 0;
+    let totalMinutos = 0;
+    const materiasUnicas = new Set();
+    const tecnicasUtilizadas = new Set();
+
+    semanas.forEach(semana => {
+        semana.dias_de_estudo?.forEach(dia => {
+            diasEstudo.add(dia.dia_semana);
+            dia.atividades?.forEach(atividade => {
+                totalSessoes++;
+                totalMinutos += atividade.duracao_minutos || 0;
+                materiasUnicas.add(atividade.materia);
+                tecnicasUtilizadas.add(atividade.tipo_de_estudo);
+            });
+        });
+    });
+
+    // Calcular período
+    let periodoTexto = 'Período não definido';
+    if (plano.data_inicio && plano.data_termino) {
+        const dataInicio = new Date(plano.data_inicio);
+        const dataTermino = new Date(plano.data_termino);
+        const diasPeriodo = Math.ceil((dataTermino - dataInicio) / (1000 * 60 * 60 * 24)) + 1;
+        periodoTexto = `${plano.data_inicio} a ${plano.data_termino} (${diasPeriodo} dias)`;
+    }
+
+    // Calcular tempo semanal
+    const tempoSemanal = Object.values(plano.disponibilidade_semanal_minutos || {}).reduce((total, minutos) => total + minutos, 0);
+    const horasSemanais = Math.floor(tempoSemanal / 60);
+    const minutosSemanais = tempoSemanal % 60;
+    const tempoSemanalTexto = `${tempoSemanal} min (${horasSemanais}h ${minutosSemanais}min)`;
+
+    // Calcular sessões por semana
+    const sessoesPorSemana = Math.floor(tempoSemanal / (plano.duracao_sessao_minutos || 25));
+
+    return {
+        concurso: plano.concurso_foco || 'Não especificado',
+        fase: obterTextoFase(plano.fase_concurso),
+        periodo: periodoTexto,
+        materias: materiasUnicas.size,
+        diasEstudo: Array.from(diasEstudo).sort(),
+        tempoSemanal: tempoSemanalTexto,
+        sessoesPorSemana: sessoesPorSemana,
+        duracaoSessao: plano.duracao_sessao_minutos || 25,
+        totalSemanas: totalSemanas,
+        totalSessoes: totalSessoes,
+        totalMinutos: totalMinutos,
+        tecnicasUtilizadas: Array.from(tecnicasUtilizadas)
+    };
+}
+
+function obterTextoFase(fase) {
+    const fases = {
+        'base_sem_edital_especifico': 'Base sem edital específico',
+        'pre_edital_com_foco': 'Pré-edital com foco',
+        'pos_edital_publicado': 'Pós-edital publicado'
+    };
+    return fases[fase] || 'Não especificada';
+}
+
+function renderizarMetricasPlano(plano) {
+    if (!metricasContent || !plano) {
+        return;
+    }
+
+    const metricas = calcularMetricasPlano(plano);
+    if (!metricas) {
+        metricasContent.innerHTML = '<p>Não foi possível calcular as métricas para este cronograma.</p>';
+        return;
+    }
+
+    const diasEstudoTexto = metricas.diasEstudo.map(dia => 
+        dia.replace('-feira', '').substring(0, 3)
+    ).join(', ');
+
+    metricasContent.innerHTML = `
+        <div class="metrica-item">
+            <div class="metrica-icon concurso">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <div class="metrica-content">
+                <div class="metrica-label">Concurso</div>
+                <div class="metrica-value">${metricas.concurso}</div>
+            </div>
+        </div>
+        
+        <div class="metrica-item">
+            <div class="metrica-icon fase">
+                <i class="fas fa-flag"></i>
+            </div>
+            <div class="metrica-content">
+                <div class="metrica-label">Fase</div>
+                <div class="metrica-value">${metricas.fase}</div>
+            </div>
+        </div>
+        
+        <div class="metrica-item">
+            <div class="metrica-icon periodo">
+                <i class="fas fa-calendar"></i>
+            </div>
+            <div class="metrica-content">
+                <div class="metrica-label">Período</div>
+                <div class="metrica-value">${metricas.periodo}</div>
+            </div>
+        </div>
+        
+        <div class="metrica-item">
+            <div class="metrica-icon materias">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="metrica-content">
+                <div class="metrica-label">Matérias</div>
+                <div class="metrica-value">${metricas.materias} selecionadas</div>
+            </div>
+        </div>
+        
+        <div class="metrica-item">
+            <div class="metrica-icon dias">
+                <i class="fas fa-calendar-week"></i>
+            </div>
+            <div class="metrica-content">
+                <div class="metrica-label">Dias de Estudo</div>
+                <div class="metrica-value">${diasEstudoTexto}</div>
+                <div class="metrica-subtitle">${metricas.diasEstudo.length} dias por semana</div>
+            </div>
+        </div>
+        
+        <div class="metrica-item">
+            <div class="metrica-icon tempo">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="metrica-content">
+                <div class="metrica-label">Tempo Semanal</div>
+                <div class="metrica-value">${metricas.tempoSemanal}</div>
+            </div>
+        </div>
+        
+        <div class="metrica-item">
+            <div class="metrica-icon sessoes">
+                <i class="fas fa-stopwatch"></i>
+            </div>
+            <div class="metrica-content">
+                <div class="metrica-label">Sessões</div>
+                <div class="metrica-value">${metricas.duracaoSessao} min cada</div>
+                <div class="metrica-subtitle">~${metricas.sessoesPorSemana} sessões/semana</div>
+            </div>
+        </div>
+        
+        <div class="metrica-item">
+            <div class="metrica-icon progresso">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <div class="metrica-content">
+                <div class="metrica-label">Plano Completo</div>
+                <div class="metrica-value">${metricas.totalSemanas} semanas</div>
+                <div class="metrica-subtitle">${metricas.totalSessoes} sessões totais</div>
+            </div>
+        </div>
+    `;
+}
+
+function popularSeletorCronogramas(planos) {
+    if (!seletorCronograma) return;
+    
+    // Limpar opções existentes
+    seletorCronograma.innerHTML = '<option value="">Selecione um cronograma...</option>';
+    
+    // Filtrar apenas planos completos
+    const planosCompletos = planos.filter(plano => 
+        plano.status === 'completed' && plano.cronograma_semanal_detalhado
+    );
+    
+    planosCompletos.forEach(plano => {
+        const dataFormatada = plano.criadoEm?.toDate()?.toLocaleDateString('pt-BR') || 'Data desconhecida';
+        const option = document.createElement('option');
+        option.value = plano.jobId || plano.id;
+        option.textContent = `${plano.concurso_foco || 'Plano'} - ${dataFormatada}`;
+        seletorCronograma.appendChild(option);
+    });
+    
+    // Se há planos, selecionar o mais recente
+    if (planosCompletos.length > 0) {
+        const planoMaisRecente = planosCompletos[0];
+        seletorCronograma.value = planoMaisRecente.jobId || planoMaisRecente.id;
+        planoSelecionado = planoMaisRecente;
+        renderizarMetricasPlano(planoMaisRecente);
+        metricasContainer.style.display = 'block';
+    } else {
+        metricasContainer.style.display = 'none';
+    }
+}
+
 function renderizarHistorico(planos) {
     if (!containerHistorico) return;
+    
+    // Atualizar lista global de planos
+    planosDisponiveis = planos || [];
+    
+    // Popular seletor de cronogramas
+    popularSeletorCronogramas(planosDisponiveis);
+    
     if (!planos || planos.length === 0) {
         containerHistorico.innerHTML = '<div class="card-placeholder"><p>Nenhum cronograma gerado ainda.</p></div>';
         return;
@@ -408,6 +626,23 @@ document.body.addEventListener('click', async (e) => {
 
 btnAbrirForm?.addEventListener('click', () => { containerForm.style.display = 'block'; });
 btnFecharForm?.addEventListener('click', () => { containerForm.style.display = 'none'; });
+
+// Event listener para o seletor de cronogramas
+seletorCronograma?.addEventListener('change', (e) => {
+    const planoId = e.target.value;
+    if (!planoId) {
+        metricasContainer.style.display = 'none';
+        planoSelecionado = null;
+        return;
+    }
+    
+    const plano = planosDisponiveis.find(p => (p.jobId || p.id) === planoId);
+    if (plano) {
+        planoSelecionado = plano;
+        renderizarMetricasPlano(plano);
+        metricasContainer.style.display = 'block';
+    }
+});
 
 // --- LÓGICA DE INICIALIZAÇÃO ---
 function ouvirHistoricoDePlanos() {

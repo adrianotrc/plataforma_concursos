@@ -63,6 +63,22 @@
                     <div id="usage-counter" class="usage-info-box"></div>
                 </section>
 
+                <!-- Seção de Métricas do Cronograma Atual -->
+                <div id="metricas-cronograma-container" class="metricas-cronograma-card" style="display: none; margin-bottom: 24px;">
+                    <div class="metricas-header">
+                        <h3><i class="fas fa-chart-line"></i> Métricas do Cronograma</h3>
+                        <div class="cronograma-selector">
+                            <label for="seletor-cronograma">Cronograma ativo:</label>
+                            <select id="seletor-cronograma">
+                                <option value="">Selecione um cronograma...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="metricas-content" class="metricas-grid">
+                        <!-- Métricas serão inseridas dinamicamente -->
+                    </div>
+                </div>
+
                 <button id="btn-abrir-form-cronograma" class="btn btn-primary" style="margin-bottom: 24px;">
                     <i class="fas fa-plus"></i> Gerar Novo Cronograma
                 </button>
