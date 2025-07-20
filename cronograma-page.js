@@ -86,6 +86,13 @@ function calcularMetricasPlano(plano) {
     console.log('Disponibilidade semanal:', plano.disponibilidade_semanal_minutos);
     console.log('Tipo da disponibilidade:', typeof plano.disponibilidade_semanal_minutos);
     console.log('Chaves da disponibilidade:', Object.keys(plano.disponibilidade_semanal_minutos || {}));
+    console.log('Valores da disponibilidade:', plano.disponibilidade_semanal_minutos);
+    
+    // Debug específico para fase
+    console.log('=== DEBUG FASE ===');
+    console.log('fase_concurso:', plano.fase_concurso);
+    console.log('Tipo de fase_concurso:', typeof plano.fase_concurso);
+    console.log('Fase mapeada:', obterTextoFase(plano.fase_concurso));
     
     if (!plano || !plano.cronograma_semanal_detalhado) {
         console.log('Plano inválido ou sem cronograma detalhado');
@@ -148,12 +155,22 @@ function calcularMetricasPlano(plano) {
 }
 
 function obterTextoFase(fase) {
+    console.log('=== DEBUG obterTextoFase ===');
+    console.log('Fase recebida:', fase);
+    console.log('Tipo da fase:', typeof fase);
+    
     const fases = {
         'base_sem_edital_especifico': 'Base sem edital específico',
         'pre_edital_com_foco': 'Pré-edital com foco',
         'pos_edital_publicado': 'Pós-edital publicado'
     };
-    return fases[fase] || 'Não especificada';
+    
+    console.log('Fases disponíveis:', Object.keys(fases));
+    console.log('Fase encontrada:', fases[fase]);
+    
+    const resultado = fases[fase] || 'Não especificada';
+    console.log('Resultado final:', resultado);
+    return resultado;
 }
 
 function calcularTempoSemanal(disponibilidade) {
