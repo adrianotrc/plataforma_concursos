@@ -877,9 +877,84 @@ async function carregarMetricasProgresso(planoId) {
             progressoContainer.style.display = 'block';
         }
         
+        // Gera o gráfico de progresso
+        gerarGraficoProgresso(planoId);
+        
     } catch (error) {
         console.error('Erro ao carregar métricas de progresso:', error);
     }
+}
+
+// Função para gerar gráfico de progresso por semana
+function gerarGraficoProgresso(planoId) {
+    const graficoContainer = document.getElementById('grafico-progresso');
+    if (!graficoContainer || !planoAbertoAtual) return;
+    
+    const semanas = planoAbertoAtual.cronograma_semanal_detalhado || [];
+    const progresso = metricasProgresso?.progresso || [];
+    
+    let graficoHtml = '';
+    
+    semanas.forEach((semana, index) => {
+        const semanaNum = semana.semana_numero || (index + 1);
+        const totalSessoes = semana.dias_de_estudo?.reduce((total, dia) => {
+            return total + (dia.atividades?.length || 0);
+        }, 0) || 0;
+        
+        // Conta progresso por status para esta semana
+        const sessoesSemana = [];
+        semana.dias_de_estudo?.forEach(dia => {
+            dia.atividades?.forEach((atividade, atvIndex) => {
+                const sessaoId = `sessao_${planoId}_${sessoesSemana.length}`;
+                sessoesSemana.push(sessaoId);
+            });
+        });
+        
+        const concluidas = progresso.filter(p => 
+            sessoesSemana.includes(p.sessaoId) && p.status === 'completed'
+        ).length;
+        
+        const modificadas = progresso.filter(p => 
+            sessoesSemana.includes(p.sessaoId) && p.status === 'modified'
+        ).length;
+        
+        const incompletas = progresso.filter(p => 
+            sessoesSemana.includes(p.sessaoId) && p.status === 'incomplete'
+        ).length;
+        
+        // Calcula porcentagens para as barras
+        const totalRegistrado = concluidas + modificadas + incompletas;
+        const pctConcluida = totalSessoes > 0 ? (concluidas / totalSessoes) * 100 : 0;
+        const pctModificada = totalSessoes > 0 ? (modificadas / totalSessoes) * 100 : 0;
+        const pctIncompleta = totalSessoes > 0 ? (incompletas / totalSessoes) * 100 : 0;
+        
+        graficoHtml += `
+            <div class="semana-progresso">
+                <div class="semana-label">Semana ${semanaNum}</div>
+                <div class="semana-barras">
+                    ${pctConcluida > 0 ? `<div class="barra-progresso barra-concluida" style="width: ${pctConcluida}%"></div>` : ''}
+                    ${pctModificada > 0 ? `<div class="barra-progresso barra-modificada" style="width: ${pctModificada}%"></div>` : ''}
+                    ${pctIncompleta > 0 ? `<div class="barra-progresso barra-incompleta" style="width: ${pctIncompleta}%"></div>` : ''}
+                </div>
+                <div class="semana-stats">
+                    <div class="stat-barra stat-concluida">
+                        <i></i>
+                        <span>${concluidas}</span>
+                    </div>
+                    <div class="stat-barra stat-modificada">
+                        <i></i>
+                        <span>${modificadas}</span>
+                    </div>
+                    <div class="stat-barra stat-incompleta">
+                        <i></i>
+                        <span>${incompletas}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    graficoContainer.innerHTML = graficoHtml;
 }
 
 // Função para carregar progresso existente
@@ -949,12 +1024,6 @@ document.body.addEventListener('click', async (e) => {
                 showToast("Não foi possível encontrar este plano.", "error");
             }
         }
-    } else if (refinarBtn) {
-        const container = document.getElementById('container-refinamento');
-        if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
-    } else if (cancelarRefinamentoBtn) {
-        const container = document.getElementById('container-refinamento');
-        if (container) container.style.display = 'none';
     } else if (exportarBtn) {
         exportarPlanoParaExcel();
     } else if (fecharBtn) {
@@ -965,5 +1034,19 @@ document.body.addEventListener('click', async (e) => {
         if (progressoContainer) {
             progressoContainer.style.display = 'none';
         }
+    }
+});
+
+// Event listener separado para refinar e cancelar refinamento
+document.body.addEventListener('click', (e) => {
+    const refinarBtn = e.target.closest('#btn-refinar-plano');
+    const cancelarRefinamentoBtn = e.target.closest('#btn-cancelar-refinamento');
+
+    if (refinarBtn) {
+        const container = document.getElementById('container-refinamento');
+        if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
+    } else if (cancelarRefinamentoBtn) {
+        const container = document.getElementById('container-refinamento');
+        if (container) container.style.display = 'none';
     }
 });

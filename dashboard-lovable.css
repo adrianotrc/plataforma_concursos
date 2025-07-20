@@ -1521,21 +1521,24 @@ body.dark-mode .modal-content p {
 /* Estilos para botões de ação nas sessões */
 .sessao-acoes {
     display: flex;
-    gap: 8px;
+    flex-direction: column;
+    gap: 4px;
     margin-top: 8px;
 }
 
 .btn-acao {
-    padding: 4px 8px;
+    padding: 3px 6px;
     border: none;
-    border-radius: 4px;
-    font-size: 0.75rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
+    min-width: 80px;
+    justify-content: center;
 }
 
 .btn-concluido {
@@ -1587,6 +1590,104 @@ body.dark-mode .modal-content p {
 .status-incompleto {
     background-color: #fee2e2;
     color: #991b1b;
+}
+
+/* Estilos para o gráfico de progresso */
+.progresso-grafico {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.progresso-grafico h4 {
+    margin: 0 0 16px 0;
+    color: #1f2937;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.grafico-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.semana-progresso {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background-color: #f9fafb;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.semana-label {
+    min-width: 80px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.semana-barras {
+    flex: 1;
+    display: flex;
+    gap: 4px;
+    height: 20px;
+    background-color: #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.barra-progresso {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.barra-concluida {
+    background-color: #10b981;
+}
+
+.barra-modificada {
+    background-color: #f59e0b;
+}
+
+.barra-incompleta {
+    background-color: #ef4444;
+}
+
+.semana-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.stat-barra {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stat-barra i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.stat-concluida i {
+    background-color: #10b981;
+}
+
+.stat-modificada i {
+    background-color: #f59e0b;
+}
+
+.stat-incompleta i {
+    background-color: #ef4444;
 }
 
 /* Responsividade */
