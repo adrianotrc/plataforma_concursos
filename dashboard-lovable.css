@@ -1415,32 +1415,33 @@ body.dark-mode .modal-content p {
     width: 100%;
 }
 
+.metricas-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
 .metricas-table table {
     width: 100%;
     border-collapse: collapse;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
 }
 
 .metricas-table tr {
     border-bottom: 1px solid #f3f4f6;
     transition: background-color 0.2s ease;
-    display: contents;
 }
 
-.metricas-table tr:hover td {
+.metricas-table tr:hover {
     background-color: #f9fafb;
 }
 
-.metricas-table tr:last-child td {
+.metricas-table tr:last-child {
     border-bottom: none;
 }
 
 .metricas-table td {
     padding: 10px 12px;
     vertical-align: top;
-    border-bottom: 1px solid #f3f4f6;
 }
 
 .metric-label {

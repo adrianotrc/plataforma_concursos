@@ -130,13 +130,23 @@ function calcularMetricasPlano(plano) {
         periodoTexto = `${plano.data_inicio} a ${plano.data_termino} (${diasPeriodo} dias)`;
     }
 
-    // Calcular tempo semanal
-    const tempoSemanalTexto = calcularTempoSemanal(plano.disponibilidade_semanal_minutos);
-    console.log('Tempo semanal calculado:', tempoSemanalTexto);
+    // Calcular tempo semanal - CORREÇÃO
+    let tempoSemanalTotal = 0;
+    if (plano.disponibilidade_semanal_minutos && typeof plano.disponibilidade_semanal_minutos === 'object') {
+        tempoSemanalTotal = Object.values(plano.disponibilidade_semanal_minutos).reduce((total, minutos) => {
+            return total + (parseInt(minutos) || 0);
+        }, 0);
+    }
+    
+    const horas = Math.floor(tempoSemanalTotal / 60);
+    const minutos = tempoSemanalTotal % 60;
+    const tempoSemanalTexto = `${tempoSemanalTotal} min (${horas}h ${minutos}min)`;
+    
+    console.log('Tempo semanal total:', tempoSemanalTotal, 'minutos');
+    console.log('Tempo semanal formatado:', tempoSemanalTexto);
 
     // Calcular sessões por semana
-    const tempoSemanal = Object.values(plano.disponibilidade_semanal_minutos || {}).reduce((total, minutos) => total + (parseInt(minutos) || 0), 0);
-    const sessoesPorSemana = Math.floor(tempoSemanal / (plano.duracao_sessao_minutos || 25));
+    const sessoesPorSemana = Math.floor(tempoSemanalTotal / (plano.duracao_sessao_minutos || 25));
 
     return {
         concurso: plano.concurso_foco || 'Não especificado',
@@ -159,6 +169,12 @@ function obterTextoFase(fase) {
     console.log('Fase recebida:', fase);
     console.log('Tipo da fase:', typeof fase);
     
+    // Se fase for null, undefined ou string vazia
+    if (!fase) {
+        console.log('Fase vazia, retornando padrão');
+        return 'Não especificada';
+    }
+    
     const fases = {
         'base_sem_edital_especifico': 'Base sem edital específico',
         'pre_edital_com_foco': 'Pré-edital com foco',
@@ -173,29 +189,7 @@ function obterTextoFase(fase) {
     return resultado;
 }
 
-function calcularTempoSemanal(disponibilidade) {
-    console.log('Calculando tempo semanal para:', disponibilidade);
-    
-    if (!disponibilidade || typeof disponibilidade !== 'object') {
-        console.log('Disponibilidade inválida, retornando 0');
-        return '0 min (0h 0min)';
-    }
-    
-    const totalMinutos = Object.values(disponibilidade).reduce((total, minutos) => {
-        const minutosInt = parseInt(minutos) || 0;
-        console.log(`Dia: ${minutos} -> ${minutosInt} minutos`);
-        return total + minutosInt;
-    }, 0);
-    
-    console.log('Total de minutos calculado:', totalMinutos);
-    
-    const horas = Math.floor(totalMinutos / 60);
-    const minutos = totalMinutos % 60;
-    
-    const resultado = `${totalMinutos} min (${horas}h ${minutos}min)`;
-    console.log('Resultado final:', resultado);
-    return resultado;
-}
+
 
 function renderizarMetricasPlano(plano) {
     if (!metricasContent || !plano) {
@@ -244,6 +238,11 @@ function renderizarMetricasPlano(plano) {
                         </td>
                         <td class="metric-value">${metricas.materias} selecionadas</td>
                     </tr>
+                </tbody>
+            </table>
+            
+            <table>
+                <tbody>
                     <tr>
                         <td class="metric-label">
                             <i class="fas fa-calendar-week"></i>
