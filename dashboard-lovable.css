@@ -1410,6 +1410,64 @@ body.dark-mode .modal-content p {
     margin-top: 2px;
 }
 
+/* Estilos para a tabela de métricas */
+.metricas-table {
+    width: 100%;
+}
+
+.metricas-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.metricas-table tr {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.2s ease;
+}
+
+.metricas-table tr:hover {
+    background-color: #f9fafb;
+}
+
+.metricas-table tr:last-child {
+    border-bottom: none;
+}
+
+.metricas-table td {
+    padding: 12px 16px;
+    vertical-align: top;
+}
+
+.metric-label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 140px;
+}
+
+.metric-label i {
+    width: 16px;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.metric-value {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.metric-subtitle {
+    font-weight: 400;
+    color: #6b7280;
+    font-size: 0.75rem;
+    margin-left: 4px;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
     .metricas-header {

@@ -80,8 +80,12 @@ function showToast(message, type = 'success', duration = 5000) {
 // --- FUNÇÕES PARA MÉTRICAS DO CRONOGRAMA ---
 
 function calcularMetricasPlano(plano) {
-    console.log('Calculando métricas para plano:', plano);
+    console.log('=== DEBUG MÉTRICAS ===');
+    console.log('Plano completo:', plano);
+    console.log('Fase do concurso:', plano.fase_concurso);
     console.log('Disponibilidade semanal:', plano.disponibilidade_semanal_minutos);
+    console.log('Tipo da disponibilidade:', typeof plano.disponibilidade_semanal_minutos);
+    console.log('Chaves da disponibilidade:', Object.keys(plano.disponibilidade_semanal_minutos || {}));
     
     if (!plano || !plano.cronograma_semanal_detalhado) {
         console.log('Plano inválido ou sem cronograma detalhado');
@@ -192,87 +196,67 @@ function renderizarMetricasPlano(plano) {
     ).join(', ');
 
     metricasContent.innerHTML = `
-        <div class="metrica-item">
-            <div class="metrica-icon concurso">
-                <i class="fas fa-trophy"></i>
-            </div>
-            <div class="metrica-content">
-                <div class="metrica-label">Concurso</div>
-                <div class="metrica-value">${metricas.concurso}</div>
-            </div>
-        </div>
-        
-        <div class="metrica-item">
-            <div class="metrica-icon fase">
-                <i class="fas fa-flag"></i>
-            </div>
-            <div class="metrica-content">
-                <div class="metrica-label">Fase</div>
-                <div class="metrica-value">${metricas.fase}</div>
-            </div>
-        </div>
-        
-        <div class="metrica-item">
-            <div class="metrica-icon periodo">
-                <i class="fas fa-calendar"></i>
-            </div>
-            <div class="metrica-content">
-                <div class="metrica-label">Período</div>
-                <div class="metrica-value">${metricas.periodo}</div>
-            </div>
-        </div>
-        
-        <div class="metrica-item">
-            <div class="metrica-icon materias">
-                <i class="fas fa-book"></i>
-            </div>
-            <div class="metrica-content">
-                <div class="metrica-label">Matérias</div>
-                <div class="metrica-value">${metricas.materias} selecionadas</div>
-            </div>
-        </div>
-        
-        <div class="metrica-item">
-            <div class="metrica-icon dias">
-                <i class="fas fa-calendar-week"></i>
-            </div>
-            <div class="metrica-content">
-                <div class="metrica-label">Dias de Estudo</div>
-                <div class="metrica-value">${diasEstudoTexto}</div>
-                <div class="metrica-subtitle">${metricas.diasEstudo.length} dias por semana</div>
-            </div>
-        </div>
-        
-        <div class="metrica-item">
-            <div class="metrica-icon tempo">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div class="metrica-content">
-                <div class="metrica-label">Tempo Semanal</div>
-                <div class="metrica-value">${metricas.tempoSemanal}</div>
-            </div>
-        </div>
-        
-        <div class="metrica-item">
-            <div class="metrica-icon sessoes">
-                <i class="fas fa-stopwatch"></i>
-            </div>
-            <div class="metrica-content">
-                <div class="metrica-label">Sessões</div>
-                <div class="metrica-value">${metricas.duracaoSessao} min cada</div>
-                <div class="metrica-subtitle">~${metricas.sessoesPorSemana} sessões/semana</div>
-            </div>
-        </div>
-        
-        <div class="metrica-item">
-            <div class="metrica-icon progresso">
-                <i class="fas fa-chart-bar"></i>
-            </div>
-            <div class="metrica-content">
-                <div class="metrica-label">Plano Completo</div>
-                <div class="metrica-value">${metricas.totalSemanas} semanas</div>
-                <div class="metrica-subtitle">${metricas.totalSessoes} sessões totais</div>
-            </div>
+        <div class="metricas-table">
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="metric-label">
+                            <i class="fas fa-trophy"></i>
+                            Concurso
+                        </td>
+                        <td class="metric-value">${metricas.concurso}</td>
+                    </tr>
+                    <tr>
+                        <td class="metric-label">
+                            <i class="fas fa-flag"></i>
+                            Fase
+                        </td>
+                        <td class="metric-value">${metricas.fase}</td>
+                    </tr>
+                    <tr>
+                        <td class="metric-label">
+                            <i class="fas fa-calendar"></i>
+                            Período
+                        </td>
+                        <td class="metric-value">${metricas.periodo}</td>
+                    </tr>
+                    <tr>
+                        <td class="metric-label">
+                            <i class="fas fa-book"></i>
+                            Matérias
+                        </td>
+                        <td class="metric-value">${metricas.materias} selecionadas</td>
+                    </tr>
+                    <tr>
+                        <td class="metric-label">
+                            <i class="fas fa-calendar-week"></i>
+                            Dias de Estudo
+                        </td>
+                        <td class="metric-value">${diasEstudoTexto} <span class="metric-subtitle">(${metricas.diasEstudo.length} dias/semana)</span></td>
+                    </tr>
+                    <tr>
+                        <td class="metric-label">
+                            <i class="fas fa-clock"></i>
+                            Tempo Semanal
+                        </td>
+                        <td class="metric-value">${metricas.tempoSemanal}</td>
+                    </tr>
+                    <tr>
+                        <td class="metric-label">
+                            <i class="fas fa-stopwatch"></i>
+                            Sessões
+                        </td>
+                        <td class="metric-value">${metricas.duracaoSessao} min cada <span class="metric-subtitle">(~${metricas.sessoesPorSemana}/semana)</span></td>
+                    </tr>
+                    <tr>
+                        <td class="metric-label">
+                            <i class="fas fa-chart-bar"></i>
+                            Plano Completo
+                        </td>
+                        <td class="metric-value">${metricas.totalSemanas} semanas <span class="metric-subtitle">(${metricas.totalSessoes} sessões totais)</span></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     `;
 }
