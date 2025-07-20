@@ -1025,6 +1025,13 @@ function exibirPlanoComProgresso(plano) {
     
     // Aguarda um pouco para o DOM ser renderizado
     setTimeout(() => {
+        // Debug: verifica se o container de refinamento foi criado
+        const containerRefinamento = document.getElementById('container-refinamento');
+        console.log('Container refinamento após exibir plano:', containerRefinamento); // Debug
+        if (containerRefinamento) {
+            console.log('Display inicial do container:', containerRefinamento.style.display); // Debug
+        }
+        
         // Adiciona botões de ação em todas as sessões
         const sessoes = document.querySelectorAll('.atividade-item');
         sessoes.forEach((sessao, index) => {
@@ -1084,8 +1091,11 @@ document.body.addEventListener('click', (e) => {
         console.log('Botão refinar clicado!'); // Debug
         const container = document.getElementById('container-refinamento');
         if (container) {
-            console.log('Container encontrado, alterando display'); // Debug
-            container.style.display = container.style.display === 'none' ? 'block' : 'none';
+            console.log('Container encontrado, display atual:', container.style.display); // Debug
+            const novoDisplay = container.style.display === 'none' ? 'block' : 'none';
+            container.style.display = novoDisplay;
+            console.log('Display alterado para:', novoDisplay); // Debug
+            console.log('Container visível?', container.offsetParent !== null); // Debug
         } else {
             console.log('Container não encontrado!'); // Debug
         }
