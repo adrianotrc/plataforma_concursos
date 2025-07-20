@@ -1096,6 +1096,14 @@ document.body.addEventListener('click', (e) => {
             container.style.display = novoDisplay;
             console.log('Display alterado para:', novoDisplay); // Debug
             console.log('Container visível?', container.offsetParent !== null); // Debug
+            
+            // Debug visual - adiciona borda colorida temporária
+            if (novoDisplay === 'block') {
+                container.style.border = '3px solid red';
+                setTimeout(() => {
+                    container.style.border = '';
+                }, 2000);
+            }
         } else {
             console.log('Container não encontrado!'); // Debug
         }
