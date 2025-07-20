@@ -129,6 +129,9 @@ function renderizarHistorico(sessoes) {
         historicoContainer.innerHTML = '<div class="card-placeholder"><p>Seu histórico de exercícios aparecerá aqui.</p></div>';
         return;
     }
+    
+    console.log('Renderizando histórico de exercícios:', sessoes); // DEBUG
+    
     historicoContainer.innerHTML = sessoes.map(sessao => {
         const resumo = sessao.resumo || {};
         const isProcessing = sessao.status === 'processing';
@@ -136,10 +139,27 @@ function renderizarHistorico(sessoes) {
         const isCompleted = sessao.status === 'completed';
         const isAttempted = isCompleted && resumo.acertos !== undefined;
 
+        console.log('Sessão:', sessao.id, 'Status:', sessao.status, 'Resumo:', resumo, 'isAttempted:', isAttempted); // DEBUG
+        console.log('Detalhes do resumo:', {
+            acertos: resumo.acertos,
+            total: resumo.total,
+            acertosType: typeof resumo.acertos,
+            totalType: typeof resumo.total
+        }); // DEBUG
+
         let percHtml = '';
         if (isAttempted) {
             const score = resumo.total > 0 ? (resumo.acertos / resumo.total) * 100 : 0;
-            percHtml = `<span class='badge-accuracy'>${score.toFixed(0)}% acertos</span>`;
+            percHtml = `<span class='badge-accuracy' style='background:#ecfdf5;color:#065f46;padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'>${score.toFixed(0)}% acertos</span>`;
+            console.log('Gerando badge para sessão:', sessao.id, 'Score:', score); // DEBUG
+        } else if (isCompleted) {
+            // TESTE: Forçar badge para sessões completas sem acertos
+            percHtml = `<span class='badge-accuracy' style='background:#ecfdf5;color:#065f46;padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'>0% acertos</span>`;
+            console.log('TESTE: Forçando badge com CSS inline para sessão completa sem acertos'); // DEBUG
+        } else {
+            // TESTE: Forçar badge para todas as sessões
+            percHtml = `<span class='badge-accuracy' style='background:#ecfdf5;color:#065f46;padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'>TESTE</span>`;
+            console.log('TESTE: Forçando badge para todas as sessões'); // DEBUG
         }
 
         let statusIcon = '';
@@ -151,7 +171,7 @@ function renderizarHistorico(sessoes) {
         else if (hasFailed) buttonText = 'Falhou';
         else if (isCompleted && !isAttempted) buttonText = 'Iniciar';
 
-        return `
+        const htmlGerado = `
             <div class="exercise-history-item">
                 <div class="exercise-info">
                     <span class="exercise-subject">${resumo.materia || 'Sessão'} - ${resumo.topico || 'Geral'} ${statusIcon} ${percHtml}</span>
@@ -163,6 +183,9 @@ function renderizarHistorico(sessoes) {
                 </div>
             </div>
         `;
+        
+        console.log('HTML gerado para sessão:', sessao.id, 'PercHtml:', percHtml); // DEBUG
+        return htmlGerado;
     }).join('');
     atualizarMetricasGerais(sessoes);
 }
@@ -207,8 +230,10 @@ async function renderUsageInfo() {
 async function salvarCorrecaoNoFirestore(respostasUsuario, acertos) {
     if (!currentUser || !sessaoAberta) return;
     try {
+        console.log('Salvando correção:', { sessaoAberta, acertos, respostasUsuario }); // DEBUG
         const sessaoRef = doc(db, `users/${currentUser.uid}/sessoesExercicios`, sessaoAberta);
         await updateDoc(sessaoRef, { 'resumo.acertos': acertos, respostasUsuario });
+        console.log('Correção salva com sucesso'); // DEBUG
     } catch (error) {
         console.error("Erro ao salvar correção:", error);
     }
