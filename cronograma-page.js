@@ -269,15 +269,22 @@ function popularSeletorCronogramas(planos) {
         seletorCronograma.appendChild(option);
     });
     
-    // Se há planos, selecionar o mais recente
+    // Se há planos, selecionar o mais recente e carregar dados automaticamente
     if (planosCompletos.length > 0) {
         const planoMaisRecente = planosCompletos[0];
         seletorCronograma.value = planoMaisRecente.jobId || planoMaisRecente.id;
         planoSelecionado = planoMaisRecente;
+        
+        // Carrega métricas do plano
         renderizarMetricasPlano(planoMaisRecente);
         metricasContainer.style.display = 'block';
+        
+        // Carrega progresso automaticamente
+        carregarMetricasProgresso(planoMaisRecente.jobId || planoMaisRecente.id);
+        progressoContainer.style.display = 'block';
     } else {
         metricasContainer.style.display = 'none';
+        progressoContainer.style.display = 'none';
     }
 }
 
@@ -690,10 +697,8 @@ function initCronogramaPage() {
         ouvirHistoricoDePlanos();
         renderUsageInfo();
         
-        // Esconde a seção de progresso inicialmente
-        if (progressoContainer) {
-            progressoContainer.style.display = 'none';
-        }
+        // O progresso será mostrado automaticamente quando houver planos disponíveis
+        // Não escondemos mais aqui, pois será controlado pela função popularSeletorCronogramas
     }
 }
 
@@ -1019,9 +1024,13 @@ function renderizarProgressoFromCache() {
 // Função para gerar gráfico de progresso por semana
 function gerarGraficoProgresso(planoId) {
     const graficoContainer = document.getElementById('grafico-progresso');
-    if (!graficoContainer || !planoAbertoAtual) return;
+    if (!graficoContainer) return;
     
-    const semanas = planoAbertoAtual.cronograma_semanal_detalhado || [];
+    // Usa planoAbertoAtual se disponível, senão usa planoSelecionado
+    const planoParaGrafico = planoAbertoAtual || planoSelecionado;
+    if (!planoParaGrafico) return;
+    
+    const semanas = planoParaGrafico.cronograma_semanal_detalhado || [];
     const progresso = metricasProgresso?.progresso || [];
     
     let graficoHtml = '';
