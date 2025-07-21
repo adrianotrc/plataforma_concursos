@@ -846,8 +846,10 @@ async function registrarProgressoSessao(sessaoId, planoId, status) {
         const cacheKey = `${currentUser.uid}_${planoId}`;
         progressoCache.delete(cacheKey);
         
-        // Atualiza as métricas de progresso
-        await carregarMetricasProgresso(planoId);
+        // Atualiza as métricas de progresso de forma assíncrona (sem bloquear)
+        setTimeout(() => {
+            carregarMetricasProgresso(planoId);
+        }, 100);
         
         const statusText = {
             'completed': 'concluída',
@@ -901,8 +903,8 @@ async function carregarMetricasProgresso(planoId) {
     const cacheKey = `${currentUser.uid}_${planoId}`;
     const cachedData = progressoCache.get(cacheKey);
     
-    // Se temos dados em cache e não são muito antigos (menos de 30 segundos), usa cache
-    if (cachedData && (Date.now() - cachedData.timestamp) < 30000) {
+    // Se temos dados em cache e não são muito antigos (menos de 60 segundos), usa cache
+    if (cachedData && (Date.now() - cachedData.timestamp) < 60000) {
         metricasProgresso = cachedData.data;
         renderizarProgressoFromCache();
         return;
@@ -1045,6 +1047,9 @@ function gerarGraficoProgresso(planoId) {
     // Usa planoAbertoAtual se disponível, senão usa planoSelecionado
     const planoParaGrafico = planoAbertoAtual || planoSelecionado;
     if (!planoParaGrafico) return;
+    
+    // Se não há dados de progresso, não gera o gráfico
+    if (!metricasProgresso) return;
     
     const semanas = planoParaGrafico.cronograma_semanal_detalhado || [];
     const progresso = metricasProgresso?.progresso || [];

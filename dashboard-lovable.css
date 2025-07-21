@@ -1534,40 +1534,47 @@ body.dark-mode .modal-content p {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 32px;
-    height: 32px;
+    min-width: 28px;
+    height: 28px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin-right: 4px;
+    margin-top: 8px;
 }
 
 .btn-concluido {
-    background-color: #10b981;
-    color: white;
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
 }
 
 .btn-concluido:hover {
-    background-color: #059669;
+    background-color: #a7f3d0;
+    color: #064e3b;
 }
 
 .btn-modificado {
-    background-color: #f59e0b;
-    color: white;
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
 }
 
 .btn-modificado:hover {
-    background-color: #d97706;
+    background-color: #fde68a;
+    color: #78350f;
 }
 
 .btn-incompleto {
-    background-color: #ef4444;
-    color: white;
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
 }
 
 .btn-incompleto:hover {
-    background-color: #dc2626;
+    background-color: #fca5a5;
+    color: #7f1d1d;
 }
 
 .sessao-status {
