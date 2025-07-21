@@ -394,10 +394,10 @@ function exibirPlanoNaTela(plano) {
             cronogramaHtml += '<td><ul>';
             if (atividades.length > 0) {
                             atividades.forEach(atividade => {
-                cronogramaHtml += `<li class="atividade-item" style="border: 2px solid red; margin: 5px 0;">
-                    <div class="materia-nome" style="border: 1px solid blue; background: yellow;">${atividade.materia || ''}</div>
-                    <div class="topico" style="border: 1px solid green; background: lightblue;">${atividade.topico_sugerido || ''}</div>
-                    <div class="tipo-e-duracao" style="border: 1px solid purple; background: lightgreen;">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</div>
+                cronogramaHtml += `<li class="atividade-item">
+                    <div class="materia-nome">${atividade.materia || ''}</div>
+                    <div class="topico">${atividade.topico_sugerido || ''}</div>
+                    <div class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</div>
                 </li>`;
             });
             }
@@ -407,12 +407,6 @@ function exibirPlanoNaTela(plano) {
         dataCorrente.setDate(dataCorrente.getDate() + 7);
     });
     cronogramaHtml += `<small class="ai-disclaimer"><i class="fas fa-robot"></i> Conteúdo gerado por inteligência artificial.</small></div>`;
-    
-    // DEBUG: Log do HTML gerado
-    console.log('=== DEBUG HTML GERADO ===');
-    console.log(cronogramaHtml);
-    console.log('=== FIM DEBUG ===');
-    
     containerExibicao.innerHTML = cronogramaHtml;
     containerExibicao.style.display = 'block';
     

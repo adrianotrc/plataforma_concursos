@@ -1825,6 +1825,7 @@ body.dark-mode .modal-content p {
     margin-bottom: 4px !important;
     clear: both !important;
     float: none !important;
+    vertical-align: top !important;
 }
 
 .cronograma-tabela li .topico {
@@ -1836,6 +1837,7 @@ body.dark-mode .modal-content p {
     margin-bottom: 3px !important;
     clear: both !important;
     float: none !important;
+    vertical-align: top !important;
 }
 
 .cronograma-tabela li .tipo-e-duracao {
@@ -1847,6 +1849,24 @@ body.dark-mode .modal-content p {
     line-height: 1.3 !important;
     clear: both !important;
     float: none !important;
+    vertical-align: top !important;
+}
+
+/* Forçar layout vertical dentro de tabelas */
+.cronograma-tabela td ul {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.cronograma-tabela td li {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 8px !important;
+}
+
+.cronograma-tabela td li:last-child {
+    margin-bottom: 0 !important;
 }
 
 /* Dark Mode para a Tabela */
