@@ -1816,34 +1816,37 @@ body.dark-mode .modal-content p {
 }
 
 .cronograma-tabela li .materia-nome {
-    color: #1e3a8a;
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: block;
-    width: 100%;
-    line-height: 1.3;
-    margin-bottom: 4px;
-    clear: both;
+    color: #1e3a8a !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    display: block !important;
+    width: 100% !important;
+    line-height: 1.3 !important;
+    margin-bottom: 4px !important;
+    clear: both !important;
+    float: none !important;
 }
 
 .cronograma-tabela li .topico {
-    color: #1c3d5a;
-    font-size: 0.75rem;
-    display: block;
-    width: 100%;
-    line-height: 1.3;
-    margin-bottom: 3px;
-    clear: both;
+    color: #1c3d5a !important;
+    font-size: 0.75rem !important;
+    display: block !important;
+    width: 100% !important;
+    line-height: 1.3 !important;
+    margin-bottom: 3px !important;
+    clear: both !important;
+    float: none !important;
 }
 
 .cronograma-tabela li .tipo-e-duracao {
-    color: #6b7280;
-    font-size: 0.7rem;
-    display: block;
-    width: 100%;
-    font-style: italic;
-    line-height: 1.3;
-    clear: both;
+    color: #6b7280 !important;
+    font-size: 0.7rem !important;
+    display: block !important;
+    width: 100% !important;
+    font-style: italic !important;
+    line-height: 1.3 !important;
+    clear: both !important;
+    float: none !important;
 }
 
 /* Dark Mode para a Tabela */
