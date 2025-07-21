@@ -637,10 +637,11 @@ btnAbrirForm?.addEventListener('click', () => { containerForm.style.display = 'b
 btnFecharForm?.addEventListener('click', () => { containerForm.style.display = 'none'; });
 
 // Event listener para o seletor de cronogramas
-seletorCronograma?.addEventListener('change', (e) => {
+seletorCronograma?.addEventListener('change', async (e) => {
     const planoId = e.target.value;
     if (!planoId) {
         metricasContainer.style.display = 'none';
+        progressoContainer.style.display = 'none';
         planoSelecionado = null;
         return;
     }
@@ -650,6 +651,10 @@ seletorCronograma?.addEventListener('change', (e) => {
         planoSelecionado = plano;
         renderizarMetricasPlano(plano);
         metricasContainer.style.display = 'block';
+        
+        // Carrega progresso automaticamente
+        await carregarMetricasProgresso(plano.jobId || plano.id);
+        progressoContainer.style.display = 'block';
     }
 });
 
@@ -765,6 +770,7 @@ const progressoPorcentagem = document.getElementById('progresso-porcentagem');
 // Estado do progresso
 let progressoAtual = null;
 let metricasProgresso = null;
+let progressoCache = new Map(); // Cache para métricas de progresso
 
 // Função para adicionar botões de ação nas sessões
 function adicionarBotoesAcao(sessaoElement, sessaoId, planoId) {
@@ -814,6 +820,10 @@ async function registrarProgressoSessao(sessaoId, planoId, status) {
         
         // Atualiza o status visual da sessão
         atualizarStatusSessao(sessaoId, status);
+        
+        // Invalida o cache para forçar recarregamento
+        const cacheKey = `${currentUser.uid}_${planoId}`;
+        progressoCache.delete(cacheKey);
         
         // Atualiza as métricas de progresso
         await carregarMetricasProgresso(planoId);
@@ -866,11 +876,70 @@ function atualizarStatusSessao(sessaoId, status) {
 async function carregarMetricasProgresso(planoId) {
     if (!currentUser || !planoId) return;
     
+    // Verifica se já temos os dados em cache
+    const cacheKey = `${currentUser.uid}_${planoId}`;
+    const cachedData = progressoCache.get(cacheKey);
+    
+    // Se temos dados em cache e não são muito antigos (menos de 30 segundos), usa cache
+    if (cachedData && (Date.now() - cachedData.timestamp) < 30000) {
+        metricasProgresso = cachedData.data;
+        renderizarProgressoFromCache();
+        return;
+    }
+    
+    // Mostra loading state
+    if (progressoContainer) {
+        progressoContainer.style.display = 'block';
+        progressoContainer.innerHTML = `
+            <div class="loading-progresso">
+                <div class="spinner"></div>
+                <p>Carregando progresso...</p>
+            </div>
+        `;
+    }
+    
     try {
         const response = await calcularMetricasProgresso(currentUser.uid, planoId);
         metricasProgresso = response;
         
+        // Salva no cache
+        progressoCache.set(cacheKey, {
+            data: response,
+            timestamp: Date.now()
+        });
+        
+        // Restaura o conteúdo original do container
+        if (progressoContainer) {
+            progressoContainer.innerHTML = `
+                <div class="progresso-header">
+                    <h3><i class="fas fa-chart-line"></i> Acompanhamento de Progresso</h3>
+                </div>
+                <div class="progresso-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="progresso-concluidas">0</div>
+                        <div class="stat-label">Sessões Concluídas</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="progresso-streak">0</div>
+                        <div class="stat-label">Dias Consecutivos</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="progresso-porcentagem">0%</div>
+                        <div class="stat-label">Conclusão</div>
+                    </div>
+                </div>
+                <div class="progresso-grafico">
+                    <h4>Progresso por Semana</h4>
+                    <div id="grafico-progresso"></div>
+                </div>
+            `;
+        }
+        
         // Atualiza os elementos da interface
+        const progressoConcluidas = document.getElementById('progresso-concluidas');
+        const progressoStreak = document.getElementById('progresso-streak');
+        const progressoPorcentagem = document.getElementById('progresso-porcentagem');
+        
         if (progressoConcluidas) {
             progressoConcluidas.textContent = metricasProgresso.sessoesCompletadas;
         }
@@ -881,16 +950,69 @@ async function carregarMetricasProgresso(planoId) {
             progressoPorcentagem.textContent = `${metricasProgresso.porcentagemConclusao}%`;
         }
         
-        // Mostra o container de progresso
-        if (progressoContainer) {
-            progressoContainer.style.display = 'block';
-        }
-        
         // Gera o gráfico de progresso
         gerarGraficoProgresso(planoId);
         
     } catch (error) {
         console.error('Erro ao carregar métricas de progresso:', error);
+        if (progressoContainer) {
+            progressoContainer.innerHTML = `
+                <div class="error-progresso">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Erro ao carregar progresso. Tente novamente.</p>
+                </div>
+            `;
+        }
+    }
+}
+
+// Função para renderizar progresso a partir do cache (sem loading)
+function renderizarProgressoFromCache() {
+    if (!progressoContainer || !metricasProgresso) return;
+    
+    // Restaura o conteúdo original do container
+    progressoContainer.innerHTML = `
+        <div class="progresso-header">
+            <h3><i class="fas fa-chart-line"></i> Acompanhamento de Progresso</h3>
+        </div>
+        <div class="progresso-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="progresso-concluidas">0</div>
+                <div class="stat-label">Sessões Concluídas</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="progresso-streak">0</div>
+                <div class="stat-label">Dias Consecutivos</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="progresso-porcentagem">0%</div>
+                <div class="stat-label">Conclusão</div>
+            </div>
+        </div>
+        <div class="progresso-grafico">
+            <h4>Progresso por Semana</h4>
+            <div id="grafico-progresso"></div>
+        </div>
+    `;
+    
+    // Atualiza os elementos da interface
+    const progressoConcluidas = document.getElementById('progresso-concluidas');
+    const progressoStreak = document.getElementById('progresso-streak');
+    const progressoPorcentagem = document.getElementById('progresso-porcentagem');
+    
+    if (progressoConcluidas) {
+        progressoConcluidas.textContent = metricasProgresso.sessoesCompletadas;
+    }
+    if (progressoStreak) {
+        progressoStreak.textContent = metricasProgresso.diasConsecutivos;
+    }
+    if (progressoPorcentagem) {
+        progressoPorcentagem.textContent = `${metricasProgresso.porcentagemConclusao}%`;
+    }
+    
+    // Gera o gráfico de progresso
+    if (planoSelecionado) {
+        gerarGraficoProgresso(planoSelecionado.jobId || planoSelecionado.id);
     }
 }
 
