@@ -849,7 +849,7 @@ async function registrarProgressoSessao(sessaoId, planoId, status) {
         // Atualiza as métricas de progresso de forma assíncrona (sem bloquear)
         setTimeout(() => {
             carregarMetricasProgresso(planoId);
-        }, 100);
+        }, 200);
         
         const statusText = {
             'completed': 'concluída',
@@ -911,7 +911,15 @@ function atualizarStatusSessao(sessaoId, status) {
         <span style="color: ${config.color}; font-weight: 500;">${config.text}</span>
     `;
     
-    sessaoElement.appendChild(statusBadge);
+    // Adiciona o badge de forma segura, preservando outros elementos
+    const acoesDiv = sessaoElement.querySelector('.sessao-acoes');
+    if (acoesDiv) {
+        // Insere o badge após os botões de ação
+        acoesDiv.parentNode.insertBefore(statusBadge, acoesDiv.nextSibling);
+    } else {
+        // Fallback: adiciona no final da sessão
+        sessaoElement.appendChild(statusBadge);
+    }
 }
 
 // Função para carregar métricas de progresso
@@ -922,15 +930,15 @@ async function carregarMetricasProgresso(planoId) {
     const cacheKey = `${currentUser.uid}_${planoId}`;
     const cachedData = progressoCache.get(cacheKey);
     
-    // Se temos dados em cache e não são muito antigos (menos de 60 segundos), usa cache
-    if (cachedData && (Date.now() - cachedData.timestamp) < 60000) {
+    // Se temos dados em cache e não são muito antigos (menos de 120 segundos), usa cache
+    if (cachedData && (Date.now() - cachedData.timestamp) < 120000) {
         metricasProgresso = cachedData.data;
         renderizarProgressoFromCache();
         return;
     }
     
-    // Mostra loading state
-    if (progressoContainer) {
+    // Mostra loading state apenas se não há dados em cache
+    if (progressoContainer && !metricasProgresso) {
         progressoContainer.style.display = 'block';
         progressoContainer.innerHTML = `
             <div class="loading-progresso">
@@ -941,7 +949,13 @@ async function carregarMetricasProgresso(planoId) {
     }
     
     try {
+        // Timeout de 10 segundos para evitar travamento
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
         const response = await calcularMetricasProgresso(currentUser.uid, planoId);
+        clearTimeout(timeoutId);
+        
         metricasProgresso = response;
         
         // Salva no cache
@@ -992,8 +1006,10 @@ async function carregarMetricasProgresso(planoId) {
             progressoPorcentagem.textContent = `${metricasProgresso.porcentagemConclusao}%`;
         }
         
-        // Gera o gráfico de progresso
-        gerarGraficoProgresso(planoId);
+        // Gera o gráfico de progresso de forma assíncrona
+        setTimeout(() => {
+            gerarGraficoProgresso(planoId);
+        }, 100);
         
     } catch (error) {
         console.error('Erro ao carregar métricas de progresso:', error);
@@ -1203,31 +1219,6 @@ function exibirPlanoComProgresso(plano) {
     
     // Aguarda um pouco para o DOM ser renderizado
     setTimeout(() => {
-        // Debug: verifica se o container de refinamento foi criado
-        const containerRefinamento = document.getElementById('container-refinamento');
-        console.log('Container refinamento após exibir plano:', containerRefinamento); // Debug
-        if (containerRefinamento) {
-            console.log('Display inicial do container:', containerRefinamento.style.display); // Debug
-            
-            // Monitora mudanças no display do container (debug temporário)
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                        const newStyle = containerRefinamento.getAttribute('style');
-                        if (newStyle && newStyle.includes('display: block')) {
-                            console.log('🚨 CONTAINER ABERTO AUTOMATICAMENTE!');
-                            console.trace();
-                        }
-                    }
-                });
-            });
-            
-            observer.observe(containerRefinamento, {
-                attributes: true,
-                attributeFilter: ['style']
-            });
-        }
-        
         // Adiciona botões de ação em todas as sessões
         const sessoes = document.querySelectorAll('.atividade-item');
         sessoes.forEach((sessao, index) => {
@@ -1236,11 +1227,15 @@ function exibirPlanoComProgresso(plano) {
             adicionarBotoesAcao(sessao, sessaoId, plano.jobId || plano.id);
         });
         
-        // Carrega progresso existente
-        carregarProgressoExistente(plano.jobId || plano.id);
+        // Carrega progresso existente de forma assíncrona
+        setTimeout(() => {
+            carregarProgressoExistente(plano.jobId || plano.id);
+        }, 50);
         
-        // Carrega métricas de progresso
-        carregarMetricasProgresso(plano.jobId || plano.id);
+        // Carrega métricas de progresso de forma assíncrona
+        setTimeout(() => {
+            carregarMetricasProgresso(plano.jobId || plano.id);
+        }, 100);
     }, 100);
 }
 
