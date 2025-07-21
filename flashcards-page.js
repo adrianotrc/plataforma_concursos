@@ -42,27 +42,26 @@ function renderHistorico(decks){
       
       if (totalCards === 0) return null;
       
-      if (cardsParaRevisar.length > 0) {
-        // Verificar se é um deck novo (sem tentativas) ou revisão
-        const deckNovo = cards.every(c => !c.quality && !c.reviewCount);
-        
-        if (deckNovo) {
-          return {
-            tipo: 'novo',
-            texto: `${cardsParaRevisar.length} cartões aguardando início dos estudos`,
-            cor: '#2563eb',
-            bg: '#eff6ff'
-          };
-        } else {
-          return {
-            tipo: 'revisao',
-            texto: `${cardsParaRevisar.length} cartões para revisar`,
-            cor: '#dc2626',
-            bg: '#fef2f2'
-          };
-        }
+      // Verificar se é um deck novo (sem tentativas)
+      const deckNovo = cards.every(c => !c.quality && !c.reviewCount);
+      
+      if (deckNovo) {
+        return {
+          tipo: 'novo',
+          texto: `${cardsParaRevisar.length} cartões aguardando início dos estudos`,
+          cor: '#2563eb',
+          bg: '#eff6ff'
+        };
+      } else if (cardsParaRevisar.length > 0) {
+        // Deck que já foi respondido e está no prazo para revisão
+        return {
+          tipo: 'revisao',
+          texto: `${cardsParaRevisar.length} cartões aguardando revisão`,
+          cor: '#dc2626',
+          bg: '#fef2f2'
+        };
       } else {
-        // Encontrar o próximo cartão a ser revisado
+        // Deck que já foi respondido e está aguardando tempo metodológico
         const proximosCards = cards
           .filter(c => c.nextReview && c.nextReview.toDate() > new Date())
           .sort((a, b) => a.nextReview.toDate() - b.nextReview.toDate());
