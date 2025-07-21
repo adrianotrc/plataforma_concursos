@@ -154,7 +154,7 @@ async function renderUsageInfo(){
 }
 
 function mostrarFormDeck(){
-  containerFormDeck.innerHTML=`<form id="form-deck"><div class="form-field-group"><label>Matéria</label><input type="text" id="deck-materia" placeholder="Ex: Direito Administrativo" required></div><div class="form-field-group"><label>Tópico</label><input type="text" id="deck-topico" placeholder="Ex: Controle de Constitucionalidade" required></div><div class="form-field-group"><label>Quantidade de cards</label><input type="number" id="deck-quantidade" min="5" max="50" value="20"></div><div class="form-actions"><button type="submit" class="btn btn-primary">Gerar Flashcards</button><button type="button" id="btn-cancelar-deck" class="btn btn-ghost">Cancelar</button></div></form>`;
+  containerFormDeck.innerHTML=`<form id="form-deck"><div class="form-field-group"><label>Matéria</label><input type="text" id="deck-materia" placeholder="Ex: Direito Administrativo" required></div><div class="form-field-group"><label>Tópico</label><input type="text" id="deck-topico" placeholder="Ex: Controle de Constitucionalidade" required></div><div class="form-field-group"><label>Quantidade de cards</label><input type="number" id="deck-quantidade" min="3" max="20" value="10"><small style="color: #6b7280; font-size: 0.875rem; margin-top: 4px; display: block;"><i class="fas fa-info-circle"></i> Limite de 3 a 20 cards por deck</small></div><div class="form-actions"><button type="submit" class="btn btn-primary">Gerar Flashcards</button><button type="button" id="btn-cancelar-deck" class="btn btn-ghost">Cancelar</button></div></form>`;
   containerFormDeck.style.display='block';
 }
 
@@ -173,6 +173,13 @@ containerFormDeck?.addEventListener('submit',async e=>{
   const materia=document.getElementById('deck-materia').value;
   const topico=document.getElementById('deck-topico').value;
   const quantidade=parseInt(document.getElementById('deck-quantidade').value,10);
+  
+  // Validação da quantidade
+  if(quantidade < 3 || quantidade > 20) {
+    showToast('Por favor, insira uma quantidade de cards entre 3 e 20.', 'error');
+    return;
+  }
+  
   if(!window.processingUI){showToast('Sistema de processamento indisponível','error');return;}
   window.processingUI.startProcessingWithConfirmation({
     confirmationTitle:'Gerar Deck',
