@@ -45,11 +45,11 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 
 # --- Lógica de Gerenciamento de Limites de Uso ---
 PLAN_LIMITS = {
-    'trial': {'cronogramas': 5, 'exercicios': 5, 'discursivas': 5, 'dicas': 5},
-    'basico': {'cronogramas': 10, 'exercicios': 10, 'discursivas': 10, 'dicas': 10},
-    'intermediario': {'cronogramas': 15, 'exercicios': 15, 'discursivas': 15, 'dicas': 15},
-    'premium': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'dicas': 20},
-    'anual': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'dicas': 20, 'flashcards': 30}
+    'trial': {'cronogramas': 5, 'exercicios': 5, 'discursivas': 5, 'correcoes_discursivas': 5, 'dicas': 5},
+    'basico': {'cronogramas': 10, 'exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
+    'intermediario': {'cronogramas': 15, 'exercicios': 15, 'discursivas': 15, 'correcoes_discursivas': 15, 'dicas': 15},
+    'premium': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20},
+    'anual': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20, 'flashcards': 30}
 }
 
 # Adiciona limite para flashcards nos demais planos

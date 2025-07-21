@@ -125,28 +125,41 @@ async function renderUsageInfo() {
     if (!state.user || !usageCounterDiv) return;
     try {
         const data = await getUsageLimits(state.user.uid);
-        // Vamos focar apenas no limite de geração de enunciados para a mensagem principal
+        // Informações sobre geração de enunciados
         const usoGeracao = data.usage.discursivas || 0;
         const limiteGeracao = data.limits.discursivas || 0;
         const restantesGeracao = limiteGeracao - usoGeracao;
+        
+        // Informações sobre correções
+        const usoCorrecoes = data.usage.correcoes_discursivas || 0;
+        const limiteCorrecoes = data.limits.correcoes_discursivas || 0;
+        const restantesCorrecoes = limiteCorrecoes - usoCorrecoes;
+        
         const plano = data.plan;
 
         let mensagem = '';
         // Nova lógica para criar a mensagem de forma clara e consistente
         if (plano === 'trial') {
-            mensagem = `Você ainda pode gerar ${restantesGeracao} de ${limiteGeracao} questões discursivas durante o seu período de teste.`;
+            mensagem = `Você ainda pode gerar ${restantesGeracao} enunciados e fazer ${restantesCorrecoes} correções durante o seu período de teste.`;
         } else {
-            mensagem = `Hoje, você ainda pode gerar ${restantesGeracao} de ${limiteGeracao} questões discursivas.`;
+            mensagem = `Hoje, você ainda pode gerar ${restantesGeracao} enunciados e fazer ${restantesCorrecoes} correções.`;
         }
 
         usageCounterDiv.textContent = mensagem;
         usageCounterDiv.style.display = 'block';
 
-        // A lógica para desabilitar o botão continua a mesma
+        // Desabilita botão de geração se não há saldo
         const btnAbrirForm = document.getElementById('btn-abrir-form-discursiva');
         if(btnAbrirForm) {
             btnAbrirForm.disabled = restantesGeracao <= 0;
         }
+
+        // Armazena informações de saldo para uso posterior
+        window.discursivasSaldo = {
+            restantesGeracao,
+            restantesCorrecoes,
+            plano
+        };
 
     } catch (error) {
         console.error("Erro ao buscar limites de uso para discursivas:", error);
@@ -227,6 +240,17 @@ document.body.addEventListener('click', async (e) => {
         if (!resposta.trim() || !sessaoAberta?.enunciado) {
             return alert('Por favor, escreva sua resposta antes de pedir a correção.');
         }
+        
+        // Verifica saldo para correções
+        if (!window.discursivasSaldo || window.discursivasSaldo.restantesCorrecoes <= 0) {
+            const plano = window.discursivasSaldo?.plano || 'trial';
+            const mensagem = plano === 'trial' 
+                ? 'Você não tem mais saldo para correções no período de teste. Faça upgrade para continuar.'
+                : 'Você não tem mais saldo para correções hoje. Tente novamente amanhã.';
+            showToast(mensagem, 'error');
+            return;
+        }
+        
         corrigirBtn.disabled = true;
         corrigirBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando para correção...';
         
@@ -241,7 +265,7 @@ document.body.addEventListener('click', async (e) => {
             await corrigirDiscursivaAsync(dadosParaCorrecao);
             corrigirBtn.textContent = "Aguardando correção da IA...";
         } catch (error) {
-            alert(error.message);
+            showToast(error.message, 'error');
             corrigirBtn.disabled = false;
             corrigirBtn.textContent = 'Corrigir Texto';
         } finally {
