@@ -1815,22 +1815,35 @@ body.dark-mode .modal-content p {
     border-left: 3px solid #3b82f6;
 }
 
-.cronograma-tabela li strong {
-    display: block;
-    margin-bottom: 4px;
+.cronograma-tabela li .atividade-header {
+    margin-bottom: 6px;
+}
+
+.cronograma-tabela li .materia-nome {
     color: #1e3a8a;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: block;
+    line-height: 1.2;
+}
+
+.cronograma-tabela li .atividade-detalhes {
+    margin-left: 8px;
 }
 
 .cronograma-tabela li .topico {
-    font-size: 0.9rem;
     color: #1c3d5a;
-    margin-bottom: 4px;
+    font-size: 0.75rem;
+    margin: 2px 0;
+    line-height: 1.2;
 }
 
 .cronograma-tabela li .tipo-e-duracao {
-    font-size: 0.8rem;
     color: #6b7280;
+    font-size: 0.7rem;
+    margin: 1px 0;
     font-style: italic;
+    line-height: 1.2;
 }
 
 /* Dark Mode para a Tabela */
@@ -1853,7 +1866,7 @@ body.dark-mode .cronograma-tabela td li {
     border-left-color: #60a5fa;
 }
 
-body.dark-mode .cronograma-tabela li strong {
+body.dark-mode .cronograma-tabela li .materia-nome {
     color: #dbeafe;
 }
 

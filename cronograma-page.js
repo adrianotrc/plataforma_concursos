@@ -393,9 +393,17 @@ function exibirPlanoNaTela(plano) {
             const atividades = diasDaSemanaApi[dia] || [];
             cronogramaHtml += '<td><ul>';
             if (atividades.length > 0) {
-                atividades.forEach(atividade => {
-                    cronogramaHtml += `<li class="atividade-item"><strong>${atividade.materia || ''}</strong><p class="topico">${atividade.topico_sugerido || ''}</p><p class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</p></li>`;
-                });
+                            atividades.forEach(atividade => {
+                cronogramaHtml += `<li class="atividade-item">
+                    <div class="atividade-header">
+                        <strong class="materia-nome">${atividade.materia || ''}</strong>
+                    </div>
+                    <div class="atividade-detalhes">
+                        <p class="topico">${atividade.topico_sugerido || ''}</p>
+                        <p class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</p>
+                    </div>
+                </li>`;
+            });
             }
             cronogramaHtml += '</ul></td>';
         });
