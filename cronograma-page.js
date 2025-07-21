@@ -353,6 +353,14 @@ function exibirPlanoNaTela(plano) {
                     <button id="btn-exportar-excel" class="btn btn-primary"><i class="fas fa-file-excel"></i> Exportar</button>
                     <button id="btn-fechar-plano" class="btn btn-outline">Fechar</button>
                 </div>
+                <div class="status-legend">
+                    <span class="legend-title">Legenda dos Status:</span>
+                    <div class="legend-items">
+                        <span class="legend-item legend-concluido"><i class="fas fa-check"></i> Concluído</span>
+                        <span class="legend-item legend-modificado"><i class="fas fa-edit"></i> Modificado</span>
+                        <span class="legend-item legend-incompleto"><i class="fas fa-times"></i> Incompleto</span>
+                    </div>
+                </div>
             </div>
             <div id="container-refinamento" class="feature-card" style="display: none; margin-top: 20px;" data-debug="container-criado">
                 <form id="form-refinamento">
@@ -782,19 +790,23 @@ function adicionarBotoesAcao(sessaoElement, sessaoId, planoId) {
     const acoesDiv = document.createElement('div');
     acoesDiv.className = 'sessao-acoes';
     
+    // Botões menores com apenas ícones
     const btnConcluido = document.createElement('button');
     btnConcluido.className = 'btn-acao btn-concluido';
-    btnConcluido.innerHTML = '<i class="fas fa-check"></i> Concluído';
+    btnConcluido.innerHTML = '<i class="fas fa-check"></i>';
+    btnConcluido.title = 'Marcar como concluído';
     btnConcluido.onclick = () => registrarProgressoSessao(sessaoId, planoId, 'completed');
     
     const btnModificado = document.createElement('button');
     btnModificado.className = 'btn-acao btn-modificado';
-    btnModificado.innerHTML = '<i class="fas fa-edit"></i> Modificado';
+    btnModificado.innerHTML = '<i class="fas fa-edit"></i>';
+    btnModificado.title = 'Marcar como modificado';
     btnModificado.onclick = () => registrarProgressoSessao(sessaoId, planoId, 'modified');
     
     const btnIncompleto = document.createElement('button');
     btnIncompleto.className = 'btn-acao btn-incompleto';
-    btnIncompleto.innerHTML = '<i class="fas fa-times"></i> Incompleto';
+    btnIncompleto.innerHTML = '<i class="fas fa-times"></i>';
+    btnIncompleto.title = 'Marcar como incompleto';
     btnIncompleto.onclick = () => registrarProgressoSessao(sessaoId, planoId, 'incomplete');
     
     acoesDiv.appendChild(btnConcluido);
@@ -1155,10 +1167,8 @@ async function carregarProgressoExistente(planoId) {
 
 // Função para modificar a exibição do plano para incluir botões de ação
 function exibirPlanoComProgresso(plano) {
-    // Esconde a seção de progresso inicialmente
-    if (progressoContainer) {
-        progressoContainer.style.display = 'none';
-    }
+    // Mantém a seção de progresso sempre visível
+    // Não esconde mais a caixa de progresso
     
     // Chama a função original de exibição
     exibirPlanoNaTela(plano);
@@ -1234,10 +1244,8 @@ document.body.addEventListener('click', async (e) => {
         containerExibicao.innerHTML = '';
         planoAbertoAtual = null;
         
-        // Mostra novamente a caixa de progresso se há um plano selecionado
-        if (planoSelecionado && progressoContainer) {
-            progressoContainer.style.display = 'block';
-        }
+        // A caixa de progresso permanece visível sempre que há um plano selecionado
+        // Não precisa fazer nada aqui
     }
 });
 

@@ -1527,18 +1527,20 @@ body.dark-mode .modal-content p {
 }
 
 .btn-acao {
-    padding: 3px 6px;
+    padding: 4px 6px;
     border: none;
-    border-radius: 3px;
-    font-size: 0.7rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 3px;
-    min-width: 80px;
     justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-right: 4px;
 }
 
 .btn-concluido {
@@ -2602,4 +2604,72 @@ body.dark-mode .error-progresso {
 body.dark-mode .loading-progresso .spinner {
     border-color: #374151;
     border-top-color: #3b82f6;
+}
+
+/* === ESTILOS PARA LEGENDA DE STATUS === */
+
+.status-legend {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.legend-title {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.legend-items {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #6b7280;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: white;
+    border: 1px solid #e5e7eb;
+}
+
+.legend-item i {
+    font-size: 0.75rem;
+}
+
+.legend-concluido i {
+    color: #10b981;
+}
+
+.legend-modificado i {
+    color: #f59e0b;
+}
+
+.legend-incompleto i {
+    color: #ef4444;
+}
+
+/* Dark mode para legenda */
+body.dark-mode .status-legend {
+    background-color: #1f2937;
+    border-color: #374151;
+}
+
+body.dark-mode .legend-title {
+    color: #f9fafb;
+}
+
+body.dark-mode .legend-item {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
 }
