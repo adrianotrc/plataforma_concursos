@@ -395,13 +395,9 @@ function exibirPlanoNaTela(plano) {
             if (atividades.length > 0) {
                             atividades.forEach(atividade => {
                 cronogramaHtml += `<li class="atividade-item">
-                    <div class="atividade-header">
-                        <strong class="materia-nome">${atividade.materia || ''}</strong>
-                    </div>
-                    <div class="atividade-detalhes">
-                        <p class="topico">${atividade.topico_sugerido || ''}</p>
-                        <p class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</p>
-                    </div>
+                    <div class="materia-nome">${atividade.materia || ''}</div>
+                    <div class="topico">${atividade.topico_sugerido || ''}</div>
+                    <div class="tipo-e-duracao">${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)</div>
                 </li>`;
             });
             }
