@@ -37,6 +37,8 @@ function renderHistorico(decks){
       const snap = await getDocs(q);
       const cards = snap.docs.map(d => ({id: d.id, ...d.data()}));
       
+      console.log(`[DEBUG] Deck ${deckId}:`, cards.map(c => ({id: c.id, quality: c.quality, reviewCount: c.reviewCount, nextReview: c.nextReview})));
+      
       const cardsParaRevisar = cards.filter(c => !c.nextReview || c.nextReview.toDate() <= new Date());
       const totalCards = cards.length;
       
@@ -44,8 +46,10 @@ function renderHistorico(decks){
       
       // Verificar se é um deck novo (sem tentativas)
       const deckNovo = cards.every(c => !c.quality && !c.reviewCount);
+      console.log(`[DEBUG] Deck ${deckId} - deckNovo:`, deckNovo, 'cardsParaRevisar:', cardsParaRevisar.length);
       
       if (deckNovo) {
+        console.log(`[DEBUG] Deck ${deckId} - Retornando NOVO`);
         return {
           tipo: 'novo',
           texto: `${totalCards} cartões aguardando início dos estudos`,
@@ -53,6 +57,7 @@ function renderHistorico(decks){
           bg: '#eff6ff'
         };
       } else if (cardsParaRevisar.length > 0) {
+        console.log(`[DEBUG] Deck ${deckId} - Retornando REVISÃO`);
         return {
           tipo: 'revisao',
           texto: `${cardsParaRevisar.length} cartões aguardando revisão`,
@@ -71,6 +76,7 @@ function renderHistorico(decks){
           const diffTime = proximaRevisao - hoje;
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           
+          console.log(`[DEBUG] Deck ${deckId} - Retornando PRÓXIMO em ${diffDays} dias`);
           return {
             tipo: 'proximo',
             texto: `Próxima revisão em ${diffDays} dia${diffDays !== 1 ? 's' : ''}`,
@@ -80,6 +86,7 @@ function renderHistorico(decks){
         }
       }
       
+      console.log(`[DEBUG] Deck ${deckId} - Retornando NULL`);
       return null;
     } catch (error) {
       console.error('Erro ao calcular status de revisão:', error);
