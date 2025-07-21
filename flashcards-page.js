@@ -43,12 +43,24 @@ function renderHistorico(decks){
       if (totalCards === 0) return null;
       
       if (cardsParaRevisar.length > 0) {
-        return {
-          tipo: 'revisao',
-          texto: `${cardsParaRevisar.length} cartões para revisar`,
-          cor: '#dc2626',
-          bg: '#fef2f2'
-        };
+        // Verificar se é um deck novo (sem tentativas) ou revisão
+        const deckNovo = cards.every(c => !c.quality && !c.reviewCount);
+        
+        if (deckNovo) {
+          return {
+            tipo: 'novo',
+            texto: `${cardsParaRevisar.length} cartões aguardando início dos estudos`,
+            cor: '#2563eb',
+            bg: '#eff6ff'
+          };
+        } else {
+          return {
+            tipo: 'revisao',
+            texto: `${cardsParaRevisar.length} cartões para revisar`,
+            cor: '#dc2626',
+            bg: '#fef2f2'
+          };
+        }
       } else {
         // Encontrar o próximo cartão a ser revisado
         const proximosCards = cards
@@ -91,7 +103,12 @@ function renderHistorico(decks){
       if (deck.status === 'completed') {
         const statusRevisao = await calcularStatusRevisao(deck.deckId);
         if (statusRevisao) {
-          statusRevisaoHtml = `<span class='badge-revisao' style='background:${statusRevisao.bg};color:${statusRevisao.cor};padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'><i class="fas fa-${statusRevisao.tipo === 'revisao' ? 'clock' : 'calendar'}"></i> ${statusRevisao.texto}</span>`;
+          const iconMap = {
+            'revisao': 'clock',
+            'proximo': 'calendar',
+            'novo': 'play'
+          };
+          statusRevisaoHtml = `<span class='badge-revisao' style='background:${statusRevisao.bg};color:${statusRevisao.cor};padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'><i class="fas fa-${iconMap[statusRevisao.tipo]}"></i> ${statusRevisao.texto}</span>`;
         }
       }
       
@@ -139,7 +156,7 @@ async function renderUsageInfo(){
 }
 
 function mostrarFormDeck(){
-  containerFormDeck.innerHTML=`<form id="form-deck"><div class="form-field-group"><label>Matéria</label><input type="text" id="deck-materia" placeholder="Ex: Direito Administrativo" required></div><div class="form-field-group"><label>Tópico</label><input type="text" id="deck-topico" placeholder="Ex: Controle de Constitucionalidade" required></div><div class="form-field-group"><label>Quantidade de cards</label><input type="number" id="deck-quantidade" min="5" max="50" value="20"></div><div class="form-actions"><button type="submit" class="btn btn-primary">Gerar Flashcards</button><button type="button" id="btn-cancelar-deck" class="btn btn-ghost">Cancelar</button></div></form>`;
+  containerFormDeck.innerHTML=`<form id="form-deck"><div class="form-field-group"><label>Matéria</label><input type="text" id="deck-materia" placeholder="Ex: Direito Administrativo" required></div><div class="form-field-group"><label>Tópico</label><input type="text" id="deck-topico" placeholder="Ex: Controle de Constitucionalidade" required></div><div class="form-field-group"><label>Quantidade de cards</label><input type="number" id="deck-quantidade" min="3" max="20" value="10"><small style="color: #6b7280; font-size: 0.875rem; margin-top: 4px; display: block;"><i class="fas fa-info-circle"></i> Limite de 3 a 20 cards por deck</small></div><div class="form-actions"><button type="submit" class="btn btn-primary">Gerar Flashcards</button><button type="button" id="btn-cancelar-deck" class="btn btn-ghost">Cancelar</button></div></form>`;
   containerFormDeck.style.display='block';
 }
 
@@ -171,7 +188,6 @@ containerFormDeck?.addEventListener('submit',async e=>{
       showToast('Deck solicitado! Gerando...','info',3000);
       const resp=await gerarFlashcardsAsync({userId:auth.currentUser.uid,materia,topico,quantidade});
       ultimoDeckSolicitado=resp.deckId;
-      estudoContainer.innerHTML=cardHtml({materia,topico,cardCount:quantidade,deckId:'placeholder',status:'processing'});
       return resp;
     },
     onComplete:()=>{
