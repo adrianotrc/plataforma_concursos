@@ -37,47 +37,51 @@ function renderHistorico(decks){
       const snap = await getDocs(q);
       const cards = snap.docs.map(d => ({id: d.id, ...d.data()}));
       
-      const cardsParaRevisar = cards.filter(c => !c.nextReview || c.nextReview.toDate() <= new Date());
       const totalCards = cards.length;
-      
       if (totalCards === 0) return null;
       
       // Verificar se é um deck novo (sem tentativas)
       const deckNovo = cards.every(c => !c.quality && !c.reviewCount);
       
       if (deckNovo) {
+        // Deck novo: todos os cartões aguardando início dos estudos
         return {
           tipo: 'novo',
-          texto: `${cardsParaRevisar.length} cartões aguardando início dos estudos`,
+          texto: `${totalCards} cartões aguardando início dos estudos`,
           cor: '#2563eb',
           bg: '#eff6ff'
         };
-      } else if (cardsParaRevisar.length > 0) {
-        // Deck que já foi respondido e está no prazo para revisão
-        return {
-          tipo: 'revisao',
-          texto: `${cardsParaRevisar.length} cartões aguardando revisão`,
-          cor: '#dc2626',
-          bg: '#fef2f2'
-        };
       } else {
-        // Deck que já foi respondido e está aguardando tempo metodológico
-        const proximosCards = cards
-          .filter(c => c.nextReview && c.nextReview.toDate() > new Date())
-          .sort((a, b) => a.nextReview.toDate() - b.nextReview.toDate());
+        // Deck já foi respondido - verificar se há cartões para revisar hoje
+        const cardsParaRevisar = cards.filter(c => !c.nextReview || c.nextReview.toDate() <= new Date());
         
-        if (proximosCards.length > 0) {
-          const proximaRevisao = proximosCards[0].nextReview.toDate();
-          const hoje = new Date();
-          const diffTime = proximaRevisao - hoje;
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
+        if (cardsParaRevisar.length > 0) {
+          // Deck que já foi respondido e está no prazo para revisão
           return {
-            tipo: 'proximo',
-            texto: `Próxima revisão em ${diffDays} dia${diffDays !== 1 ? 's' : ''}`,
-            cor: '#059669',
-            bg: '#f0fdf4'
+            tipo: 'revisao',
+            texto: `${cardsParaRevisar.length} cartões aguardando revisão`,
+            cor: '#dc2626',
+            bg: '#fef2f2'
           };
+        } else {
+          // Deck que já foi respondido e está aguardando tempo metodológico
+          const proximosCards = cards
+            .filter(c => c.nextReview && c.nextReview.toDate() > new Date())
+            .sort((a, b) => a.nextReview.toDate() - b.nextReview.toDate());
+          
+          if (proximosCards.length > 0) {
+            const proximaRevisao = proximosCards[0].nextReview.toDate();
+            const hoje = new Date();
+            const diffTime = proximaRevisao - hoje;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return {
+              tipo: 'proximo',
+              texto: `Próxima revisão em ${diffDays} dia${diffDays !== 1 ? 's' : ''}`,
+              cor: '#059669',
+              bg: '#f0fdf4'
+            };
+          }
         }
       }
       
