@@ -614,6 +614,11 @@ formCronograma?.addEventListener('submit', async (e) => {
             
             // Toast informativo curto
             showToast("Cronograma solicitado! Gerando...", 'info', 3000);
+            
+            // Scroll para o histórico para acompanhar o progresso
+            setTimeout(() => {
+                document.querySelector('#historico-cronogramas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 500);
         }
     });
 });
@@ -652,8 +657,16 @@ document.body.addEventListener('click', async (e) => {
     }
 });
 
-btnAbrirForm?.addEventListener('click', () => { containerForm.style.display = 'block'; });
-btnFecharForm?.addEventListener('click', () => { containerForm.style.display = 'none'; });
+btnAbrirForm?.addEventListener('click', () => { 
+    containerForm.style.display = 'block'; 
+    // Scroll suave para o formulário
+    containerForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+btnFecharForm?.addEventListener('click', () => { 
+    containerForm.style.display = 'none'; 
+    // Scroll suave para o topo da seção
+    document.querySelector('.welcome-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 // Event listener para o seletor de cronogramas
 seletorCronograma?.addEventListener('change', async (e) => {
@@ -690,11 +703,20 @@ function ouvirHistoricoDePlanos() {
             if (change.type === 'modified') {
                 const dado = change.doc.data();
                 if (dado.status === 'completed' && change.doc.id === ultimoJobIdSolicitado) {
-                    showToast('✅ Seu novo cronograma está pronto! Clique em "Abrir" no histórico.', 'success', 7000);
+                    showToast('✅ Seu novo cronograma está pronto! Abrindo automaticamente...', 'success', 5000);
+                    
                     // Remove destaque da área de resultado se ainda existir
                     if (window.processingUI) {
                         window.processingUI.removeResultAreaHighlight('#historico-cronogramas');
                     }
+                    
+                    // Abre automaticamente o cronograma recém-criado
+                    setTimeout(() => {
+                        exibirPlanoComProgresso(dado);
+                        // Scroll para o topo do cronograma
+                        containerExibicao.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 1000);
+                    
                     ultimoJobIdSolicitado = null;
                 }
             }
