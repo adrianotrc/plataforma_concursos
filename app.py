@@ -686,6 +686,12 @@ def gerar_exercicios_async():
     dados_req = request.json
     user_id = dados_req.get("userId")
     if not user_id: return jsonify({"erro": "ID do usuário não fornecido."}), 400
+    
+    # Validação da quantidade de questões
+    quantidade = dados_req.get("quantidade", 0)
+    if not isinstance(quantidade, int) or quantidade < 1 or quantidade > 20:
+        return jsonify({"error": "invalid_quantity", "message": "A quantidade deve ser um número entre 1 e 20."}), 400
+    
     is_allowed, message = check_usage_and_update(user_id, 'exercicios')
     if not is_allowed: return jsonify({"error": "limit_exceeded", "message": message}), 429
     job_ref = db.collection('users').document(user_id).collection('sessoesExercicios').document()

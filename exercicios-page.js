@@ -245,8 +245,8 @@ btnFecharForm?.addEventListener('click', () => { formExercicios.style.display = 
 formExercicios?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const quantidade = parseInt(document.getElementById('exercicio-quantidade').value) || 0;
-    if (quantidade < 1 || quantidade > 10) {
-        alert('Por favor, insira uma quantidade de exercícios entre 1 e 10.');
+    if (quantidade < 1 || quantidade > 20) {
+        showToast('Por favor, insira uma quantidade de exercícios entre 1 e 20.', 'error');
         return;
     }
     
