@@ -1391,8 +1391,8 @@ def calcular_metricas_progresso(user_id, plano_id):
             
         plano_data = plano_doc.to_dict()
         
-        # Busca o progresso
-        progresso_refs = db.collection('users').document(user_id).collection('progresso').where('planoId', '==', plano_id).stream()
+        # Busca o progresso com limite para evitar timeout
+        progresso_refs = db.collection('users').document(user_id).collection('progresso').where('planoId', '==', plano_id).limit(1000).stream()
         
         progresso_lista = []
         for doc in progresso_refs:
@@ -1400,52 +1400,42 @@ def calcular_metricas_progresso(user_id, plano_id):
             data['id'] = doc.id
             progresso_lista.append(data)
         
-        # Calcula métricas
+        # Calcula métricas de forma otimizada
         total_sessoes = 0
-        sessoes_completadas = 0
-        sessoes_modificadas = 0
-        sessoes_incompletas = 0
-        dias_consecutivos = 0
-        ultima_data = None
         
-        # Conta sessões do plano
+        # Conta sessões do plano de forma mais eficiente
         if 'cronograma_semanal_detalhado' in plano_data:
             for semana in plano_data['cronograma_semanal_detalhado']:
                 for dia in semana.get('dias_de_estudo', []):
-                    for atividade in dia.get('atividades', []):
-                        total_sessoes += 1
+                    total_sessoes += len(dia.get('atividades', []))
         
-        # Analisa progresso - considera apenas o último status de cada sessão
+        # Analisa progresso de forma otimizada
         datas_estudo = set()
-        sessoes_por_id = {}  # Dicionário para armazenar o último status de cada sessão
+        sessoes_por_id = {}
         
         # Agrupa registros por sessão e pega o mais recente
         for registro in progresso_lista:
             sessao_id = registro['sessaoId']
             data_registro = registro.get('dataRegistro')
             
-            # Se não existe registro para esta sessão ou se é mais recente
             if sessao_id not in sessoes_por_id or (data_registro and sessoes_por_id[sessao_id]['dataRegistro'] < data_registro):
                 sessoes_por_id[sessao_id] = registro
         
-        # Conta apenas o último status de cada sessão
-        for sessao_id, registro in sessoes_por_id.items():
-            if registro['status'] == 'completed':
-                sessoes_completadas += 1
-            elif registro['status'] == 'modified':
-                sessoes_modificadas += 1
-            elif registro['status'] == 'incomplete':
-                sessoes_incompletas += 1
-            
-            # Adiciona data ao conjunto
+        # Conta status de forma otimizada
+        sessoes_completadas = sum(1 for r in sessoes_por_id.values() if r['status'] == 'completed')
+        sessoes_modificadas = sum(1 for r in sessoes_por_id.values() if r['status'] == 'modified')
+        sessoes_incompletas = sum(1 for r in sessoes_por_id.values() if r['status'] == 'incomplete')
+        
+        # Coleta datas de forma otimizada
+        for registro in sessoes_por_id.values():
             if 'dataRegistro' in registro:
                 data_str = registro['dataRegistro'].strftime('%Y-%m-%d')
                 datas_estudo.add(data_str)
         
-        # Calcula dias consecutivos
+        # Calcula dias consecutivos de forma otimizada
+        dias_consecutivos = 1
         if datas_estudo:
             datas_ordenadas = sorted(list(datas_estudo))
-            dias_consecutivos = 1
             for i in range(1, len(datas_ordenadas)):
                 data_anterior = datetime.strptime(datas_ordenadas[i-1], '%Y-%m-%d')
                 data_atual = datetime.strptime(datas_ordenadas[i], '%Y-%m-%d')
@@ -1465,7 +1455,7 @@ def calcular_metricas_progresso(user_id, plano_id):
             'porcentagemConclusao': round(porcentagem, 1),
             'diasConsecutivos': dias_consecutivos,
             'totalDiasEstudo': len(datas_estudo),
-            'progresso': progresso_lista
+            'progresso': list(sessoes_por_id.values())  # Retorna apenas os últimos status
         }
         
         return jsonify(metricas), 200
