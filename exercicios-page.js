@@ -153,13 +153,15 @@ function renderizarHistorico(sessoes) {
             percHtml = `<span class='badge-accuracy' style='background:#ecfdf5;color:#065f46;padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'>${score.toFixed(0)}% acertos</span>`;
             console.log('Gerando badge para sessão:', sessao.id, 'Score:', score); // DEBUG
         } else if (isCompleted) {
-            // TESTE: Forçar badge para sessões completas sem acertos
+            // Sessão completa mas sem tentativas
             percHtml = `<span class='badge-accuracy' style='background:#ecfdf5;color:#065f46;padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'>0% acertos</span>`;
-            console.log('TESTE: Forçando badge com CSS inline para sessão completa sem acertos'); // DEBUG
         } else {
-            // TESTE: Forçar badge para todas as sessões
-            percHtml = `<span class='badge-accuracy' style='background:#ecfdf5;color:#065f46;padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'>TESTE</span>`;
-            console.log('TESTE: Forçando badge para todas as sessões'); // DEBUG
+            // Sessão em processamento ou não iniciada
+            if (isProcessing) {
+                percHtml = `<span class='badge-accuracy' style='background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'>Gerando...</span>`;
+            } else {
+                percHtml = `<span class='badge-accuracy' style='background:#f3f4f6;color:#6b7280;padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'>Não respondido</span>`;
+            }
         }
 
         let statusIcon = '';
