@@ -877,22 +877,41 @@ function atualizarStatusSessao(sessaoId, status) {
     const statusClass = `status-${status}`;
     sessaoElement.classList.add(statusClass);
     
-    // Adiciona badge de status
-    let statusBadge = sessaoElement.querySelector('.sessao-status');
-    if (!statusBadge) {
-        statusBadge = document.createElement('span');
-        statusBadge.className = 'sessao-status';
-        sessaoElement.appendChild(statusBadge);
+    // Remove badge anterior se existir
+    const statusBadgeAnterior = sessaoElement.querySelector('.sessao-status');
+    if (statusBadgeAnterior) {
+        statusBadgeAnterior.remove();
     }
     
-    const statusText = {
-        'completed': '✅ Concluído',
-        'modified': '⚠️ Modificado',
-        'incomplete': '❌ Incompleto'
+    // Cria novo badge de status com melhor formatação
+    const statusBadge = document.createElement('div');
+    statusBadge.className = `sessao-status status-${status}`;
+    
+    const statusConfig = {
+        'completed': {
+            icon: 'fas fa-check',
+            text: 'Concluído',
+            color: '#065f46'
+        },
+        'modified': {
+            icon: 'fas fa-edit',
+            text: 'Modificado',
+            color: '#92400e'
+        },
+        'incomplete': {
+            icon: 'fas fa-times',
+            text: 'Incompleto',
+            color: '#991b1b'
+        }
     };
     
-    statusBadge.textContent = statusText[status];
-    statusBadge.className = `sessao-status status-${status}`;
+    const config = statusConfig[status];
+    statusBadge.innerHTML = `
+        <i class="${config.icon}" style="color: ${config.color}; margin-right: 4px;"></i>
+        <span style="color: ${config.color}; font-weight: 500;">${config.text}</span>
+    `;
+    
+    sessaoElement.appendChild(statusBadge);
 }
 
 // Função para carregar métricas de progresso

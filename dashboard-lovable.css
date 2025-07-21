@@ -1578,12 +1578,16 @@ body.dark-mode .modal-content p {
 }
 
 .sessao-status {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 6px;
     font-size: 0.75rem;
     font-weight: 500;
-    margin-left: 8px;
+    margin-top: 8px;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .status-concluido {
@@ -1641,15 +1645,15 @@ body.dark-mode .modal-content p {
 }
 
 .legenda-concluida {
-    color: #10b981;
+    color: #065f46;
 }
 
 .legenda-modificada {
-    color: #f59e0b;
+    color: #92400e;
 }
 
 .legenda-incompleta {
-    color: #ef4444;
+    color: #991b1b;
 }
 
 .grafico-container {
@@ -1698,15 +1702,18 @@ body.dark-mode .modal-content p {
 }
 
 .barra-concluida {
-    background-color: #10b981;
+    background-color: #d1fae5;
+    border: 1px solid #a7f3d0;
 }
 
 .barra-modificada {
-    background-color: #f59e0b;
+    background-color: #fef3c7;
+    border: 1px solid #fde68a;
 }
 
 .barra-incompleta {
-    background-color: #ef4444;
+    background-color: #fee2e2;
+    border: 1px solid #fca5a5;
 }
 
 .semana-stats {
