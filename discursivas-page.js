@@ -58,15 +58,29 @@ function renderEnunciado(enunciado) {
 
 function renderCorrecao(correcao, container) {
     if (!container || !correcao) return;
+    
+    // Função para formatar comentários com quebras de linha
+    const formatarComentario = (comentario) => {
+        if (!comentario) return 'Sem comentários.';
+        return comentario
+            .replace(/Pontos a melhorar:/g, '\n\n<strong>Pontos a melhorar:</strong>')
+            .replace(/Pontos a corrigir:/g, '\n\n<strong>Pontos a corrigir:</strong>')
+            .replace(/\n/g, '<br>');
+    };
+    
     const analiseHtml = correcao.analise_por_criterio?.map(item => `
-        <div class="criterio-analise" style="margin-bottom: 1rem;">
+        <div class="criterio-analise" style="margin-bottom: 1.5rem;">
             <h5>${item.criterio} (Nota: ${item.nota_criterio?.toFixed(1) || 'N/A'})</h5>
-            <p style="white-space: pre-wrap;">${item.comentario || 'Sem comentários.'}</p>
+            <div style="white-space: pre-wrap; line-height: 1.6;">${formatarComentario(item.comentario)}</div>
         </div>
     `).join('') || '<p>Análise detalhada não disponível.</p>';
+    
     container.innerHTML = `
         <h4>Análise da IA (Nota Final: ${correcao.nota_atribuida?.toFixed(1) || 'N/A'} / 10.0)</h4>
-        <p><strong>Comentário Geral:</strong> ${correcao.comentario_geral || 'Sem comentário geral.'}</p>
+        <div style="margin-bottom: 1rem;">
+            <strong>Comentário Geral:</strong>
+            <div style="white-space: pre-wrap; line-height: 1.6; margin-top: 0.5rem;">${correcao.comentario_geral || 'Sem comentário geral.'}</div>
+        </div>
         <hr style="margin: 16px 0;">
         ${analiseHtml}
         <small class="ai-disclaimer"><i class="fas fa-robot"></i> Análise e nota geradas por IA.</small>
@@ -315,8 +329,14 @@ function ouvirHistoricoDiscursivas() {
                     renderEnunciado(data.enunciado);
                 } else if (data.status === 'correcao_pronta' && sessaoAberta && sessaoAberta.id === change.doc.id) {
                     renderCorrecao(data.correcao, correcaoContainer);
+                    
+                    // Reabilita o botão de corrigir para permitir novas correções
                     const btn = document.getElementById('btn-corrigir-texto');
-                    if(btn) btn.style.display = 'none';
+                    if(btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Corrigir Texto';
+                        btn.style.display = 'block';
+                    }
                     
                     // Toast de correção finalizada
                     const nota = data.correcao?.nota_atribuida?.toFixed(1) || 'N/A';
