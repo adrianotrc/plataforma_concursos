@@ -59,31 +59,31 @@ function renderEnunciado(enunciado) {
 function renderCorrecao(correcao, container) {
     if (!container || !correcao) return;
     
-    // Função para formatar comentários com quebras de linha
+    // Função para formatar comentários com quebras de linha e hierarquia de fontes
     const formatarComentario = (comentario) => {
         if (!comentario) return 'Sem comentários.';
         return comentario
-            .replace(/Pontos a melhorar:/g, '\n\n<strong>Pontos a melhorar:</strong>')
-            .replace(/Pontos a corrigir:/g, '\n\n<strong>Pontos a corrigir:</strong>')
+            .replace(/Pontos a melhorar:/g, '\n\n<span style="font-weight: 600; color: #374151;">Pontos a melhorar:</span>')
+            .replace(/Pontos a corrigir:/g, '\n\n<span style="font-weight: 600; color: #374151;">Pontos a corrigir:</span>')
             .replace(/\n/g, '<br>');
     };
     
     const analiseHtml = correcao.analise_por_criterio?.map(item => `
         <div class="criterio-analise" style="margin-bottom: 1.5rem;">
-            <h5>${item.criterio} (Nota: ${item.nota_criterio?.toFixed(1) || 'N/A'})</h5>
-            <div style="white-space: pre-wrap; line-height: 1.6;">${formatarComentario(item.comentario)}</div>
+            <h5 style="font-size: 1.1rem; font-weight: 600; color: #1f2937; margin-bottom: 0.75rem;">${item.criterio} (Nota: ${item.nota_criterio?.toFixed(1) || 'N/A'})</h5>
+            <div style="white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; color: #4b5563;">${formatarComentario(item.comentario)}</div>
         </div>
     `).join('') || '<p>Análise detalhada não disponível.</p>';
     
     container.innerHTML = `
-        <h4>Análise da IA (Nota Final: ${correcao.nota_atribuida?.toFixed(1) || 'N/A'} / 10.0)</h4>
-        <div style="margin-bottom: 1rem;">
-            <strong>Comentário Geral:</strong>
-            <div style="white-space: pre-wrap; line-height: 1.6; margin-top: 0.5rem;">${correcao.comentario_geral || 'Sem comentário geral.'}</div>
+        <h4 style="font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Análise da IA (Nota Final: ${correcao.nota_atribuida?.toFixed(1) || 'N/A'} / 10.0)</h4>
+        <div style="margin-bottom: 1.5rem;">
+            <div style="font-size: 1rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">Comentário Geral:</div>
+            <div style="white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; color: #4b5563;">${correcao.comentario_geral || 'Sem comentário geral.'}</div>
         </div>
         <hr style="margin: 16px 0;">
         ${analiseHtml}
-        <small class="ai-disclaimer"><i class="fas fa-robot"></i> Análise e nota geradas por IA.</small>
+        <small class="ai-disclaimer" style="font-size: 0.875rem; color: #6b7280;"><i class="fas fa-robot"></i> Análise e nota geradas por IA.</small>
     `;
     container.style.display = 'block';
 }
