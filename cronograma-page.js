@@ -353,6 +353,9 @@ function exibirPlanoNaTela(plano) {
                     <button id="btn-exportar-excel" class="btn btn-primary"><i class="fas fa-file-excel"></i> Exportar</button>
                     <button id="btn-fechar-plano" class="btn btn-outline">Fechar</button>
                 </div>
+                <div class="plano-orientacao">
+                    <p><i class="fas fa-lightbulb"></i> <strong>Dica:</strong> Use os botões de cada matéria para marcar seu progresso e acompanhar suas estatísticas em tempo real!</p>
+                </div>
                 <div class="status-legend">
                     <span class="legend-title">Legenda dos Status:</span>
                     <div class="legend-items">
@@ -991,6 +994,9 @@ async function carregarMetricasProgresso(planoId) {
             progressoContainer.innerHTML = `
                 <div class="progresso-header">
                     <h3><i class="fas fa-chart-line"></i> Acompanhamento de Progresso</h3>
+                    <div class="progresso-orientacao">
+                        <p><i class="fas fa-info-circle"></i> Para acompanhar seu progresso, clique nos botões de cada matéria no cronograma para marcar como <strong>Concluído</strong>, <strong>Modificado</strong> ou <strong>Incompleto</strong>.</p>
+                    </div>
                 </div>
                 <div class="progresso-stats">
                     <div class="stat-item">
@@ -1054,6 +1060,9 @@ function renderizarProgressoFromCache() {
     progressoContainer.innerHTML = `
         <div class="progresso-header">
             <h3><i class="fas fa-chart-line"></i> Acompanhamento de Progresso</h3>
+            <div class="progresso-orientacao">
+                <p><i class="fas fa-info-circle"></i> Para acompanhar seu progresso, clique nos botões de cada matéria no cronograma para marcar como <strong>Concluído</strong>, <strong>Modificado</strong> ou <strong>Incompleto</strong>.</p>
+            </div>
         </div>
         <div class="progresso-stats">
             <div class="stat-item">

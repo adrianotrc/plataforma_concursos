@@ -1491,13 +1491,53 @@ body.dark-mode .modal-content p {
 }
 
 .progresso-header h3 {
-    margin: 0;
+    margin: 0 0 12px 0;
     color: #1f2937;
     font-size: 1.25rem;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.progresso-orientacao {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.progresso-orientacao p {
+    margin: 0;
+    color: #0369a1;
+}
+
+.progresso-orientacao i {
+    margin-right: 6px;
+    color: #0284c7;
+}
+
+.plano-orientacao {
+    margin: 16px 0;
+    padding: 12px 16px;
+    background-color: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.plano-orientacao p {
+    margin: 0;
+    color: #92400e;
+}
+
+.plano-orientacao i {
+    margin-right: 6px;
+    color: #f59e0b;
 }
 
 .progresso-stats {
@@ -2725,4 +2765,30 @@ body.dark-mode .legend-item {
     background-color: #374151;
     border-color: #4b5563;
     color: #d1d5db;
+}
+
+body.dark-mode .progresso-orientacao {
+    background-color: #1e3a8a;
+    border-color: #3b82f6;
+}
+
+body.dark-mode .progresso-orientacao p {
+    color: #93c5fd;
+}
+
+body.dark-mode .progresso-orientacao i {
+    color: #60a5fa;
+}
+
+body.dark-mode .plano-orientacao {
+    background-color: #78350f;
+    border-color: #f59e0b;
+}
+
+body.dark-mode .plano-orientacao p {
+    color: #fde68a;
+}
+
+body.dark-mode .plano-orientacao i {
+    color: #fbbf24;
 }
