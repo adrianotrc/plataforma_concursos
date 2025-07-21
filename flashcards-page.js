@@ -29,15 +29,79 @@ function showToast(message, type='success', duration=5000){
 function renderHistorico(decks){
   if(!historicoDecks)return;
   if(decks.length===0){historicoDecks.innerHTML='<p>Nenhum deck ainda.</p>';return;}
-  historicoDecks.innerHTML=decks.map(deck=>{
-    const statusIcon = deck.status==='processing'?'<i class="fas fa-spinner fa-spin"></i>':deck.status==='failed'?'<i class="fas fa-exclamation-triangle" style="color:#ef4444"></i>':'';
-    const btnLabel = deck.status==='processing'? 'Gerando...' : deck.status==='failed'? 'Falhou' : 'Estudar';
-    const s=deck.stats||{};
-    const totalStats=(s.q0||0)+(s.q1||0)+(s.q2||0)+(s.q3||0)+(s.q4||0)+(s.q5||0);
-    const perc= totalStats? Math.round(((s.q4||0)+(s.q5||0))*100/totalStats):0;
-    const percHtml= totalStats? `<span class='badge-accuracy'>${perc}% fácil</span>`:'';
-    return `<div class="plano-item"><div><h3>${deck.materia||'Deck'} ${statusIcon} ${percHtml}</h3><p>${deck.topico||''} • ${deck.cardCount||0} cards</p></div><button class="btn btn-primary btn-abrir-deck" data-id="${deck.deckId}" ${deck.status!=='completed'?'disabled':''}>${btnLabel}</button></div>`;
-  }).join('');
+  
+  // Função para calcular status de revisão
+  const calcularStatusRevisao = async (deckId) => {
+    try {
+      const q = query(collection(db, `users/${auth.currentUser.uid}/flashcards/${deckId}/cards`));
+      const snap = await getDocs(q);
+      const cards = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      
+      const cardsParaRevisar = cards.filter(c => !c.nextReview || c.nextReview.toDate() <= new Date());
+      const totalCards = cards.length;
+      
+      if (totalCards === 0) return null;
+      
+      if (cardsParaRevisar.length > 0) {
+        return {
+          tipo: 'revisao',
+          texto: `${cardsParaRevisar.length} cartões para revisar`,
+          cor: '#dc2626',
+          bg: '#fef2f2'
+        };
+      } else {
+        // Encontrar o próximo cartão a ser revisado
+        const proximosCards = cards
+          .filter(c => c.nextReview && c.nextReview.toDate() > new Date())
+          .sort((a, b) => a.nextReview.toDate() - b.nextReview.toDate());
+        
+        if (proximosCards.length > 0) {
+          const proximaRevisao = proximosCards[0].nextReview.toDate();
+          const hoje = new Date();
+          const diffTime = proximaRevisao - hoje;
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          return {
+            tipo: 'proximo',
+            texto: `Próxima revisão em ${diffDays} dia${diffDays !== 1 ? 's' : ''}`,
+            cor: '#059669',
+            bg: '#f0fdf4'
+          };
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Erro ao calcular status de revisão:', error);
+      return null;
+    }
+  };
+  
+  // Renderizar decks com status de revisão
+  const renderizarDecksComStatus = async () => {
+    const decksHtml = await Promise.all(decks.map(async (deck) => {
+      const statusIcon = deck.status==='processing'?'<i class="fas fa-spinner fa-spin"></i>':deck.status==='failed'?'<i class="fas fa-exclamation-triangle" style="color:#ef4444"></i>':'';
+      const btnLabel = deck.status==='processing'? 'Gerando...' : deck.status==='failed'? 'Falhou' : 'Estudar';
+      const s=deck.stats||{};
+      const totalStats=(s.q0||0)+(s.q1||0)+(s.q2||0)+(s.q3||0)+(s.q4||0)+(s.q5||0);
+      const perc= totalStats? Math.round(((s.q4||0)+(s.q5||0))*100/totalStats):0;
+      const percHtml= totalStats? `<span class='badge-accuracy'>${perc}% fácil</span>`:'';
+      
+      let statusRevisaoHtml = '';
+      if (deck.status === 'completed') {
+        const statusRevisao = await calcularStatusRevisao(deck.deckId);
+        if (statusRevisao) {
+          statusRevisaoHtml = `<span class='badge-revisao' style='background:${statusRevisao.bg};color:${statusRevisao.cor};padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'><i class="fas fa-${statusRevisao.tipo === 'revisao' ? 'clock' : 'calendar'}"></i> ${statusRevisao.texto}</span>`;
+        }
+      }
+      
+      return `<div class="plano-item"><div><h3>${deck.materia||'Deck'} ${statusIcon} ${percHtml} ${statusRevisaoHtml}</h3><p>${deck.topico||''} • ${deck.cardCount||0} cards</p></div><button class="btn btn-primary btn-abrir-deck" data-id="${deck.deckId}" ${deck.status!=='completed'?'disabled':''}>${btnLabel}</button></div>`;
+    }));
+    
+    historicoDecks.innerHTML = decksHtml.join('');
+  };
+  
+  renderizarDecksComStatus();
 }
 
 function ouvirDecks(){
