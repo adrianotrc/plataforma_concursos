@@ -264,6 +264,7 @@ document.body.addEventListener('click', async (e) => {
         try {
             await corrigirDiscursivaAsync(dadosParaCorrecao);
             corrigirBtn.textContent = "Aguardando correção da IA...";
+            showToast("📝 Correção enviada! Nossa IA está analisando sua resposta...", 'info', 5000);
         } catch (error) {
             showToast(error.message, 'error');
             corrigirBtn.disabled = false;
@@ -316,6 +317,10 @@ function ouvirHistoricoDiscursivas() {
                     renderCorrecao(data.correcao, correcaoContainer);
                     const btn = document.getElementById('btn-corrigir-texto');
                     if(btn) btn.style.display = 'none';
+                    
+                    // Toast de correção finalizada
+                    const nota = data.correcao?.nota_atribuida?.toFixed(1) || 'N/A';
+                    showToast(`✅ Correção finalizada! Sua nota: ${nota}/10`, 'success', 7000);
                 }
             }
         });
