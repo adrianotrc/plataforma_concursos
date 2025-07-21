@@ -1233,9 +1233,10 @@ document.body.addEventListener('click', async (e) => {
         containerExibicao.style.display = 'none';
         containerExibicao.innerHTML = '';
         planoAbertoAtual = null;
-        // Esconde o container de progresso
-        if (progressoContainer) {
-            progressoContainer.style.display = 'none';
+        
+        // Mostra novamente a caixa de progresso se há um plano selecionado
+        if (planoSelecionado && progressoContainer) {
+            progressoContainer.style.display = 'block';
         }
     }
 });
