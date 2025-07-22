@@ -37,7 +37,7 @@ function renderHistorico(decks){
       const snap = await getDocs(q);
       const cards = snap.docs.map(d => ({id: d.id, ...d.data()}));
       
-      console.log(`[DEBUG] Deck ${deckId}:`, cards.map(c => ({id: c.id, quality: c.quality, reviewCount: c.reviewCount, nextReview: c.nextReview})));
+      console.log(`[DEBUG] Deck ${deckId}:`, cards.map(c => ({id: c.id, quality: c.quality, reviewCount: c.reviewCount, nextReview: c.nextReview, nextReviewDate: c.nextReview ? c.nextReview.toDate() : null})));
       
       const cardsParaRevisar = cards.filter(c => !c.nextReview || c.nextReview.toDate() <= new Date());
       const totalCards = cards.length;
@@ -70,6 +70,8 @@ function renderHistorico(decks){
         const proximosCards = cards
           .filter(c => c.nextReview && c.nextReview.toDate() > new Date())
           .sort((a, b) => a.nextReview.toDate() - b.nextReview.toDate());
+        
+        console.log(`[DEBUG] Deck ${deckId} - proximosCards:`, proximosCards.length);
         
         if (proximosCards.length > 0) {
           const proximaRevisao = proximosCards[0].nextReview.toDate();
