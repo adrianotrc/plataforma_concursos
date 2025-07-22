@@ -92,10 +92,9 @@ function renderHistorico(decks){
       const cardsComPrazo = cards.filter(c => c.nextReview);
       const deckEstudado = cardsComPrazo.length > 0;
       
-      // CORREÇÃO: Primeiro verificar se é um deck novo (nunca foi estudado)
-      if (!deckEstudado) {
-        console.log(`[DEBUG] Deck ${deckId} identificado como NOVO`);
-        return {
+              // CORREÇÃO: Primeiro verificar se é um deck novo (nunca foi estudado)
+        if (!deckEstudado) {
+          return {
           tipo: 'novo',
           texto: `${totalCards} cartões aguardando início dos estudos`,
           cor: '#059669',
@@ -322,10 +321,8 @@ estudoContainer?.addEventListener('click',async e=>{
   if(e.target.classList.contains('btn-quality')){
     const qualidade=parseInt(e.target.dataset.q,10);
     const card=filaCartoes.shift();
-    console.log(`[DEBUG] Respondendo flashcard - Quality: ${qualidade}, Card: ${card.id}`);
     try {
       await responderFlashcard({userId:auth.currentUser.uid,deckId:deckAberto,cardId:card.id,quality:qualidade});
-      console.log(`[DEBUG] Flashcard respondido com sucesso`);
       document.dispatchEvent(new CustomEvent('flashcardReviewed',{detail:{quality:qualidade}}));
       mostrarCartao();
     } catch (error) {
