@@ -46,12 +46,8 @@ function renderHistorico(decks){
       const cardsComPrazo = cards.filter(c => c.nextReview);
       const deckEstudado = cardsComPrazo.length > 0;
       
-      // Verificar se é um deck novo (sem quality definido)
-      const cardsComQuality = cards.filter(c => c.quality !== undefined && c.quality !== null);
-      const deckNovo = cardsComQuality.length === 0;
-      
       // Log para todos os decks
-      console.log(`[DEBUG] Deck ${deckId} - Total: ${totalCards}, Cards com prazo: ${cardsComPrazo.length}, Cards com quality: ${cardsComQuality.length}, Cards para revisar: ${cardsParaRevisar.length}, Deck estudado: ${deckEstudado}, Deck novo: ${deckNovo}`);
+      console.log(`[DEBUG] Deck ${deckId} - Total: ${totalCards}, Cards com prazo: ${cardsComPrazo.length}, Cards para revisar: ${cardsParaRevisar.length}, Deck estudado: ${deckEstudado}`);
       
       // Log detalhado para os 2 primeiros decks (que devem ser novos)
       if (deckId === 'oije5KcxJM7kj3M7pE36' || deckId === '5rwjsozoeVCgDCImAAfy') {
@@ -68,8 +64,8 @@ function renderHistorico(decks){
           cor: '#dc2626',
           bg: '#fef2f2'
         };
-      } else if (deckNovo) {
-        // Deck novo (nunca foi respondido)
+      } else if (!deckEstudado) {
+        // Deck novo (nunca foi estudado)
         return {
           tipo: 'novo',
           texto: `${totalCards} cartões aguardando início dos estudos`,
