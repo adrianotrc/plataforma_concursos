@@ -37,16 +37,6 @@ function renderHistorico(decks){
       const snap = await getDocs(q);
       const cards = snap.docs.map(d => ({id: d.id, ...d.data()}));
       
-      console.log(`[DEBUG] Deck ${deckId} - Cards detalhados:`, cards.map(c => ({
-        id: c.id, 
-        quality: c.quality, 
-        reviewCount: c.reviewCount, 
-        nextReview: c.nextReview, 
-        nextReviewDate: c.nextReview ? c.nextReview.toDate() : null,
-        hasQuality: !!c.quality,
-        hasReviewCount: !!c.reviewCount
-      })));
-      
       const cardsParaRevisar = cards.filter(c => !c.nextReview || c.nextReview.toDate() <= new Date());
       const totalCards = cards.length;
       
@@ -55,11 +45,9 @@ function renderHistorico(decks){
       // Verificar se há cartões com nextReview definido (já foram estudados)
       const cardsComPrazo = cards.filter(c => c.nextReview);
       const deckEstudado = cardsComPrazo.length > 0;
-      console.log(`[DEBUG] Deck ${deckId} - deckEstudado:`, deckEstudado, 'cardsParaRevisar:', cardsParaRevisar.length, 'cardsComPrazo:', cardsComPrazo.length);
       
       // Se há cartões para revisar hoje (prazo alcançado)
       if (cardsParaRevisar.length > 0) {
-        console.log(`[DEBUG] Deck ${deckId} - Retornando REVISÃO`);
         return {
           tipo: 'revisao',
           texto: `${cardsParaRevisar.length} cartões aguardando revisão`,
@@ -68,7 +56,6 @@ function renderHistorico(decks){
         };
       } else if (!deckEstudado) {
         // Deck novo (nunca foi estudado)
-        console.log(`[DEBUG] Deck ${deckId} - Retornando NOVO`);
         return {
           tipo: 'novo',
           texto: `${totalCards} cartões aguardando início dos estudos`,
@@ -81,15 +68,12 @@ function renderHistorico(decks){
           .filter(c => c.nextReview && c.nextReview.toDate() > new Date())
           .sort((a, b) => a.nextReview.toDate() - b.nextReview.toDate());
         
-        console.log(`[DEBUG] Deck ${deckId} - proximosCards:`, proximosCards.length);
-        
         if (proximosCards.length > 0) {
           const proximaRevisao = proximosCards[0].nextReview.toDate();
           const hoje = new Date();
           const diffTime = proximaRevisao - hoje;
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           
-          console.log(`[DEBUG] Deck ${deckId} - Retornando PRÓXIMO em ${diffDays} dias`);
           return {
             tipo: 'proximo',
             texto: `${proximosCards.length} cartões aguardando o prazo da próxima revisão`,
