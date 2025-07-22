@@ -26,6 +26,43 @@ function showToast(message, type='success', duration=5000){
   setTimeout(()=>{toast.classList.remove('show');setTimeout(()=>toast.remove(),500);},duration);
 }
 
+// Função para formatar datas
+function formatarData(data) {
+  if (!data) return 'Data desconhecida';
+  
+  const dataObj = data.toDate ? data.toDate() : new Date(data);
+  return dataObj.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
+
+// Função para calcular dias desde uma data
+function calcularDiasDesde(data) {
+  if (!data) return 0;
+  
+  const dataObj = data.toDate ? data.toDate() : new Date(data);
+  const hoje = new Date();
+  const diffTime = hoje - dataObj;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+}
+
+// Função para calcular próxima revisão
+function calcularProximaRevisao(cards) {
+  if (!cards || cards.length === 0) return null;
+  
+  const cardsComPrazo = cards.filter(c => c.nextReview && c.nextReview.toDate() > new Date());
+  if (cardsComPrazo.length === 0) return null;
+  
+  const proximaRevisao = cardsComPrazo
+    .sort((a, b) => a.nextReview.toDate() - b.nextReview.toDate())[0]
+    .nextReview.toDate();
+  
+  return proximaRevisao;
+}
+
 function renderHistorico(decks){
   if(!historicoDecks)return;
   if(decks.length===0){historicoDecks.innerHTML='<p>Nenhum deck ainda.</p>';return;}
@@ -37,24 +74,15 @@ function renderHistorico(decks){
       const snap = await getDocs(q);
       const cards = snap.docs.map(d => ({id: d.id, ...d.data()}));
       
-      const cardsParaRevisar = cards.filter(c => !c.nextReview || c.nextReview.toDate() <= new Date());
       const totalCards = cards.length;
-      
       if (totalCards === 0) return null;
       
       // Verificar se há cartões com nextReview definido (já foram estudados)
       const cardsComPrazo = cards.filter(c => c.nextReview);
       const deckEstudado = cardsComPrazo.length > 0;
       
-      // Log para todos os decks
-      console.log(`[DEBUG] Deck ${deckId} - Total: ${totalCards}, Cards com prazo: ${cardsComPrazo.length}, Cards para revisar: ${cardsParaRevisar.length}, Deck estudado: ${deckEstudado}`);
-      
-      // Log detalhado para os 2 primeiros decks (que devem ser novos)
-      if (deckId === 'oije5KcxJM7kj3M7pE36' || deckId === '5rwjsozoeVCgDCImAAfy') {
-        console.log(`[DEBUG DETALHADO] Deck ${deckId}:`, cards.map(c => ({id: c.id, quality: c.quality, nextReview: c.nextReview})));
-      }
-      
-
+      // Cartões para revisar hoje (prazo alcançado)
+      const cardsParaRevisar = cards.filter(c => !c.nextReview || c.nextReview.toDate() <= new Date());
       
       // Se há cartões para revisar hoje (prazo alcançado)
       if (cardsParaRevisar.length > 0) {
@@ -65,7 +93,7 @@ function renderHistorico(decks){
           bg: '#fef2f2'
         };
       } else if (!deckEstudado) {
-        // Deck novo (nunca foi estudado)
+        // Deck novo (nunca foi estudado) - CORREÇÃO AQUI
         return {
           tipo: 'novo',
           texto: `${totalCards} cartões aguardando início dos estudos`,
@@ -93,7 +121,6 @@ function renderHistorico(decks){
         }
       }
       
-      console.log(`[DEBUG] Deck ${deckId} - Retornando NULL`);
       return null;
     } catch (error) {
       console.error('Erro ao calcular status de revisão:', error);
@@ -111,6 +138,40 @@ function renderHistorico(decks){
       const perc= totalStats? Math.round(((s.q4||0)+(s.q5||0))*100/totalStats):0;
       const percHtml= totalStats? `<span class='badge-accuracy'>${perc}% fácil</span>`:'';
       
+      // Informações de data e tempo
+      const dataCriacao = formatarData(deck.criadoEm);
+      const diasDesdeCriacao = calcularDiasDesde(deck.criadoEm);
+      const diasTexto = diasDesdeCriacao === 0 ? 'hoje' : 
+                       diasDesdeCriacao === 1 ? 'ontem' : 
+                       `${diasDesdeCriacao} dias atrás`;
+      
+      // Informações de próxima revisão
+      let proximaRevisaoHtml = '';
+      if (deck.status === 'completed') {
+        try {
+          const q = query(collection(db, `users/${auth.currentUser.uid}/flashcards/${deck.deckId}/cards`));
+          const snap = await getDocs(q);
+          const cards = snap.docs.map(d => ({id: d.id, ...d.data()}));
+          const proximaRevisao = calcularProximaRevisao(cards);
+          
+          if (proximaRevisao) {
+            const hoje = new Date();
+            const diffTime = proximaRevisao - hoje;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) {
+              proximaRevisaoHtml = '<span style="color: #dc2626; font-size: 0.8rem;"><i class="fas fa-exclamation-circle"></i> Revisão hoje</span>';
+            } else if (diffDays === 1) {
+              proximaRevisaoHtml = '<span style="color: #d97706; font-size: 0.8rem;"><i class="fas fa-clock"></i> Próxima revisão amanhã</span>';
+            } else {
+              proximaRevisaoHtml = `<span style="color: #6b7280; font-size: 0.8rem;"><i class="fas fa-calendar"></i> Próxima revisão em ${diffDays} dias</span>`;
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao calcular próxima revisão:', error);
+        }
+      }
+      
       let statusRevisaoHtml = '';
       if (deck.status === 'completed') {
         const statusRevisao = await calcularStatusRevisao(deck.deckId);
@@ -124,7 +185,17 @@ function renderHistorico(decks){
         }
       }
       
-      return `<div class="plano-item"><div><h3>${deck.materia||'Deck'} ${statusIcon} ${percHtml} ${statusRevisaoHtml}</h3><p>${deck.topico||''} • ${deck.cardCount||0} cards</p></div><button class="btn btn-primary btn-abrir-deck" data-id="${deck.deckId}" ${deck.status!=='completed'?'disabled':''}>${btnLabel}</button></div>`;
+      return `<div class="plano-item">
+        <div>
+          <h3>${deck.materia||'Deck'} ${statusIcon} ${percHtml} ${statusRevisaoHtml}</h3>
+          <p>${deck.topico||''} • ${deck.cardCount||0} cards</p>
+          <p style="font-size: 0.8rem; color: #6b7280; margin-top: 4px;">
+            <i class="fas fa-calendar-plus"></i> Criado ${dataCriacao} (${diasTexto})
+            ${proximaRevisaoHtml ? '<br>' + proximaRevisaoHtml : ''}
+          </p>
+        </div>
+        <button class="btn btn-primary btn-abrir-deck" data-id="${deck.deckId}" ${deck.status!=='completed'?'disabled':''}>${btnLabel}</button>
+      </div>`;
     }));
     
     historicoDecks.innerHTML = decksHtml.join('');
@@ -265,7 +336,7 @@ historicoDecks?.addEventListener('click',async e=>{
   mostrarCartao();
 }); 
 
-// helper to render card html
+// helper to render card html (mantido para compatibilidade)
 function cardHtml(deck){
   const s=deck.stats||{};
   const totalStats=(s.q0||0)+(s.q1||0)+(s.q2||0)+(s.q3||0)+(s.q4||0)+(s.q5||0);
