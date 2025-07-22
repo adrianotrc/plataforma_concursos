@@ -48,21 +48,22 @@ function renderHistorico(decks){
       const deckNovo = cards.every(c => !c.quality && !c.reviewCount);
       console.log(`[DEBUG] Deck ${deckId} - deckNovo:`, deckNovo, 'cardsParaRevisar:', cardsParaRevisar.length);
       
-      if (deckNovo) {
-        console.log(`[DEBUG] Deck ${deckId} - Retornando NOVO`);
-        return {
-          tipo: 'novo',
-          texto: `${totalCards} cartões aguardando início dos estudos`,
-          cor: '#2563eb',
-          bg: '#eff6ff'
-        };
-      } else if (cardsParaRevisar.length > 0) {
+      // Se há cartões para revisar hoje, NÃO é um deck novo
+      if (cardsParaRevisar.length > 0) {
         console.log(`[DEBUG] Deck ${deckId} - Retornando REVISÃO`);
         return {
           tipo: 'revisao',
           texto: `${cardsParaRevisar.length} cartões aguardando revisão`,
           cor: '#dc2626',
           bg: '#fef2f2'
+        };
+      } else if (deckNovo) {
+        console.log(`[DEBUG] Deck ${deckId} - Retornando NOVO`);
+        return {
+          tipo: 'novo',
+          texto: `${totalCards} cartões aguardando início dos estudos`,
+          cor: '#2563eb',
+          bg: '#eff6ff'
         };
       } else {
         // Encontrar o próximo cartão a ser revisado
