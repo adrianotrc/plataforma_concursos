@@ -53,6 +53,11 @@ function renderHistorico(decks){
       // Log para todos os decks
       console.log(`[DEBUG] Deck ${deckId} - Total: ${totalCards}, Cards com prazo: ${cardsComPrazo.length}, Cards com quality: ${cardsComQuality.length}, Cards para revisar: ${cardsParaRevisar.length}, Deck estudado: ${deckEstudado}, Deck novo: ${deckNovo}`);
       
+      // Log detalhado para os 2 primeiros decks (que devem ser novos)
+      if (deckId === 'oije5KcxJM7kj3M7pE36' || deckId === '5rwjsozoeVCgDCImAAfy') {
+        console.log(`[DEBUG DETALHADO] Deck ${deckId}:`, cards.map(c => ({id: c.id, quality: c.quality, nextReview: c.nextReview})));
+      }
+      
 
       
       // Se há cartões para revisar hoje (prazo alcançado)
