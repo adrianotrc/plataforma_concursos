@@ -57,7 +57,7 @@ function renderHistorico(decks){
           cor: '#dc2626',
           bg: '#fef2f2'
         };
-      } else if (deckNovo) {
+      } else if (deckNovo && cardsParaRevisar.length === 0) {
         console.log(`[DEBUG] Deck ${deckId} - Retornando NOVO`);
         return {
           tipo: 'novo',
