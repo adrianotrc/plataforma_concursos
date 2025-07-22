@@ -46,10 +46,7 @@ function renderHistorico(decks){
       const cardsComPrazo = cards.filter(c => c.nextReview);
       const deckEstudado = cardsComPrazo.length > 0;
       
-      // Log temporário para debug
-      if (cardsParaRevisar.length === 0 && !deckEstudado) {
-        console.log(`[DEBUG NOVO] Deck ${deckId} - Total: ${totalCards}, Cards com prazo: ${cardsComPrazo.length}, Deck estudado: ${deckEstudado}`);
-      }
+
       
       // Se há cartões para revisar hoje (prazo alcançado)
       if (cardsParaRevisar.length > 0) {
@@ -233,9 +230,15 @@ estudoContainer?.addEventListener('click',async e=>{
   if(e.target.classList.contains('btn-quality')){
     const qualidade=parseInt(e.target.dataset.q,10);
     const card=filaCartoes.shift();
-    await responderFlashcard({userId:auth.currentUser.uid,deckId:deckAberto,cardId:card.id,quality:qualidade});
-    document.dispatchEvent(new CustomEvent('flashcardReviewed',{detail:{quality:qualidade}}));
-    mostrarCartao();
+    console.log(`[DEBUG] Respondendo flashcard - Quality: ${qualidade}, Card: ${card.id}`);
+    try {
+      await responderFlashcard({userId:auth.currentUser.uid,deckId:deckAberto,cardId:card.id,quality:qualidade});
+      console.log(`[DEBUG] Flashcard respondido com sucesso`);
+      document.dispatchEvent(new CustomEvent('flashcardReviewed',{detail:{quality:qualidade}}));
+      mostrarCartao();
+    } catch (error) {
+      console.error(`[DEBUG] Erro ao responder flashcard:`, error);
+    }
   }
 });
 
