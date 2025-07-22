@@ -26,6 +26,11 @@ function showToast(message, type='success', duration=5000){
   setTimeout(()=>{toast.classList.remove('show');setTimeout(()=>toast.remove(),500);},duration);
 }
 
+// Função para obter data atual em Brasília
+function getDataBrasilia() {
+  return new Date().toLocaleString("pt-BR", {timeZone: "America/Sao_Paulo"});
+}
+
 // Função para formatar datas
 function formatarData(data) {
   if (!data) return 'Data desconhecida';
@@ -34,7 +39,8 @@ function formatarData(data) {
   return dataObj.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
+    timeZone: 'America/Sao_Paulo'
   });
 }
 
@@ -44,7 +50,12 @@ function calcularDiasDesde(data) {
   
   const dataObj = data.toDate ? data.toDate() : new Date(data);
   const hoje = new Date();
-  const diffTime = hoje - dataObj;
+  
+  // Ajustar para fuso horário de Brasília
+  const hojeBrasilia = new Date(hoje.toLocaleString("pt-BR", {timeZone: "America/Sao_Paulo"}));
+  const dataBrasilia = new Date(dataObj.toLocaleString("pt-BR", {timeZone: "America/Sao_Paulo"}));
+  
+  const diffTime = hojeBrasilia - dataBrasilia;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
 }
@@ -81,24 +92,25 @@ function renderHistorico(decks){
       const cardsComPrazo = cards.filter(c => c.nextReview);
       const deckEstudado = cardsComPrazo.length > 0;
       
-      // Cartões para revisar hoje (prazo alcançado)
-      const cardsParaRevisar = cards.filter(c => !c.nextReview || c.nextReview.toDate() <= new Date());
+      // CORREÇÃO: Primeiro verificar se é um deck novo (nunca foi estudado)
+      if (!deckEstudado) {
+        return {
+          tipo: 'novo',
+          texto: `${totalCards} cartões aguardando início dos estudos`,
+          cor: '#059669',
+          bg: '#f0fdf4'
+        };
+      }
       
-      // Se há cartões para revisar hoje (prazo alcançado)
+      // Se chegou aqui, o deck já foi estudado. Agora verificar cartões para revisar
+      const cardsParaRevisar = cards.filter(c => c.nextReview && c.nextReview.toDate() <= new Date());
+      
       if (cardsParaRevisar.length > 0) {
         return {
           tipo: 'revisao',
           texto: `${cardsParaRevisar.length} cartões aguardando revisão`,
           cor: '#dc2626',
           bg: '#fef2f2'
-        };
-      } else if (!deckEstudado) {
-        // Deck novo (nunca foi estudado) - CORREÇÃO AQUI
-        return {
-          tipo: 'novo',
-          texto: `${totalCards} cartões aguardando início dos estudos`,
-          cor: '#059669',
-          bg: '#f0fdf4'
         };
       } else {
         // Deck já foi estudado, mas está aguardando prazo
