@@ -42,12 +42,16 @@ function renderHistorico(decks){
       
       if (totalCards === 0) return null;
       
-      // Verificar se há cartões que realmente foram estudados (têm quality definido)
-      const cardsEstudados = cards.filter(c => c.quality !== undefined && c.quality !== null);
-      const deckEstudado = cardsEstudados.length > 0;
+      // Verificar se há cartões com nextReview definido (já foram estudados)
+      const cardsComPrazo = cards.filter(c => c.nextReview);
+      const deckEstudado = cardsComPrazo.length > 0;
+      
+      // Verificar se é um deck novo (sem quality definido)
+      const cardsComQuality = cards.filter(c => c.quality !== undefined && c.quality !== null);
+      const deckNovo = cardsComQuality.length === 0;
       
       // Log para todos os decks
-      console.log(`[DEBUG] Deck ${deckId} - Total: ${totalCards}, Cards estudados: ${cardsEstudados.length}, Cards para revisar: ${cardsParaRevisar.length}, Deck estudado: ${deckEstudado}`);
+      console.log(`[DEBUG] Deck ${deckId} - Total: ${totalCards}, Cards com prazo: ${cardsComPrazo.length}, Cards com quality: ${cardsComQuality.length}, Cards para revisar: ${cardsParaRevisar.length}, Deck estudado: ${deckEstudado}, Deck novo: ${deckNovo}`);
       
 
       
@@ -59,8 +63,8 @@ function renderHistorico(decks){
           cor: '#dc2626',
           bg: '#fef2f2'
         };
-      } else if (!deckEstudado) {
-        // Deck novo (nunca foi estudado)
+      } else if (deckNovo) {
+        // Deck novo (nunca foi respondido)
         return {
           tipo: 'novo',
           texto: `${totalCards} cartões aguardando início dos estudos`,
