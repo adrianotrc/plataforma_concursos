@@ -37,7 +37,15 @@ function renderHistorico(decks){
       const snap = await getDocs(q);
       const cards = snap.docs.map(d => ({id: d.id, ...d.data()}));
       
-      console.log(`[DEBUG] Deck ${deckId}:`, cards.map(c => ({id: c.id, quality: c.quality, reviewCount: c.reviewCount, nextReview: c.nextReview, nextReviewDate: c.nextReview ? c.nextReview.toDate() : null})));
+      console.log(`[DEBUG] Deck ${deckId} - Cards detalhados:`, cards.map(c => ({
+        id: c.id, 
+        quality: c.quality, 
+        reviewCount: c.reviewCount, 
+        nextReview: c.nextReview, 
+        nextReviewDate: c.nextReview ? c.nextReview.toDate() : null,
+        hasQuality: !!c.quality,
+        hasReviewCount: !!c.reviewCount
+      })));
       
       const cardsParaRevisar = cards.filter(c => !c.nextReview || c.nextReview.toDate() <= new Date());
       const totalCards = cards.length;
@@ -57,7 +65,7 @@ function renderHistorico(decks){
           cor: '#dc2626',
           bg: '#fef2f2'
         };
-      } else if (deckNovo && cardsParaRevisar.length === 0) {
+      } else if (deckNovo) {
         console.log(`[DEBUG] Deck ${deckId} - Retornando NOVO`);
         return {
           tipo: 'novo',
