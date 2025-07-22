@@ -62,8 +62,8 @@ function renderHistorico(decks){
         return {
           tipo: 'novo',
           texto: `${totalCards} cartões aguardando início dos estudos`,
-          cor: '#2563eb',
-          bg: '#eff6ff'
+          cor: '#059669',
+          bg: '#f0fdf4'
         };
       } else {
         // Encontrar o próximo cartão a ser revisado
@@ -80,9 +80,9 @@ function renderHistorico(decks){
           console.log(`[DEBUG] Deck ${deckId} - Retornando PRÓXIMO em ${diffDays} dias`);
           return {
             tipo: 'proximo',
-            texto: `Próxima revisão em ${diffDays} dia${diffDays !== 1 ? 's' : ''}`,
-            cor: '#059669',
-            bg: '#f0fdf4'
+            texto: `${proximosCards.length} cartões aguardando o prazo da próxima revisão`,
+            cor: '#d97706',
+            bg: '#fef3c7'
           };
         }
       }
@@ -111,7 +111,7 @@ function renderHistorico(decks){
         if (statusRevisao) {
           const iconMap = {
             'revisao': 'clock',
-            'proximo': 'calendar',
+            'proximo': 'clock',
             'novo': 'play'
           };
           statusRevisaoHtml = `<span class='badge-revisao' style='background:${statusRevisao.bg};color:${statusRevisao.cor};padding:2px 6px;border-radius:12px;font-size:0.75rem;margin-left:6px;'><i class="fas fa-${iconMap[statusRevisao.tipo]}"></i> ${statusRevisao.texto}</span>`;
@@ -201,7 +201,6 @@ containerFormDeck?.addEventListener('submit',async e=>{
       showToast('Deck solicitado! Gerando...','info',3000);
       const resp=await gerarFlashcardsAsync({userId:auth.currentUser.uid,materia,topico,quantidade});
       ultimoDeckSolicitado=resp.deckId;
-      estudoContainer.innerHTML=cardHtml({materia,topico,cardCount:quantidade,deckId:'placeholder',status:'processing'});
       return resp;
     },
     onComplete:()=>{
