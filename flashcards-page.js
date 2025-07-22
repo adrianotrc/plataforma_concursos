@@ -46,6 +46,9 @@ function renderHistorico(decks){
       const cardsComPrazo = cards.filter(c => c.nextReview);
       const deckEstudado = cardsComPrazo.length > 0;
       
+      // Log para todos os decks
+      console.log(`[DEBUG] Deck ${deckId} - Total: ${totalCards}, Cards com prazo: ${cardsComPrazo.length}, Cards para revisar: ${cardsParaRevisar.length}, Deck estudado: ${deckEstudado}`);
+      
 
       
       // Se há cartões para revisar hoje (prazo alcançado)
