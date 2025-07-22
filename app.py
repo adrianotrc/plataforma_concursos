@@ -1186,7 +1186,8 @@ def processar_flashcards_em_background(user_id, deck_id, dados_req):
                 'frente': card.get('frente'),
                 'verso': card.get('verso'),
                 'createdAt': firestore.SERVER_TIMESTAMP,
-                'nextReview': firestore.SERVER_TIMESTAMP,
+                # Cartões novos NÃO devem ter nextReview definido
+                # nextReview será definido apenas quando o cartão for estudado pela primeira vez
                 'interval': 0,
                 'ease': 2.5,
                 'reps': 0,

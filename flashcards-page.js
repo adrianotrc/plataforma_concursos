@@ -92,14 +92,6 @@ function renderHistorico(decks){
       const cardsComPrazo = cards.filter(c => c.nextReview);
       const deckEstudado = cardsComPrazo.length > 0;
       
-      // Debug: log para entender o que está acontecendo
-      console.log(`[DEBUG] Deck ${deckId}:`, {
-        totalCards,
-        cardsComPrazo: cardsComPrazo.length,
-        deckEstudado,
-        cards: cards.map(c => ({ id: c.id, nextReview: c.nextReview }))
-      });
-      
       // CORREÇÃO: Primeiro verificar se é um deck novo (nunca foi estudado)
       if (!deckEstudado) {
         console.log(`[DEBUG] Deck ${deckId} identificado como NOVO`);
