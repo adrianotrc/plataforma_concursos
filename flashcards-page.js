@@ -42,12 +42,12 @@ function renderHistorico(decks){
       
       if (totalCards === 0) return null;
       
-      // Verificar se há cartões com nextReview definido (já foram estudados)
-      const cardsComPrazo = cards.filter(c => c.nextReview);
-      const deckEstudado = cardsComPrazo.length > 0;
+      // Verificar se há cartões que realmente foram estudados (têm quality definido)
+      const cardsEstudados = cards.filter(c => c.quality !== undefined && c.quality !== null);
+      const deckEstudado = cardsEstudados.length > 0;
       
       // Log para todos os decks
-      console.log(`[DEBUG] Deck ${deckId} - Total: ${totalCards}, Cards com prazo: ${cardsComPrazo.length}, Cards para revisar: ${cardsParaRevisar.length}, Deck estudado: ${deckEstudado}`);
+      console.log(`[DEBUG] Deck ${deckId} - Total: ${totalCards}, Cards estudados: ${cardsEstudados.length}, Cards para revisar: ${cardsParaRevisar.length}, Deck estudado: ${deckEstudado}`);
       
 
       
