@@ -51,11 +51,11 @@ function calcularDiasDesde(data) {
   const dataObj = data.toDate ? data.toDate() : new Date(data);
   const hoje = new Date();
   
-  // Ajustar para fuso horário de Brasília
-  const hojeBrasilia = new Date(hoje.toLocaleString("pt-BR", {timeZone: "America/Sao_Paulo"}));
-  const dataBrasilia = new Date(dataObj.toLocaleString("pt-BR", {timeZone: "America/Sao_Paulo"}));
+  // Simplificar o cálculo usando UTC para evitar problemas de fuso horário
+  const hojeUTC = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const dataUTC = new Date(dataObj.getFullYear(), dataObj.getMonth(), dataObj.getDate());
   
-  const diffTime = hojeBrasilia - dataBrasilia;
+  const diffTime = hojeUTC - dataUTC;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
 }
@@ -92,8 +92,17 @@ function renderHistorico(decks){
       const cardsComPrazo = cards.filter(c => c.nextReview);
       const deckEstudado = cardsComPrazo.length > 0;
       
+      // Debug: log para entender o que está acontecendo
+      console.log(`[DEBUG] Deck ${deckId}:`, {
+        totalCards,
+        cardsComPrazo: cardsComPrazo.length,
+        deckEstudado,
+        cards: cards.map(c => ({ id: c.id, nextReview: c.nextReview }))
+      });
+      
       // CORREÇÃO: Primeiro verificar se é um deck novo (nunca foi estudado)
       if (!deckEstudado) {
+        console.log(`[DEBUG] Deck ${deckId} identificado como NOVO`);
         return {
           tipo: 'novo',
           texto: `${totalCards} cartões aguardando início dos estudos`,
