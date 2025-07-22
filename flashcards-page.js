@@ -46,6 +46,11 @@ function renderHistorico(decks){
       const cardsComPrazo = cards.filter(c => c.nextReview);
       const deckEstudado = cardsComPrazo.length > 0;
       
+      // Log temporário para debug
+      if (cardsParaRevisar.length === 0 && !deckEstudado) {
+        console.log(`[DEBUG NOVO] Deck ${deckId} - Total: ${totalCards}, Cards com prazo: ${cardsComPrazo.length}, Deck estudado: ${deckEstudado}`);
+      }
+      
       // Se há cartões para revisar hoje (prazo alcançado)
       if (cardsParaRevisar.length > 0) {
         return {
