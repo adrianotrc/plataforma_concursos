@@ -26,7 +26,6 @@
                 <nav class="nav-desktop">
                     <a href="#funcionalidades">Funcionalidades</a>
                     <a href="#planos">Planos</a>
-                    <a href="#depoimentos">Depoimentos</a>
                     <a href="#sobre">Sobre</a>
                     <button class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
                 </nav>
@@ -35,7 +34,6 @@
             <nav class="nav-mobile" id="mobileNav">
                 <a href="#funcionalidades">Funcionalidades</a>
                 <a href="#planos">Planos</a>
-                <a href="#depoimentos">Depoimentos</a>
                 <a href="#sobre">Sobre</a>
                 <button class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
             </nav>
@@ -94,6 +92,19 @@
                                 <div class="slide-text">
                                     <h3>Cronogramas Personalizados</h3>
                                     <p>Nossa IA cria cronogramas adaptados ao seu perfil, tempo disponível e objetivos. Baseado na metodologia comprovada, o sistema distribui suas matérias de forma inteligente, otimizando seu aprendizado.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 2.5: Acompanhamento do Cronograma -->
+                        <div class="carousel-slide">
+                            <div class="slide-content">
+                                <div class="slide-image">
+                                    <img src="outros_documentos/Imagens/Cronograma_acompanhamento.png" alt="Acompanhamento do Plano de Estudos">
+                                </div>
+                                <div class="slide-text">
+                                    <h3>Acompanhamento Inteligente</h3>
+                                    <p>Monitore seu progresso em tempo real com métricas detalhadas. Visualize sua evolução, identifique pontos de melhoria e mantenha-se motivado com relatórios que mostram exatamente onde você está em sua jornada de estudos.</p>
                                 </div>
                             </div>
                         </div>
@@ -178,6 +189,7 @@
                         <span class="dot" data-slide="4"></span>
                         <span class="dot" data-slide="5"></span>
                         <span class="dot" data-slide="6"></span>
+                        <span class="dot" data-slide="7"></span>
                     </div>
                     <button class="carousel-btn next" id="nextBtn">
                         <i class="fas fa-chevron-right"></i>
@@ -254,18 +266,47 @@
         </div>
     </section>
 
-    <section id="depoimentos" class="testimonials">
-         <div class="container"><div class="section-header"><h2>Histórias de Sucesso</h2><p>Conheça alguns dos nossos alunos.</p></div><div class="testimonials-grid">
-                <div class="testimonial-card"><div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p>"O IAprovas revolucionou meus estudos! Os cronogramas personalizados me ajudaram muito."</p><div class="testimonial-author"><div class="avatar">AS</div><div class="author-info"><h4>Adriano T.</h4><span>Aprovado Senado Federal</span></div></div></div>
-                <div class="testimonial-card"><div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p>"As dicas estratégicas foram incríveis. Consegui focar onde realmente precisava."</p><div class="testimonial-author"><div class="avatar">CL</div><div class="author-info"><h4> Felipe S.</h4><span>Aprovado TCDF</span></div></div></div>
-        </div></div>
-    </section>
+
 
     <section id="sobre" class="about">
-         <div class="container"><div class="section-header"><h2>Sobre o IAprovas</h2><p>Metodologia comprovada encontra tecnologia de ponta</p></div><div class="about-content">
-                <div class="about-text"><h3>Nossa História</h3><p>O IAprovas nasceu da união entre metodologia comprovada de estudos para concursos e a mais avançada IA.</p><p>Baseado em livro especializado, nossa plataforma automatiza e personaliza estratégias de estudo.</p></div>
-                <div class="stats-card"><h4>Números dos criadores do IA provas</h4><div class="stats-grid"><div class="stat-item"><div class="stat-icon"><i class="fas fa-users"></i></div><div class="stat-number">7+</div><div class="stat-label">Aprovações</div></div><div class="stat-item"><div class="stat-icon"><i class="fas fa-book-open"></i></div><div class="stat-number">14+</div><div class="stat-label">Anos de Experiência</div></div></div></div>
-        </div></div>
+        <div class="container">
+            <div class="section-header">
+                <h2>Sobre o IAprovas</h2>
+                <p>Metodologia comprovada que transformou vidas, agora potenciada pela Inteligência Artificial</p>
+            </div>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>Nossa Missão</h3>
+                    <p>O <strong>IAprovas</strong> nasceu da experiência real de dois concurseiros que transformaram suas derrotas em vitórias. Inspirado no <em>"Guia Definitivo de Aprovação em Concursos"</em> que escrevemos, nossa plataforma utiliza <strong>Inteligência Artificial</strong> para facilitar e otimizar os processos de estudo que nos levaram ao sucesso.</p>
+                    
+                    <p>O que fizemos foi <strong>automatizar com IA</strong> as estratégias que utilizamos: desde a geração de cronogramas personalizados até o acompanhamento detalhado do progresso, passando pelo acesso a questões comentadas e correção inteligente de provas discursivas.</p>
+                    
+                    <div class="achievements-grid">
+                        <div class="achievement-card">
+                            <div class="achievement-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <div class="achievement-content">
+                                <h4>Adriano T. R. Castro</h4>
+                                <p><strong>Primeira nomeação aos 23 anos</strong>, com 7 aprovações em concursos federais até os 25 anos. Aprovado em órgãos como <strong>Senado Federal</strong>, <strong>AGU</strong>, <strong>STM</strong>, <strong>PREVIC</strong>, <strong>MPU</strong>, <strong>DPU</strong> e <strong>DATAPREV</strong>. Conquistou o <em>7º lugar</em> no último concurso do Senado Federal (2012).</p>
+                            </div>
+                        </div>
+                        
+                        <div class="achievement-card">
+                            <div class="achievement-icon">
+                                <i class="fas fa-medal"></i>
+                            </div>
+                            <div class="achievement-content">
+                                <h4>Felipe Silva</h4>
+                                <p>Aprovado em <strong>5º lugar</strong> para Técnico de Administração Pública e <strong>16º lugar</strong> para Analista de Administração Pública do <strong>Tribunal de Contas do Distrito Federal</strong> (2014). Anteriormente aprovado como <strong>Agente de Polícia Federal</strong> e com experiência em <strong>Infraero</strong>, <strong>Metro-DF</strong> e <strong>PMDF</strong>.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="about-cta">Nossa metodologia já transformou centenas de vidas. Agora, com a <strong>Inteligência Artificial</strong>, queremos ajudar você a alcançar seus objetivos de forma mais eficiente e personalizada.</p>
+                </div>
+            </div>
+        </div>
     </section>
 
     <footer class="footer">
