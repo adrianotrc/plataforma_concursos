@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ - IAprovas</title>
+    <link rel="stylesheet" href="styles.css?v=1.3">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="index.html" class="logo-link">
+                    <div class="logo">
+                        <i class="fas fa-book-open"></i>
+                        <span>IAprovas</span>
+                    </div>
+                </a>
+                <nav class="nav-desktop">
+                    <a href="index.html#funcionalidades">Funcionalidades</a>
+                    <a href="index.html#beneficios">Benefícios</a>
+                    <a href="index.html#planos">Planos</a>
+                    <a href="index.html#sobre">Sobre</a>
+                    <button class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
+                </nav>
+                <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fas fa-bars"></i></button>
+            </div>
+            <nav class="nav-mobile" id="mobileNav">
+                <a href="index.html#funcionalidades">Funcionalidades</a>
+                <a href="index.html#beneficios">Benefícios</a>
+                <a href="index.html#planos">Planos</a>
+                <a href="index.html#sobre">Sobre</a>
+                <button class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
+            </nav>
+        </div>
+    </header>
+
+    <section class="faq-hero">
+        <div class="container">
+            <div class="faq-hero-content">
+                <div class="faq-hero-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <h1>Perguntas Frequentes</h1>
+                <p>Tire suas dúvidas sobre a plataforma IAprovas e descubra como podemos ajudar na sua aprovação</p>
+                <div class="faq-search">
+                    <input type="text" id="faqSearch" placeholder="Digite sua dúvida...">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="faq-section">
+        <div class="container">
+            <div class="faq-categories">
+                <button class="faq-category active" data-category="all">
+                    <i class="fas fa-th"></i>
+                    Todas
+                </button>
+                <button class="faq-category" data-category="planos">
+                    <i class="fas fa-credit-card"></i>
+                    Planos e Pagamento
+                </button>
+                <button class="faq-category" data-category="funcionalidades">
+                    <i class="fas fa-cogs"></i>
+                    Funcionalidades
+                </button>
+                <button class="faq-category" data-category="tecnico">
+                    <i class="fas fa-tools"></i>
+                    Suporte Técnico
+                </button>
+            </div>
+            
+            <div class="faq-container">
+                <!-- Categoria: Planos e Pagamento -->
+                <div class="faq-item" data-category="planos">
+                    <div class="faq-question">
+                        <h3>Como funciona o período de teste gratuito?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>O período de teste gratuito dura 7 dias e permite acesso completo a todas as funcionalidades da plataforma com limites reduzidos de uso. Não é necessário cartão de crédito para começar. Você pode testar cronogramas, exercícios, discursivas, flashcards e todas as outras ferramentas.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="planos">
+                    <div class="faq-question">
+                        <h3>Quais são os limites de uso por plano?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Cada plano possui limites diários de uso por funcionalidade. O plano <strong>Básico</strong> permite 10 usos/dia, <strong>Intermediário</strong> 15 usos/dia, <strong>Premium</strong> 20 usos/dia e <strong>Anual</strong> 20 usos/dia com suporte prioritário. Os limites são resetados diariamente à meia-noite.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="planos">
+                    <div class="faq-question">
+                        <h3>Posso cancelar minha assinatura a qualquer momento?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Sim, você pode cancelar sua assinatura a qualquer momento através do portal do cliente. O acesso será mantido até o final do período contratado. Não há multas ou taxas de cancelamento. Para cancelar, acesse "Meu Perfil" > "Gerenciar Assinatura".</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="planos">
+                    <div class="faq-question">
+                        <h3>O plano anual oferece desconto?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Sim! O plano anual oferece o equivalente a 2 meses de desconto comparado ao plano mensal. Além disso, inclui suporte prioritário e acesso antecipado a novas funcionalidades. É a opção mais econômica para quem está comprometido com a aprovação.</p>
+                    </div>
+                </div>
+
+                <!-- Categoria: Funcionalidades -->
+                <div class="faq-item" data-category="funcionalidades">
+                    <div class="faq-question">
+                        <h3>Como funciona a correção de discursivas?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>A IA analisa sua redação em três critérios: <strong>apresentação e estrutura</strong>, <strong>desenvolvimento do tema e argumentação</strong>, e <strong>domínio da modalidade escrita</strong>. Você recebe uma nota de 0 a 10 e feedback detalhado com sugestões específicas de melhoria para cada critério.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="funcionalidades">
+                    <div class="faq-question">
+                        <h3>Os cronogramas são realmente personalizados?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Sim! Nossa IA considera seu tempo disponível, matérias de foco, fase do concurso (iniciante, intermediário, avançado), preferências de estudo e até mesmo seu ritmo de aprendizado. Cada cronograma é único e adaptado ao seu perfil específico.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="funcionalidades">
+                    <div class="faq-question">
+                        <h3>Como funciona o sistema de exercícios inteligentes?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Utilizamos tecnologia RAG (Retrieval-Augmented Generation) que busca em nosso banco de dados vetorial com milhares de questões reais de concursos. A IA identifica suas dificuldades e gera exercícios personalizados, focando nos pontos onde você mais precisa melhorar.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="funcionalidades">
+                    <div class="faq-question">
+                        <h3>Como funciona o sistema de flashcards?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Os flashcards utilizam o algoritmo de repetição espaçada para otimizar sua revisão. A IA gera cartões baseados no seu desempenho e você pode criar seus próprios flashcards personalizados. O sistema mostra os cartões no momento ideal para fixar o conteúdo na memória.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="funcionalidades">
+                    <div class="faq-question">
+                        <h3>As dicas estratégicas são personalizadas?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Sim! As dicas são geradas com base no seu desempenho real na plataforma. A IA analisa suas dificuldades, tempo de estudo, taxa de acerto e sugere estratégias específicas para superar seus pontos fracos e otimizar seu aprendizado.</p>
+                    </div>
+                </div>
+
+                <!-- Categoria: Suporte Técnico -->
+                <div class="faq-item" data-category="tecnico">
+                    <div class="faq-question">
+                        <h3>Posso usar a plataforma em dispositivos móveis?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Sim, a plataforma é totalmente responsiva e funciona perfeitamente em smartphones e tablets. Todas as funcionalidades estão disponíveis em dispositivos móveis, incluindo cronogramas, exercícios, flashcards e correção de discursivas.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="tecnico">
+                    <div class="faq-question">
+                        <h3>Como funciona o backup dos meus dados?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Seus dados são armazenados de forma segura na nuvem com backup automático. Cronogramas, exercícios realizados, discursivas corrigidas e flashcards ficam salvos permanentemente. Você pode acessar todo seu histórico de estudos a qualquer momento.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="tecnico">
+                    <div class="faq-question">
+                        <h3>Preciso de internet para usar a plataforma?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Sim, a plataforma requer conexão com a internet para funcionar, pois utiliza inteligência artificial em tempo real. No entanto, você pode baixar alguns materiais de estudo para visualização offline. Recomendamos uma conexão estável para melhor experiência.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="tecnico">
+                    <div class="faq-question">
+                        <h3>Como posso entrar em contato com o suporte?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Você pode entrar em contato através do e-mail <strong>contato@iaprovas.com.br</strong>. Planos Premium e Anual têm suporte prioritário com resposta em até 24h. Para dúvidas urgentes, utilize o chat em tempo real disponível na plataforma.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" data-category="tecnico">
+                    <div class="faq-question">
+                        <h3>A plataforma funciona em todos os navegadores?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>A plataforma é otimizada para Chrome, Firefox, Safari e Edge nas versões mais recentes. Recomendamos manter seu navegador atualizado para melhor performance e acesso a todas as funcionalidades.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-contact">
+                <div class="faq-contact-card">
+                    <div class="faq-contact-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3>Não encontrou sua resposta?</h3>
+                    <p>Nossa equipe está pronta para ajudar você</p>
+                    <a href="mailto:contato@iaprovas.com.br" class="btn btn-primary">
+                        <i class="fas fa-envelope"></i>
+                        Enviar Mensagem
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="logo">
+                        <i class="fas fa-book-open"></i>
+                        <span>IAprovas</span>
+                    </div>
+                    <p>Sua aprovação começa aqui.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Produto</h4>
+                    <ul>
+                        <li><a href="index.html#funcionalidades">Funcionalidades</a></li>
+                        <li><a href="index.html#beneficios">Benefícios</a></li>
+                        <li><a href="index.html#planos">Planos</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Recursos</h4>
+                    <ul>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contato</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-envelope"></i> contato@iaprovas.com.br</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 IAprovas. Todos os direitos reservados.</p>
+                <div class="footer-links">
+                    <a href="privacidade.html">Privacidade</a>
+                    <a href="termos.html">Termos</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // FAQ Accordion functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const faqItems = document.querySelectorAll('.faq-item');
+            const faqCategories = document.querySelectorAll('.faq-category');
+            const faqSearch = document.getElementById('faqSearch');
+            
+            // Accordion functionality
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question');
+                const answer = item.querySelector('.faq-answer');
+                const icon = item.querySelector('.faq-question i');
+                
+                question.addEventListener('click', () => {
+                    const isOpen = item.classList.contains('active');
+                    
+                    // Close all other items
+                    faqItems.forEach(otherItem => {
+                        otherItem.classList.remove('active');
+                        otherItem.querySelector('.faq-answer').style.maxHeight = '0px';
+                        otherItem.querySelector('.faq-question i').classList.remove('fa-chevron-up');
+                        otherItem.querySelector('.faq-question i').classList.add('fa-chevron-down');
+                    });
+                    
+                    // Toggle current item
+                    if (!isOpen) {
+                        item.classList.add('active');
+                        answer.style.maxHeight = answer.scrollHeight + 'px';
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-up');
+                    }
+                });
+            });
+
+            // Category filtering
+            faqCategories.forEach(category => {
+                category.addEventListener('click', () => {
+                    const selectedCategory = category.dataset.category;
+                    
+                    // Update active category
+                    faqCategories.forEach(cat => cat.classList.remove('active'));
+                    category.classList.add('active');
+                    
+                    // Filter items
+                    faqItems.forEach(item => {
+                        if (selectedCategory === 'all' || item.dataset.category === selectedCategory) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            });
+
+            // Search functionality
+            faqSearch.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                
+                faqItems.forEach(item => {
+                    const question = item.querySelector('.faq-question h3').textContent.toLowerCase();
+                    const answer = item.querySelector('.faq-answer p').textContent.toLowerCase();
+                    
+                    if (question.includes(searchTerm) || answer.includes(searchTerm)) {
+                        item.style.display = 'block';
+                        // Highlight search term
+                        if (searchTerm) {
+                            item.style.backgroundColor = '#f0f9ff';
+                        } else {
+                            item.style.backgroundColor = 'white';
+                        }
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+
+            // Mobile menu toggle
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileNav = document.getElementById('mobileNav');
+            
+            if (mobileMenuBtn && mobileNav) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    mobileNav.classList.toggle('show');
+                });
+            }
+        });
+    </script>
+</body>
+</html> 

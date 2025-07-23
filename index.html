@@ -4,7 +4,240 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IAprovas - Inteligência Artificial para Concursos</title>
-    <link rel="stylesheet" href="styles.css"> <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=1.5">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* CSS específico para o carrossel */
+        .carousel-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            background: white;
+        }
+
+        .carousel-slide {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .carousel-slide.active {
+            display: block !important;
+            opacity: 1 !important;
+        }
+
+        .slide-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 60px 40px;
+            min-height: 600px;
+        }
+
+        .slide-image {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 40px;
+            width: 100%;
+        }
+
+        .slide-image img {
+            max-width: 80%;
+            max-height: 400px;
+            width: auto;
+            height: auto;
+            border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .slide-image img:hover {
+            transform: scale(1.05);
+        }
+
+        .slide-text {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .slide-text h3 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .slide-text p {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: #6b7280;
+            margin-bottom: 0;
+        }
+
+        .carousel-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .carousel-btn {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #6b7280;
+        }
+
+        .carousel-btn:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            color: #374151;
+        }
+
+        .carousel-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .carousel-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #d1d5db;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot:hover {
+            background: #9ca3af;
+        }
+
+        .dot.active {
+            background: #3b82f6;
+        }
+
+        @media (max-width: 768px) {
+            .slide-content {
+                padding: 40px 20px;
+                min-height: 500px;
+            }
+
+            .slide-image img {
+                max-width: 90%;
+                max-height: 300px;
+            }
+
+            .slide-text h3 {
+                font-size: 2rem;
+            }
+
+            .slide-text p {
+                font-size: 1rem;
+            }
+
+            .carousel-controls {
+                gap: 20px;
+            }
+
+            .carousel-btn {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .slide-content {
+                padding: 30px 15px;
+                min-height: 400px;
+            }
+
+            .slide-image img {
+                max-width: 95%;
+                max-height: 250px;
+            }
+
+            .slide-text h3 {
+                font-size: 1.75rem;
+            }
+
+            .slide-text p {
+                font-size: 0.95rem;
+            }
+
+            .carousel-controls {
+                gap: 15px;
+            }
+
+            .carousel-btn {
+                width: 35px;
+                height: 35px;
+            }
+
+            .dot {
+                width: 10px;
+                height: 10px;
+            }
+        }
+
+        /* CSS específico para corrigir cores do footer */
+        .footer {
+            background: #1f2937;
+            color: white;
+        }
+
+        .footer-section h4 {
+            color: white !important;
+        }
+
+        .footer-section p {
+            color: #d1d5db !important;
+        }
+
+        .footer-section ul li a {
+            color: #d1d5db !important;
+        }
+
+        .footer-section ul li a:hover {
+            color: white !important;
+        }
+
+        .footer-bottom p {
+            color: #d1d5db !important;
+        }
+
+        .footer-links a {
+            color: #d1d5db !important;
+        }
+
+        .footer-links a:hover {
+            color: white !important;
+        }
+
+        .contact-list li {
+            color: #d1d5db !important;
+        }
+
+        .contact-list i {
+            color: #d1d5db !important;
+        }
+    </style>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-FCHSYJJ7FB"></script>
     <script>
@@ -15,7 +248,8 @@
     </script>
 </head>
 <body>
-    <header class="header"> <div class="container">
+    <header class="header">
+        <div class="container">
             <div class="nav-wrapper">
                 <a href="index.html" class="logo-link">
                     <div class="logo">
@@ -25,6 +259,7 @@
                 </a>
                 <nav class="nav-desktop">
                     <a href="#funcionalidades">Funcionalidades</a>
+                    <a href="#beneficios">Benefícios</a>
                     <a href="#planos">Planos</a>
                     <a href="#sobre">Sobre</a>
                     <button class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
@@ -33,6 +268,7 @@
             </div>
             <nav class="nav-mobile" id="mobileNav">
                 <a href="#funcionalidades">Funcionalidades</a>
+                <a href="#beneficios">Benefícios</a>
                 <a href="#planos">Planos</a>
                 <a href="#sobre">Sobre</a>
                 <button class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
@@ -43,17 +279,83 @@
     <section class="hero">
         <div class="container">
             <div class="hero-content">
-                <h1>Estude para <span class="highlight">Concursos Públicos</span> com Inteligência Artificial</h1>
-                <p class="hero-description">Cronogramas personalizados, exercícios inteligentes, correção de textos e dicas estratégicas baseadas em metodologia comprovada. Sua aprovação começa aqui.</p>
+                <div class="hero-badge">
+                    <i class="fas fa-star"></i>
+                    <span>Metodologia comprovada com IA</span>
+                </div>
+                <h1 class="hero-title">
+                    Estude para <span class="highlight">Concursos Públicos</span> com Inteligência Artificial
+                </h1>
+                <p class="hero-description">
+                    Cronogramas personalizados, exercícios inteligentes, correção de textos e dicas estratégicas baseadas em metodologia comprovada. Sua aprovação começa aqui.
+                </p>
                 <div class="hero-buttons">
                     <button class="btn btn-primary btn-large" onclick="window.location.href='cadastro.html'">
                         Comece seu Plano Gratuito (7 dias)
                         <i class="fas fa-arrow-right"></i>
                     </button>
+                    <button class="btn btn-outline btn-large" onclick="window.location.href='#funcionalidades'">
+                        <i class="fas fa-play"></i>
+                        Ver Funcionalidades
+                    </button>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="floating-card card-1">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Cronograma IA</span>
+                </div>
+                <div class="floating-card card-2">
+                    <i class="fas fa-edit"></i>
+                    <span>Discursivas</span>
+                </div>
+                <div class="floating-card card-3">
+                    <i class="fas fa-brain"></i>
+                    <span>Exercícios Comentados</span>
+                </div>
+                <div class="floating-card card-4">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Flashcards</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção de benefícios -->
+    <section id="beneficios" class="benefits">
+        <div class="container">
+            <div class="section-header">
+                <h2>Por que escolher a IAprovas?</h2>
+                <p>Metodologia comprovada + Inteligência Artificial = Resultados garantidos</p>
+            </div>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="fas fa-rocket"></i>
                     </div>
-                <div class="hero-stats">
-                    <div class="stat"><div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div></div>
-                    <span>Metodologia comprovada</span>
+                    <h3>Resultados Rápidos</h3>
+                    <p>Metodologia testada que já aprovou concurseiros em órgãos federais</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>IA Personalizada</h3>
+                    <p>Algoritmos que se adaptam ao seu perfil e evolução nos estudos</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>Economia de Tempo</h3>
+                    <p>Automatização inteligente que otimiza cada minuto do seu estudo</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Progresso Mensurável</h3>
+                    <p>Métricas detalhadas que mostram sua evolução em tempo real</p>
                 </div>
             </div>
         </div>
@@ -199,13 +501,34 @@
         </div>
     </section>
 
+    <!-- CTA intermediário -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Pronto para transformar seus estudos?</h2>
+                <p>Junte-se aos concurseiros que já estão usando IA para acelerar sua aprovação</p>
+                <button class="btn btn-primary btn-large" onclick="window.location.href='cadastro.html'">
+                    Começar Agora - 7 dias grátis
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
     <section id="planos" class="pricing">
         <div class="container">
-            <div class="section-header"><h2>Planos que Cabem no seu Bolso</h2><p>Escolha o plano ideal para sua jornada rumo à aprovação.</p></div>
+            <div class="section-header">
+                <h2>Planos que Cabem no seu Bolso</h2>
+                <p>Escolha o plano ideal para sua jornada rumo à aprovação.</p>
+            </div>
             
             <div class="pricing-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 100%;">
                 <div class="pricing-card">
-                    <div class="pricing-header"><h3>Trial Gratuito</h3><div class="price"><span class="amount">R$0</span></div><p>7 dias para testar tudo</p></div>
+                    <div class="pricing-header">
+                        <h3>Trial Gratuito</h3>
+                        <div class="price"><span class="amount">R$0</span></div>
+                        <p>7 dias para testar tudo</p>
+                    </div>
                     <ul class="features-list">
                         <li><i class="fas fa-check"></i> Cronogramas Personalizados</li>
                         <li><i class="fas fa-check"></i> Exercícios Inteligentes</li>
@@ -218,7 +541,11 @@
                 </div>
     
                 <div class="pricing-card">
-                    <div class="pricing-header"><h3>Básico</h3><div class="price"><span class="currency">R$</span><span class="amount">29</span><span class="period">,90/mês</span></div><p>O essencial para organizar</p></div>
+                    <div class="pricing-header">
+                        <h3>Básico</h3>
+                        <div class="price"><span class="currency">R$</span><span class="amount">29</span><span class="period">,90/mês</span></div>
+                        <p>O essencial para organizar</p>
+                    </div>
                     <ul class="features-list">
                         <li><i class="fas fa-check"></i> Cronogramas Gerados por IA</li>
                         <li><i class="fas fa-check"></i> Dicas Estratégicas</li>
@@ -232,7 +559,11 @@
     
                 <div class="pricing-card popular">
                     <div class="popular-badge"><i class="fas fa-star"></i>Mais Popular</div>
-                    <div class="pricing-header"><h3>Intermediário</h3><div class="price"><span class="currency">R$</span><span class="amount">39</span><span class="period">,90/mês</span></div><p>Organize e pratique</p></div>
+                    <div class="pricing-header">
+                        <h3>Intermediário</h3>
+                        <div class="price"><span class="currency">R$</span><span class="amount">39</span><span class="period">,90/mês</span></div>
+                        <p>Organize e pratique</p>
+                    </div>
                     <ul class="features-list">
                         <li><i class="fas fa-check"></i> <strong>Tudo do Básico</strong></li>
                         <li><i class="fas fa-check"></i> Módulo de Exercícios IA</li>
@@ -242,7 +573,11 @@
                 </div>
     
                 <div class="pricing-card">
-                    <div class="pricing-header"><h3>Premium</h3><div class="price"><span class="currency">R$</span><span class="amount">69</span><span class="period">,90/mês</span></div><p>A preparação completa</p></div>
+                    <div class="pricing-header">
+                        <h3>Premium</h3>
+                        <div class="price"><span class="currency">R$</span><span class="amount">69</span><span class="period">,90/mês</span></div>
+                        <p>A preparação completa</p>
+                    </div>
                     <ul class="features-list">
                         <li><i class="fas fa-check"></i> <strong>Tudo do Intermediário</strong></li>
                         <li><i class="fas fa-check"></i> Correção de Discursivas IA</li>
@@ -252,7 +587,11 @@
                 </div>
     
                  <div class="pricing-card">
-                    <div class="pricing-header"><h3>Premium Anual</h3><div class="price"><span class="currency">R$</span><span class="amount">699</span><span class="period">,90/ano</span></div><p>Melhor Custo-Benefício</p></div>
+                    <div class="pricing-header">
+                        <h3>Premium Anual</h3>
+                        <div class="price"><span class="currency">R$</span><span class="amount">699</span><span class="period">,90/ano</span></div>
+                        <p>Melhor Custo-Benefício</p>
+                    </div>
                     <ul class="features-list">
                         <li><i class="fas fa-check"></i> <strong>Todas as funcionalidades</strong></li>
                         <li><i class="fas fa-check"></i> Desconto de 2 meses</li>
@@ -262,11 +601,11 @@
                     <button class="btn btn-primary btn-full" onclick="window.location.href='contratacao.html?plano=anual'">Assinar Anual</button>
                 </div>
             </div>
-            <div class="pricing-footer"><p>🔒 Pagamento seguro via Stripe • ✅ Cancele quando quiser</p></div>
+            <div class="pricing-footer">
+                <p>🔒 Pagamento seguro via Stripe • ✅ Cancele quando quiser</p>
+            </div>
         </div>
     </section>
-
-
 
     <section id="sobre" class="about">
         <div class="container">
@@ -282,7 +621,7 @@
                     <p>O que fiz foi <strong>automatizar com IA</strong> as estratégias que utilizamos: desde a geração de cronogramas personalizados até o acompanhamento detalhado do progresso, passando pelo acesso a questões comentadas e correção inteligente de provas discursivas.</p>
                     
                 </div>
-                                <div class="stats-card">
+                <div class="stats-card">
                     <h4>Conquistas do Criador</h4>
                     <div class="achievement-highlight">
                         <div class="achievement-icon" style="text-align: center; margin-bottom: 15px;">
@@ -294,7 +633,6 @@
                         </div>
                     </div>
                 </div>
-                </div>
             </div>
         </div>
     </section>
@@ -302,13 +640,47 @@
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                <div class="footer-section"><div class="logo"><i class="fas fa-book-open"></i><span>IAprovas</span></div><p>Sua aprovação começa aqui.</p><div class="social-links"><a href="#"><i class="fab fa-facebook"></i></a><a href="#"><i class="fab fa-instagram"></i></a></div></div>
-                <div class="footer-section"><h4>Links</h4><ul><li><a href="#funcionalidades">Funcionalidades</a></li><li><a href="#planos">Planos</a></li></ul></div>
-                <div class="footer-section"><h4>Contato</h4><ul class="contact-list"><li><i class="fas fa-envelope"></i> contato@iaprovas.com.br</li></ul></div>
+                <div class="footer-section">
+                    <div class="logo">
+                        <i class="fas fa-book-open"></i>
+                        <span>IAprovas</span>
+                    </div>
+                    <p>Sua aprovação começa aqui.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Produto</h4>
+                    <ul>
+                        <li><a href="#funcionalidades">Funcionalidades</a></li>
+                        <li><a href="#beneficios">Benefícios</a></li>
+                        <li><a href="#planos">Planos</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Recursos</h4>
+                    <ul>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contato</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-envelope"></i> contato@iaprovas.com.br</li>
+                    </ul>
+                </div>
             </div>
-            <div class="footer-bottom"><p>&copy; 2025 IAprovas. Todos os direitos reservados.</p><div class="footer-links"><a href="#">Privacidade</a><a href="#">Termos</a></div></div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 IAprovas. Todos os direitos reservados.</p>
+                <div class="footer-links">
+                    <a href="privacidade.html">Privacidade</a>
+                    <a href="termos.html">Termos</a>
+                </div>
+            </div>
         </div>
     </footer>
+
     <script>
         // Mobile menu toggle (JavaScript vanilla específico para esta página)
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -357,8 +729,6 @@
             
             // Função para mostrar slide específico
             function showSlide(index) {
-                console.log('Mostrando slide:', index); // Debug
-                
                 // Remove classe active de todos os slides e dots
                 slides.forEach(slide => {
                     slide.classList.remove('active');
@@ -421,6 +791,157 @@
             
             // Inicializa o primeiro slide
             showSlide(0);
+        });
+    </script>
+
+    <!-- JavaScript para animações de scroll -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Função para verificar se elemento está visível
+            function isElementInViewport(el) {
+                const rect = el.getBoundingClientRect();
+                return (
+                    rect.top >= 0 &&
+                    rect.left >= 0 &&
+                    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+                    rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+                );
+            }
+
+            // Função para animar elementos quando entram na viewport
+            function animateOnScroll() {
+                const elements = document.querySelectorAll('.benefit-card');
+                
+                elements.forEach(element => {
+                    if (isElementInViewport(element) && !element.classList.contains('animate')) {
+                        element.classList.add('animate');
+                    }
+                });
+            }
+
+            // Adiciona event listeners para scroll
+            window.addEventListener('scroll', animateOnScroll);
+            window.addEventListener('resize', animateOnScroll);
+            
+            // Executa uma vez no carregamento
+            animateOnScroll();
+
+            // Smooth scroll para links internos
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Parallax effect para os cards flutuantes
+            function parallaxEffect() {
+                const cards = document.querySelectorAll('.floating-card');
+                const scrolled = window.pageYOffset;
+                
+                cards.forEach((card, index) => {
+                    const speed = 0.5 + (index * 0.1);
+                    const yPos = -(scrolled * speed);
+                    card.style.transform = `translateY(${yPos}px)`;
+                });
+            }
+
+            window.addEventListener('scroll', parallaxEffect);
+
+            // Hover effects para os cards de benefícios
+            document.querySelectorAll('.benefit-card').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Loading animation para a página
+            window.addEventListener('load', () => {
+                document.body.classList.add('loaded');
+            });
+
+            // Header scroll effect
+            const header = document.querySelector('.header');
+            let lastScrollTop = 0;
+
+            window.addEventListener('scroll', () => {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                // Adiciona classe scrolled quando scroll > 100px
+                if (scrollTop > 100) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+                
+                // Hide/show header on scroll (opcional)
+                if (scrollTop > lastScrollTop && scrollTop > 200) {
+                    // Scrolling down
+                    header.style.transform = 'translateY(-100%)';
+                } else {
+                    // Scrolling up
+                    header.style.transform = 'translateY(0)';
+                }
+                
+                lastScrollTop = scrollTop;
+            });
+
+            // Intersection Observer para animações mais suaves
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate');
+                    }
+                });
+            }, observerOptions);
+
+            // Observa todos os elementos que devem ser animados
+            document.querySelectorAll('.benefit-card, .pricing-card').forEach(el => {
+                observer.observe(el);
+            });
+
+            // Melhorias na navegação mobile
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileNav = document.getElementById('mobileNav');
+            const body = document.body;
+
+            if (mobileMenuBtn && mobileNav) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    mobileNav.classList.toggle('show');
+                    body.style.overflow = mobileNav.classList.contains('show') ? 'hidden' : '';
+                });
+
+                // Fecha menu ao clicar em um link
+                mobileNav.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', () => {
+                        mobileNav.classList.remove('show');
+                        body.style.overflow = '';
+                    });
+                });
+            }
+
+            // Melhorias na acessibilidade
+            document.addEventListener('keydown', (e) => {
+                // Apenas navegação por teclado, sem autoplay
+                if (e.key === 'Tab' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    // Navegação por teclado funcionando
+                }
+            });
         });
     </script>
 </body>
