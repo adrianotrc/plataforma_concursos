@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FAQ - IAprovas</title>
-    <link rel="stylesheet" href="styles-clean.css?v=1.0">
+    <link rel="stylesheet" href="styles-clean.css?v=1.1">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -36,44 +36,29 @@
         </div>
     </header>
 
-    <section class="faq-hero">
+    <section class="faq-header">
         <div class="container">
-            <div class="faq-hero-content">
-                <div class="faq-hero-icon">
-                    <i class="fas fa-question-circle"></i>
-                </div>
-                <h1>Perguntas Frequentes</h1>
-                <p>Tire suas dúvidas sobre a plataforma IAprovas e descubra como podemos ajudar na sua aprovação</p>
-                <div class="faq-search">
-                    <input type="text" id="faqSearch" placeholder="Digite sua dúvida...">
-                    <i class="fas fa-search"></i>
-                </div>
-            </div>
+            <h1>Perguntas Frequentes</h1>
+            <p>Tire suas dúvidas sobre a plataforma IAprovas e descubra como podemos ajudar na sua aprovação</p>
         </div>
     </section>
 
-    <section class="faq-section">
+    <section class="faq-content">
         <div class="container">
-            <div class="faq-categories">
-                <button class="faq-category active" data-category="all">
-                    <i class="fas fa-th"></i>
-                    Todas
-                </button>
-                <button class="faq-category" data-category="planos">
-                    <i class="fas fa-credit-card"></i>
-                    Planos e Pagamento
-                </button>
-                <button class="faq-category" data-category="funcionalidades">
-                    <i class="fas fa-cogs"></i>
-                    Funcionalidades
-                </button>
-                <button class="faq-category" data-category="tecnico">
-                    <i class="fas fa-tools"></i>
-                    Suporte Técnico
-                </button>
+            <div class="faq-search">
+                <input type="text" id="faqSearch" placeholder="Digite sua dúvida...">
             </div>
             
-            <div class="faq-container">
+            <div class="faq-categories">
+                <button class="category-btn active" data-category="all">Todas</button>
+                <button class="category-btn" data-category="planos">Planos e Pagamento</button>
+                <button class="category-btn" data-category="funcionalidades">Funcionalidades</button>
+                <button class="category-btn" data-category="tecnico">Suporte Técnico</button>
+            </div>
+
+    <section class="faq-section">
+        <div class="container">
+            <div class="faq-list">
                 <!-- Categoria: Planos e Pagamento -->
                 <div class="faq-item" data-category="planos">
                     <div class="faq-question">
@@ -282,7 +267,7 @@
         // FAQ Accordion functionality
         document.addEventListener('DOMContentLoaded', () => {
             const faqItems = document.querySelectorAll('.faq-item');
-            const faqCategories = document.querySelectorAll('.faq-category');
+            const categoryBtns = document.querySelectorAll('.category-btn');
             const faqSearch = document.getElementById('faqSearch');
             
             // Accordion functionality
@@ -313,13 +298,13 @@
             });
 
             // Category filtering
-            faqCategories.forEach(category => {
-                category.addEventListener('click', () => {
-                    const selectedCategory = category.dataset.category;
+            categoryBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const selectedCategory = btn.dataset.category;
                     
                     // Update active category
-                    faqCategories.forEach(cat => cat.classList.remove('active'));
-                    category.classList.add('active');
+                    categoryBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
                     
                     // Filter items
                     faqItems.forEach(item => {
@@ -344,7 +329,7 @@
                         item.style.display = 'block';
                         // Highlight search term
                         if (searchTerm) {
-                            item.style.backgroundColor = '#f0f9ff';
+                            item.style.backgroundColor = '#fef3c7';
                         } else {
                             item.style.backgroundColor = 'white';
                         }
