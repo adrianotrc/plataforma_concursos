@@ -230,8 +230,15 @@ if (btnGoogleLogin) {
                 enviarEmailBoasVindas(user.email, user.displayName);
             }
 
-            // Redireciona para o dashboard
-            window.location.href = 'home.html';
+            // Lógica de redirect inteligente para o LOGIN COM GOOGLE
+            const googleLoginParams = new URLSearchParams(window.location.search);
+            const googleReturnTo = googleLoginParams.get('returnTo');
+
+            if (googleReturnTo) {
+                window.location.href = googleReturnTo;
+            } else {
+                window.location.href = 'home.html';
+            }
 
         } catch (error) {
             console.error("Erro no login com Google: ", error);

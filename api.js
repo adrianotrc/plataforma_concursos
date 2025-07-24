@@ -9,7 +9,7 @@ function isLocalEnvironment() {
 
 // Define a URL base da API dinamicamente
 const API_BASE_URL = isLocalEnvironment() 
-    ? 'http://127.0.0.1:5001' // URL para desenvolvimento local
+    ? 'http://127.0.0.1:5000' // URL para desenvolvimento local
     : 'https://iaprovas-backend.onrender.com'; // URL para produção
 
 // Função auxiliar genérica para chamadas de API
