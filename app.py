@@ -1153,6 +1153,112 @@ def stripe_webhook():
 
             except Exception as e:
                 print(f"Erro no webhook checkout.session.completed: {e}")
+    elif event['type'] == 'invoice.payment_failed':
+        # FALHA DE PAGAMENTO - Primeira tentativa
+        invoice = event['data']['object']
+        stripe_customer_id = invoice.get('customer')
+        attempt_count = invoice.get('attempt_count', 1)
+
+        try:
+            users_ref = db.collection('users')
+            query = users_ref.where('stripeCustomerId', '==', stripe_customer_id).limit(1)
+            docs = query.stream()
+
+            for doc in docs:
+                user_data = doc.to_dict()
+                user_email = user_data.get('email')
+                user_nome = user_data.get('nome', 'estudante')
+                frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+
+                # EMAIL ESPECÍFICO para falha de pagamento
+                assunto = "💳 Problema no pagamento da sua assinatura IAprovas"
+                
+                conteudo_html = f"""
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+                    <!-- Header laranja para aviso -->
+                    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 32px 24px; text-align: center; border-radius: 12px 12px 0 0;">
+                        <div style="background: white; width: 60px; height: 60px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                            <span style="font-size: 24px;">💳</span>
+                        </div>
+                        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">IAprovas</h1>
+                        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 16px;">Problema no pagamento</p>
+                    </div>
+                    
+                    <div style="padding: 40px 24px; background: white;">
+                        <div style="text-align: center; margin-bottom: 32px;">
+                            <h2 style="color: #1f2937; margin: 0; font-size: 24px; font-weight: bold;">Não conseguimos processar seu pagamento</h2>
+                            <p style="color: #6b7280; margin: 16px 0 0 0; font-size: 16px;">Olá, {user_nome}</p>
+                        </div>
+                        
+                        <!-- Problema identificado -->
+                        <div style="background: #fffbeb; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                            <h3 style="color: #92400e; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">⚠️ O que aconteceu?</h3>
+                            <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.5;">
+                                Tentamos processar o pagamento da sua assinatura, mas houve um problema:
+                            </p>
+                            <ul style="color: #92400e; margin: 12px 0 0 0; font-size: 14px; line-height: 1.5;">
+                                <li>Cartão pode estar vencido ou com dados incorretos</li>
+                                <li>Limite do cartão pode ter sido excedido</li>
+                                <li>Banco pode ter bloqueado a transação</li>
+                                <li>Problema temporário no processamento</li>
+                            </ul>
+                        </div>
+
+                        <!-- Status atual -->
+                        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                            <h3 style="color: #0369a1; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">🔄 Status da sua conta</h3>
+                            <p style="color: #0369a1; margin: 0; font-size: 14px; line-height: 1.5;">
+                                <strong>Seu acesso ainda está ativo!</strong> Tentaremos novamente nos próximos dias.
+                            </p>
+                        </div>
+                        
+                        <!-- Ação necessária -->
+                        <div style="text-align: center; margin: 32px 0;">
+                            <a href="{frontend_url}/meu-perfil.html" style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(29, 78, 216, 0.3);">
+                                💳 Atualizar Forma de Pagamento
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f8fafc; padding: 24px; text-align: center; border-radius: 0 0 12px 12px; border-top: 1px solid #e2e8f0;">
+                        <p style="color: #6b7280; margin: 0; font-size: 14px;">
+                            IAprovas - <a href="mailto:contato@iaprovas.com.br" style="color: #1d4ed8;">contato@iaprovas.com.br</a>
+                        </p>
+                    </div>
+                </div>
+                """
+                
+                conteudo_texto = f"""
+                💳 PROBLEMA NO PAGAMENTO - IAprovas
+
+                Olá, {user_nome}!
+
+                Não conseguimos processar o pagamento da sua assinatura.
+
+                POSSÍVEIS MOTIVOS:
+                - Cartão vencido ou dados incorretos
+                - Limite do cartão excedido  
+                - Banco bloqueou a transação
+                - Problema temporário no processamento
+
+                SUA CONTA:
+                - Status: AINDA ATIVA
+                - Tentaremos novamente automaticamente
+                - Atualize seus dados para evitar problemas
+
+                AÇÃO NECESSÁRIA:
+                1. Acesse: {frontend_url}/meu-perfil.html
+                2. Atualize forma de pagamento
+                3. Verifique dados do cartão
+
+                Equipe IAprovas
+                """
+                
+                enviar_email(user_email, user_nome, assunto, conteudo_html, conteudo_texto)
+                break
+        except Exception as e:
+            print(f"Erro no webhook invoice.payment_failed: {e}")
+
     elif event['type'] == 'customer.subscription.deleted':
         subscription = event['data']['object']
         stripe_customer_id = subscription.get('customer')
@@ -1175,10 +1281,110 @@ def stripe_webhook():
                     'dataCancelamento': firestore.SERVER_TIMESTAMP
                 })
 
-                # Envia e-mail de cancelamento
-                assunto = "Sua assinatura IAprovas foi cancelada"
-                conteudo_html = f"<p>Olá, {user_nome},</p><p>Confirmamos o cancelamento da sua assinatura. Você perdeu o acesso às funcionalidades premium.</p><p>Para reativar, visite: <a href='https://iaprovas.com.br/index.html#planos'>iaprovas.com.br</a></p>"
-                conteudo_texto = "Sua assinatura IAprovas foi cancelada. Acesso premium removido."
+                # EMAIL ESPECÍFICO para cancelamento definitivo
+                frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+                assunto = "😔 Sua assinatura IAprovas foi cancelada"
+                
+                conteudo_html = f"""
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+                    <!-- Header -->
+                    <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 32px 24px; text-align: center; border-radius: 12px 12px 0 0;">
+                        <div style="background: white; width: 60px; height: 60px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                            <span style="font-size: 24px;">⚠️</span>
+                        </div>
+                        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">IAprovas</h1>
+                        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 16px;">Assinatura cancelada</p>
+                    </div>
+                    
+                    <!-- Conteúdo -->
+                    <div style="padding: 40px 24px; background: white;">
+                        <div style="text-align: center; margin-bottom: 32px;">
+                            <h2 style="color: #1f2937; margin: 0; font-size: 24px; font-weight: bold;">Assinatura Cancelada</h2>
+                            <p style="color: #6b7280; margin: 16px 0 0 0; font-size: 16px;">Olá, {user_nome}</p>
+                        </div>
+                        
+                        <!-- Motivos possíveis -->
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                                                         <h3 style="color: #dc2626; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">📋 O que aconteceu?</h3>
+                             <p style="color: #dc2626; margin: 0; font-size: 14px; line-height: 1.5;">
+                                 Sua assinatura foi <strong>cancelada definitivamente</strong>. Isso ocorreu por:
+                             </p>
+                             <ul style="color: #dc2626; margin: 12px 0 0 0; font-size: 14px; line-height: 1.5;">
+                                 <li>Múltiplas tentativas de cobrança falharam</li>
+                                 <li>Cancelamento solicitado pelo usuário</li>
+                                 <li>Problemas persistentes com forma de pagamento</li>
+                                 <li>Solicitação via suporte ao cliente</li>
+                             </ul>
+                        </div>
+                        
+                        <!-- Status atual -->
+                        <div style="background: #fffbeb; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                            <h3 style="color: #92400e; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">🔒 Status da sua conta</h3>
+                            <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.5;">
+                                <strong>Acesso premium removido:</strong> Você retornou ao plano trial com funcionalidades limitadas.
+                            </p>
+                        </div>
+                        
+                        <!-- Reativar -->
+                        <div style="text-align: center; margin: 32px 0;">
+                            <a href="{frontend_url}/index.html#planos" style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(29, 78, 216, 0.3);">
+                                🔄 Reativar Assinatura
+                            </a>
+                        </div>
+                        
+                        <!-- Suporte -->
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                            <h4 style="color: #1d4ed8; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">💬 Precisa de ajuda?</h4>
+                            <p style="color: #1e40af; margin: 0 0 12px 0; font-size: 14px; line-height: 1.5;">
+                                Se o cancelamento foi por engano ou você precisa de assistência:
+                            </p>
+                            <a href="mailto:contato@iaprovas.com.br?subject=Problema com cancelamento da assinatura" style="color: #1d4ed8; text-decoration: none; font-size: 14px; font-weight: 500;">
+                                📧 Entre em contato conosco
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div style="background: #f8fafc; padding: 24px; text-align: center; border-radius: 0 0 12px 12px; border-top: 1px solid #e2e8f0;">
+                        <p style="color: #6b7280; margin: 0; font-size: 14px;">
+                            IAprovas - Sua aprovação com Inteligência Artificial<br>
+                            <a href="mailto:contato@iaprovas.com.br" style="color: #1d4ed8;">contato@iaprovas.com.br</a>
+                        </p>
+                    </div>
+                </div>
+                """
+                
+                conteudo_texto = f"""
+                 😔 ASSINATURA CANCELADA - IAprovas
+ 
+                 Olá, {user_nome}!
+ 
+                 Sua assinatura do IAprovas foi cancelada definitivamente.
+ 
+                 O QUE ACONTECEU?
+                 Isso ocorreu por:
+                 - Múltiplas tentativas de cobrança falharam
+                 - Cancelamento solicitado pelo usuário
+                 - Problemas persistentes com forma de pagamento
+                 - Solicitação via suporte ao cliente
+
+                STATUS DA SUA CONTA:
+                - Acesso premium: REMOVIDO
+                - Plano atual: Trial (funcionalidades limitadas)
+                - Dados salvos: Preservados
+
+                PARA REATIVAR:
+                1. Acesse: {frontend_url}/index.html#planos
+                2. Escolha seu plano
+                3. Complete o pagamento
+                4. Acesso será restaurado automaticamente
+
+                PRECISA DE AJUDA?
+                Se o cancelamento foi por engano ou há problemas com pagamento:
+                📧 contato@iaprovas.com.br
+
+                Equipe IAprovas
+                """
                 enviar_email(user_email, user_nome, assunto, conteudo_html, conteudo_texto)
                 break # Para após encontrar o usuário
         except Exception as e:
