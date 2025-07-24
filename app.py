@@ -1168,10 +1168,17 @@ def stripe_webhook():
                 user_email = user_data.get('email')
                 user_nome = user_data.get('nome', 'estudante')
 
+                # ✅ DESATIVA A CONTA (CRÍTICO)
+                doc.reference.update({
+                    'plano': 'trial',  # Reverte para trial
+                    'assinaturaCancelada': True,
+                    'dataCancelamento': firestore.SERVER_TIMESTAMP
+                })
+
                 # Envia e-mail de cancelamento
                 assunto = "Sua assinatura IAprovas foi cancelada"
-                conteudo_html = f"<p>Olá, {user_nome},</p><p>Confirmamos o cancelamento da sua assinatura. Você terá acesso às funcionalidades premium até o final do seu ciclo de faturamento atual.</p>"
-                conteudo_texto = "Sua assinatura IAprovas foi cancelada."
+                conteudo_html = f"<p>Olá, {user_nome},</p><p>Confirmamos o cancelamento da sua assinatura. Você perdeu o acesso às funcionalidades premium.</p><p>Para reativar, visite: <a href='https://iaprovas.com.br/index.html#planos'>iaprovas.com.br</a></p>"
+                conteudo_texto = "Sua assinatura IAprovas foi cancelada. Acesso premium removido."
                 enviar_email(user_email, user_nome, assunto, conteudo_html, conteudo_texto)
                 break # Para após encontrar o usuário
         except Exception as e:
