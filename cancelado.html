@@ -14,10 +14,275 @@
       gtag('js', new Date());
       gtag('config', 'G-FCHSYJJ7FB');
     </script>
+    <style>
+        .cancelled-page {
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+            min-height: 100vh;
+        }
+        
+        .cancelled-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .cancelled-card {
+            background: white;
+            border-radius: 20px;
+            padding: 48px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .cancelled-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px;
+        }
+        
+        .cancelled-icon i {
+            font-size: 2.5rem;
+            color: white;
+        }
+        
+        .cancelled-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+        
+        .cancelled-subtitle {
+            font-size: 1.1rem;
+            color: #6b7280;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+        
+        .reassurance-box {
+            background: #eff6ff;
+            border: 2px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        
+        .reassurance-box h4 {
+            color: #1d4ed8;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+        
+        .reassurance-box p {
+            color: #1d4ed8;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        
+        .options-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+        
+        .options-section h3 {
+            color: #1f2937;
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        
+        .option-card {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .option-card:hover {
+            border-color: #1d4ed8;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(29, 78, 216, 0.15);
+        }
+        
+        .option-icon {
+            width: 60px;
+            height: 60px;
+            background: #1d4ed8;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 0 auto 16px;
+        }
+        
+        .option-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .option-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+        
+        .option-btn {
+            background: #1d4ed8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .option-btn:hover {
+            background: #1e40af;
+            color: white;
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+        
+        .primary-actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin: 32px 0;
+            flex-wrap: wrap;
+        }
+        
+        .primary-btn {
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(29, 78, 216, 0.3);
+        }
+        
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(29, 78, 216, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .secondary-btn {
+            background: white;
+            color: #6b7280;
+            border: 2px solid #e5e7eb;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .secondary-btn:hover {
+            border-color: #6b7280;
+            color: #374151;
+            text-decoration: none;
+        }
+        
+        .faq-section {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        
+        .faq-section h4 {
+            color: #1d4ed8;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .faq-item {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #bfdbfe;
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .faq-question {
+            font-weight: 600;
+            color: #1d4ed8;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .faq-answer {
+            color: #1e40af;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 768px) {
+            .cancelled-card {
+                padding: 32px 24px;
+            }
+            
+            .cancelled-title {
+                font-size: 1.75rem;
+            }
+            
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .primary-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="dashboard-layout">
-        <header class="dashboard-header">
+    <div class="cancelled-page">
+        <header class="dashboard-header" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
             <div class="header-content">
                 <div class="header-left">
                     <a href="index.html" class="logo-link">
@@ -27,25 +292,118 @@
             </div>
         </header>
 
-        <main class="main-content" style="margin-left: 0; display: flex; align-items: center; justify-content: center;">
-            <div class="content-wrapper" style="max-width: 500px; text-align: center;">
-                
-                <div class="feature-card">
-                    <div class="feature-header" style="justify-content: center;">
-                        <div class="feature-icon orange"><i class="fas fa-exclamation-triangle"></i></div>
-                    </div>
-
-                    <h1>Pagamento Cancelado</h1>
-                    <p style="font-size: 18px; color: #374151; margin-bottom: 24px;">
-                        Sua sessão de pagamento foi cancelada ou expirou. Nenhum valor foi cobrado.
-                    </p>
-                    
-                    <a href="index.html#planos" class="btn btn-primary" style="margin-bottom: 12px;">Ver Planos Novamente</a>
-                    <a href="index.html" class="btn btn-ghost">Voltar para o Início</a>
+        <div class="cancelled-container">
+            <!-- Cartão principal -->
+            <div class="cancelled-card">
+                <div class="cancelled-icon">
+                    <i class="fas fa-pause-circle"></i>
                 </div>
-
+                <h1 class="cancelled-title">Pagamento Pausado</h1>
+                <p class="cancelled-subtitle">
+                    Sua sessão de pagamento foi cancelada ou expirou.<br>
+                    Não se preocupe - nenhum valor foi cobrado e você pode tentar novamente a qualquer momento.
+                </p>
+                
+                <div class="reassurance-box">
+                    <h4><i class="fas fa-shield-alt"></i> Sua Segurança é Garantida</h4>
+                    <p>Todos os seus dados estão protegidos e nenhuma cobrança foi realizada. Você pode continuar de onde parou com total segurança.</p>
+                </div>
+                
+                <div class="primary-actions">
+                    <a href="index.html#planos" class="primary-btn">
+                        <i class="fas fa-redo"></i> Tentar Novamente
+                    </a>
+                    <a href="index.html" class="secondary-btn">
+                        <i class="fas fa-home"></i> Voltar ao Início
+                    </a>
+                </div>
             </div>
-        </main>
+            
+            <!-- Opções disponíveis -->
+            <div class="options-section">
+                <h3><i class="fas fa-lightbulb"></i> O que você gostaria de fazer?</h3>
+                <div class="options-grid">
+                    <div class="option-card" onclick="window.location.href='index.html#planos'">
+                        <div class="option-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div class="option-title">Continuar Assinatura</div>
+                        <div class="option-description">Retomar o processo de pagamento e ativar seu plano premium</div>
+                        <a href="index.html#planos" class="option-btn">
+                            <i class="fas fa-arrow-right"></i> Escolher Plano
+                        </a>
+                    </div>
+                    
+                    <div class="option-card" onclick="window.location.href='cadastro.html'">
+                        <div class="option-icon">
+                            <i class="fas fa-gift"></i>
+                        </div>
+                        <div class="option-title">Teste Gratuito</div>
+                        <div class="option-description">Comece com 7 dias grátis para testar todas as funcionalidades</div>
+                        <a href="cadastro.html" class="option-btn">
+                            <i class="fas fa-play"></i> Começar Teste
+                        </a>
+                    </div>
+                    
+                    <div class="option-card" onclick="window.open('mailto:contato@iaprovas.com.br?subject=Dúvidas sobre Planos', '_blank')">
+                        <div class="option-icon">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <div class="option-title">Falar com Suporte</div>
+                        <div class="option-description">Tire suas dúvidas ou receba ajuda personalizada da nossa equipe</div>
+                        <a href="#" class="option-btn" onclick="window.open('mailto:contato@iaprovas.com.br?subject=Dúvidas sobre Planos', '_blank')">
+                            <i class="fas fa-envelope"></i> Contatar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FAQ -->
+            <div class="faq-section">
+                <h4><i class="fas fa-question-circle"></i> Dúvidas Frequentes</h4>
+                
+                <div class="faq-item">
+                    <div class="faq-question">Por que meu pagamento foi cancelado?</div>
+                    <div class="faq-answer">Isso pode acontecer se você fechou a página de pagamento, houve um problema com o cartão ou a sessão expirou. É completamente normal e você pode tentar novamente.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">Fui cobrado mesmo com o cancelamento?</div>
+                    <div class="faq-answer">Não. Quando uma sessão é cancelada, nenhuma cobrança é processada. Seu cartão está totalmente seguro.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">Posso usar o teste gratuito enquanto decido?</div>
+                    <div class="faq-answer">Sim! O teste de 7 dias inclui todas as funcionalidades premium. É uma ótima forma de conhecer a plataforma antes de assinar.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">Como funciona o cancelamento?</div>
+                    <div class="faq-answer">Você pode cancelar a qualquer momento através do seu perfil, sem taxas ou burocracias.</div>
+                </div>
+            </div>
+        </div>
     </div>
+    
+    <script>
+        // Analytics de cancelamento
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'checkout_progress', {
+                'checkout_step': 'cancelled',
+                'checkout_option': 'user_cancelled'
+            });
+        }
+        
+        // Verificar se veio de uma sessão de pagamento específica
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session_id');
+            
+            if (sessionId) {
+                console.log('Sessão de pagamento cancelada:', sessionId);
+                // Aqui poderia adicionar lógica específica baseada na sessão
+            }
+        });
+    </script>
 </body>
 </html>

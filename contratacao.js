@@ -57,6 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Salva o plano no sessionStorage para a página de sucesso
+        sessionStorage.setItem('plano_contratado', planoSelecionado);
+
         btnPagar.disabled = true;
         btnPagar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aguarde...';
     
@@ -68,13 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 alert(`Não foi possível iniciar o checkout. Tente novamente.`);
                 btnPagar.disabled = false;
-                btnPagar.innerHTML = '<i class="fas fa-lock"></i> Ir para o Pagamento';
+                btnPagar.innerHTML = '<i class="fas fa-lock"></i> Finalizar Pagamento Seguro';
             }
         } catch (error) {
             console.error('Erro ao criar sessão de checkout:', error);
             alert('Ocorreu um erro de comunicação.');
             btnPagar.disabled = false;
-            btnPagar.innerHTML = '<i class="fas fa-lock"></i> Ir para o Pagamento';
+            btnPagar.innerHTML = '<i class="fas fa-lock"></i> Finalizar Pagamento Seguro';
         }
     });
 });

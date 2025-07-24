@@ -14,10 +14,241 @@
       gtag('js', new Date());
       gtag('config', 'G-FCHSYJJ7FB');
     </script>
+    <style>
+        .success-page {
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+            min-height: 100vh;
+        }
+        
+        .success-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .success-card {
+            background: white;
+            border-radius: 20px;
+            padding: 48px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .success-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px;
+            animation: successPulse 2s ease-in-out infinite;
+        }
+        
+        .success-icon i {
+            font-size: 3rem;
+            color: white;
+        }
+        
+        @keyframes successPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .success-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+        
+        .success-subtitle {
+            font-size: 1.25rem;
+            color: #6b7280;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+        
+        .next-steps {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+        
+        .next-steps h3 {
+            color: #1f2937;
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+        
+        .step-card {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .step-card:hover {
+            border-color: #1d4ed8;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(29, 78, 216, 0.15);
+        }
+        
+        .step-number {
+            width: 48px;
+            height: 48px;
+            background: #1d4ed8;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.25rem;
+            margin: 0 auto 16px;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .step-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .main-cta {
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin: 24px auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(29, 78, 216, 0.4);
+        }
+        
+        .main-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(29, 78, 216, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .subscription-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+        
+        .subscription-info h4 {
+            color: #1d4ed8;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1e40af;
+            font-size: 0.9rem;
+        }
+        
+        .management-links {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .management-links h4 {
+            color: #1d4ed8;
+            margin-bottom: 16px;
+        }
+        
+        .link-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .link-btn {
+            background: white;
+            color: #1d4ed8;
+            border: 2px solid #bfdbfe;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .link-btn:hover {
+            background: #1d4ed8;
+            color: white;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 768px) {
+            .success-card {
+                padding: 32px 24px;
+            }
+            
+            .success-title {
+                font-size: 2rem;
+            }
+            
+            .steps-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .link-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="dashboard-layout">
-        <header class="dashboard-header">
+    <div class="success-page">
+        <header class="dashboard-header" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
             <div class="header-content">
                 <div class="header-left">
                     <a href="index.html" class="logo-link">
@@ -26,18 +257,127 @@
                 </div>
             </div>
         </header>
-        <main class="main-content" style="margin-left: 0; display: flex; align-items: center; justify-content: center;">
-            <div class="content-wrapper" style="max-width: 500px; text-align: center;">
-                <div class="feature-card">
-                    <div class="feature-header" style="justify-content: center;">
-                        <div class="feature-icon green"><i class="fas fa-check-circle"></i></div>
+        
+        <div class="success-container">
+            <!-- Cartão principal de sucesso -->
+            <div class="success-card">
+                <div class="success-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h1 class="success-title">🎉 Parabéns!</h1>
+                <p class="success-subtitle">
+                    Sua assinatura foi confirmada com sucesso!<br>
+                    Sua jornada para a aprovação ganhou um grande impulso com nossa metodologia + IA.
+                </p>
+                
+                <a href="home.html" class="main-cta">
+                    <i class="fas fa-rocket"></i> Acessar Meu Dashboard
+                </a>
+            </div>
+            
+            <!-- Informações da assinatura -->
+            <div class="subscription-info">
+                <h4><i class="fas fa-info-circle"></i> Detalhes da sua Assinatura</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="plano-ativado">Plano Ativado</span>
                     </div>
-                    <h1>Assinatura Confirmada!</h1>
-                    <p style="font-size: 18px; color: #374151; margin-bottom: 24px;">Seu acesso premium foi liberado. A sua jornada para a aprovação ganhou um grande impulso!</p>
-                    <a href="home.html" class="btn btn-primary">Ir para o meu Dashboard</a>
+                    <div class="info-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Cobrança Automática</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>E-mail de Confirmação Enviado</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-headset"></i>
+                        <span>Suporte Prioritário Liberado</span>
+                    </div>
                 </div>
             </div>
-        </main>
+            
+            <!-- Próximos passos -->
+            <div class="next-steps">
+                <h3><i class="fas fa-map-marked-alt"></i> Seus Próximos Passos</h3>
+                <div class="steps-grid">
+                    <a href="cronograma.html" class="step-card" style="text-decoration: none; color: inherit;">
+                        <div class="step-number">1</div>
+                        <div class="step-title">Crie seu Primeiro Cronograma</div>
+                        <div class="step-description">Gere um plano de estudos personalizado com nossa IA</div>
+                    </a>
+                    
+                    <a href="exercicios.html" class="step-card" style="text-decoration: none; color: inherit;">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Pratique com Exercícios IA</div>
+                        <div class="step-description">Resolva questões inteligentes geradas especificamente para suas necessidades</div>
+                    </a>
+                    
+                    <a href="discursivas.html" class="step-card" style="text-decoration: none; color: inherit;">
+                        <div class="step-number">3</div>
+                        <div class="step-title">Treine Redações</div>
+                        <div class="step-description">Receba correções detalhadas e feedback profissional da nossa IA especializada</div>
+                    </a>
+                    
+                    <a href="dicas-estrategicas.html" class="step-card" style="text-decoration: none; color: inherit;">
+                        <div class="step-number">4</div>
+                        <div class="step-title">Receba Dicas Personalizadas</div>
+                        <div class="step-description">Obtenha conselhos estratégicos baseados no seu desempenho e progresso</div>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Links de gerenciamento -->
+            <div class="management-links">
+                <h4><i class="fas fa-cog"></i> Gerencie sua Assinatura</h4>
+                <div class="link-buttons">
+                    <a href="meu-perfil.html" class="link-btn">
+                        <i class="fas fa-user"></i> Meu Perfil
+                    </a>
+                    <a href="#" class="link-btn" onclick="window.open('mailto:contato@iaprovas.com.br?subject=Suporte IAprovas', '_blank')">
+                        <i class="fas fa-envelope"></i> Suporte
+                    </a>
+                    <a href="material-de-estudo.html" class="link-btn">
+                        <i class="fas fa-book"></i> Materiais de Estudo
+                    </a>
+                </div>
+                <p style="margin-top: 16px; font-size: 0.875rem; color: #1d4ed8;">
+                    <i class="fas fa-shield-alt"></i> 
+                    Você pode cancelar ou alterar seu plano a qualquer momento através do seu perfil
+                </p>
+            </div>
+        </div>
     </div>
+    
+    <script>
+        // Analytics de conversão
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'purchase', {
+                'transaction_id': Date.now().toString(),
+                'value': 69.90,
+                'currency': 'BRL'
+            });
+        }
+        
+        // Detectar plano baseado na URL ou sessionStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            let plano = urlParams.get('plano') || sessionStorage.getItem('plano_contratado') || 'Premium';
+            
+            // Mapear nomes dos planos
+            const planoNomes = {
+                'basico': 'Plano Básico',
+                'intermediario': 'Plano Intermediário', 
+                'premium': 'Plano Premium',
+                'anual': 'Plano Premium Anual'
+            };
+            
+            const nomeDoPlano = planoNomes[plano.toLowerCase()] || 'Plano Premium';
+            document.getElementById('plano-ativado').textContent = `${nomeDoPlano} Ativado`;
+            
+            console.log('🎉 Assinatura confirmada! Bem-vindo ao IAprovas!');
+        });
+    </script>
 </body>
 </html>
