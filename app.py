@@ -85,11 +85,15 @@ def call_openai_api(prompt_content, system_message, model="gpt-4o-mini"):
             ],
             response_format={"type": "json_object"},
             temperature=0.5,
-            timeout=120.0
+            timeout=180.0  # Aumentado para 3 minutos
         )
         return json.loads(response.choices[0].message.content)
     except Exception as e:
         print(f"ERRO na chamada da API OpenAI: {e}")
+        # Log mais detalhado para debugging
+        if hasattr(e, 'response'):
+            print(f"Status code: {e.response.status_code}")
+            print(f"Response: {e.response.text}")
         raise
 
 def get_embedding(text, model="text-embedding-3-small"):
@@ -176,6 +180,17 @@ def processar_refinamento_em_background(user_id, job_id, original_plan, feedback
     job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
 
     try:
+        # Verifica se o job ainda existe e não foi cancelado
+        job_doc = job_ref.get()
+        if not job_doc.exists:
+            print(f"Job {job_id} não existe mais. Abortando refinamento.")
+            return
+        
+        current_status = job_doc.to_dict().get('status')
+        if current_status != 'processing_refinement':
+            print(f"Job {job_id} não está mais em refinamento (status: {current_status}). Abortando.")
+            return
+
         # Remove campos que não devem ser enviados de volta para a IA
         original_plan.pop('status', None)
         original_plan.pop('jobId', None)
@@ -489,11 +504,15 @@ def verificar_plano_status(user_id, job_id):
             return jsonify({"status": "not_found"}), 404
 
         data = doc.to_dict()
+        status = data.get('status')
 
-        if data.get('status') != 'processing':
-            return jsonify({"status": "completed", "plano": data})
-        else:
+        # Verifica se o plano está em processamento (incluindo refinamento)
+        if status in ['processing', 'processing_refinement']:
             return jsonify({"status": "processing"})
+        elif status == 'failed':
+            return jsonify({"status": "failed", "error": data.get('error', 'Erro desconhecido')})
+        else:
+            return jsonify({"status": "completed", "plano": data})
 
     except Exception as e:
         print(f"Erro ao verificar status do job {job_id}: {e}")
