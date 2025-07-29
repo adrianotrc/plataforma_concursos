@@ -5,6 +5,7 @@ class ConfirmationModal {
         this.modal = null;
         this.resolve = null;
         this.reject = null;
+        this.isShowing = false;
     }
 
     show(options = {}) {
@@ -21,17 +22,23 @@ class ConfirmationModal {
         console.log('Modal sendo criado com opções:', options);
 
         return new Promise((resolve, reject) => {
+            // Se já há um modal ativo, não cria outro
+            if (this.modal && document.body.contains(this.modal)) {
+                console.log('Modal já existe, removendo anterior');
+                this.hide();
+            }
+
             this.resolve = resolve;
             this.reject = reject;
 
-            // Remove modal existente se houver
-            if (this.modal) {
-                this.modal.remove();
-            }
+            // Remove todos os modais existentes
+            const existingModals = document.querySelectorAll('.confirmation-modal-overlay');
+            existingModals.forEach(modal => modal.remove());
 
             // Cria o modal
             this.modal = document.createElement('div');
             this.modal.className = 'confirmation-modal-overlay';
+            this.modal.style.display = 'flex';
             this.modal.innerHTML = `
                 <div class="confirmation-modal">
                     <div class="confirmation-modal-header">
@@ -50,7 +57,18 @@ class ConfirmationModal {
 
             // Adiciona ao DOM
             document.body.appendChild(this.modal);
+            this.isShowing = true;
             console.log('Modal adicionado ao DOM');
+            
+            // Força o foco e garante que está visível
+            setTimeout(() => {
+                if (this.modal && document.body.contains(this.modal)) {
+                    this.modal.style.display = 'flex';
+                    this.modal.style.visibility = 'visible';
+                    this.modal.style.opacity = '1';
+                    console.log('Modal forçado a aparecer');
+                }
+            }, 10);
 
             // Event listeners
             const confirmBtn = this.modal.querySelector('.btn-confirm');
@@ -96,6 +114,7 @@ class ConfirmationModal {
 
     hide() {
         if (this.modal) {
+            this.isShowing = false;
             this.modal.classList.add('fade-out');
             setTimeout(() => {
                 if (this.modal && this.modal.parentNode) {
@@ -108,12 +127,14 @@ class ConfirmationModal {
     }
 }
 
-// Instância global
-window.confirmationModal = new ConfirmationModal();
-
-// Função helper para facilitar o uso
-window.confirmCustom = (options) => {
-    return window.confirmationModal.show(options);
+// Função simples e direta para confirmação
+window.confirmCustom = async (options) => {
+    console.log('confirmCustom chamado com:', options);
+    
+    // Fallback direto para confirm nativo por enquanto
+    const message = options.message || 'Tem certeza que deseja realizar esta ação?';
+    const confirmed = confirm(message);
+    return confirmed;
 };
 
 // Garante que o modal esteja disponível quando o DOM estiver pronto
