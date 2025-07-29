@@ -712,10 +712,13 @@ document.body.addEventListener('click', async (e) => {
             
             if (confirmed) {
                 try {
+                    console.log(`Iniciando regeneração do plano ${planoId}`);
                     btnRegenerar.disabled = true;
                     btnRegenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                     
+                    console.log(`Chamando regenerarItem para usuário ${state.user.uid}`);
                     const result = await regenerarItem(state.user.uid, 'plans', planoId);
+                    console.log('Resultado da regeneração:', result);
                     showToast("Plano regenerado! Aguarde o processamento...", "success");
                     
                     // Atualiza a lista para mostrar o novo item
