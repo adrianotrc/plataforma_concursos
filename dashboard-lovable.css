@@ -79,6 +79,7 @@ body {
 .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 8px 16px;
     border: none;
@@ -2542,35 +2543,7 @@ body.dark-mode .video-playlist-item.active {
 /* === MODAIS DE CONFIRMAÇÃO E PROCESSAMENTO === */
 /* ============================================= */
 
-/* Modal de Confirmação */
-.confirmation-modal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    background-color: rgba(0, 0, 0, 0.5) !important;
-    display: none !important;
-    justify-content: center !important;
-    align-items: center !important;
-    z-index: 9999999 !important;
-    backdrop-filter: blur(4px) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: none !important;
-    overflow: visible !important;
-}
 
-.confirmation-modal.show {
-    display: flex !important;
-}
-
-/* Força o modal de confirmação a aparecer sobre tudo */
-.confirmation-modal * {
-    box-sizing: border-box !important;
-}
 
 .confirmation-content {
     background: white;
