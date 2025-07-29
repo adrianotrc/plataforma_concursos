@@ -666,23 +666,34 @@ document.body.addEventListener('click', async (e) => {
         const planoId = btnExcluir.dataset.id;
         const plano = planosDisponiveis.find(p => (p.jobId || p.id) === planoId);
         
-        if (plano && confirm(`Tem certeza que deseja excluir o plano "${plano.concurso_foco || 'Plano de Estudos'}"?`)) {
-            try {
-                btnExcluir.disabled = true;
-                btnExcluir.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                
-                await excluirItem(state.user.uid, 'plans', planoId);
-                showToast("Plano excluído com sucesso!", "success");
-                
-                // Remove o item da lista local
-                planosDisponiveis = planosDisponiveis.filter(p => (p.jobId || p.id) !== planoId);
-                renderizarHistorico(planosDisponiveis);
-                
-            } catch (error) {
-                console.error("Erro ao excluir plano:", error);
-                showToast("Erro ao excluir plano. Tente novamente.", "error");
-                btnExcluir.disabled = false;
-                btnExcluir.innerHTML = '<i class="fas fa-trash"></i>';
+        if (plano) {
+            const confirmed = await window.confirmCustom({
+                title: 'Excluir Plano',
+                message: `Tem certeza que deseja excluir o plano "${plano.concurso_foco || 'Plano de Estudos'}"?`,
+                confirmText: 'Excluir',
+                cancelText: 'Cancelar',
+                confirmClass: 'btn-danger',
+                icon: 'fas fa-trash'
+            });
+            
+            if (confirmed) {
+                try {
+                    btnExcluir.disabled = true;
+                    btnExcluir.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    
+                    await excluirItem(state.user.uid, 'plans', planoId);
+                    showToast("Plano excluído com sucesso!", "success");
+                    
+                    // Remove o item da lista local
+                    planosDisponiveis = planosDisponiveis.filter(p => (p.jobId || p.id) !== planoId);
+                    renderizarHistorico(planosDisponiveis);
+                    
+                } catch (error) {
+                    console.error("Erro ao excluir plano:", error);
+                    showToast("Erro ao excluir plano. Tente novamente.", "error");
+                    btnExcluir.disabled = false;
+                    btnExcluir.innerHTML = '<i class="fas fa-trash"></i>';
+                }
             }
         }
     } else if (btnRegenerar) {
