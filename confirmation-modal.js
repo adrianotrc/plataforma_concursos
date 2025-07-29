@@ -18,6 +18,8 @@ class ConfirmationModal {
             icon = 'fas fa-question-circle'
         } = options;
 
+        console.log('Modal sendo criado com opções:', options);
+
         return new Promise((resolve, reject) => {
             this.resolve = resolve;
             this.reject = reject;
@@ -48,6 +50,7 @@ class ConfirmationModal {
 
             // Adiciona ao DOM
             document.body.appendChild(this.modal);
+            console.log('Modal adicionado ao DOM');
 
             // Event listeners
             const confirmBtn = this.modal.querySelector('.btn-confirm');
@@ -111,4 +114,44 @@ window.confirmationModal = new ConfirmationModal();
 // Função helper para facilitar o uso
 window.confirmCustom = (options) => {
     return window.confirmationModal.show(options);
-}; 
+};
+
+// Garante que o modal esteja disponível quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', () => {
+    if (!window.confirmationModal) {
+        window.confirmationModal = new ConfirmationModal();
+    }
+    if (!window.confirmCustom) {
+        window.confirmCustom = (options) => {
+            return window.confirmationModal.show(options);
+        };
+    }
+    console.log('Modal de confirmação carregado com sucesso');
+});
+
+// Fallback para garantir que funcione mesmo se carregado antes do DOM
+if (document.readyState === 'loading') {
+    // DOM ainda não carregou
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!window.confirmationModal) {
+            window.confirmationModal = new ConfirmationModal();
+        }
+        if (!window.confirmCustom) {
+            window.confirmCustom = (options) => {
+                return window.confirmationModal.show(options);
+            };
+        }
+        console.log('Modal de confirmação carregado (fallback)');
+    });
+} else {
+    // DOM já carregou
+    if (!window.confirmationModal) {
+        window.confirmationModal = new ConfirmationModal();
+    }
+    if (!window.confirmCustom) {
+        window.confirmCustom = (options) => {
+            return window.confirmationModal.show(options);
+        };
+    }
+    console.log('Modal de confirmação carregado (imediato)');
+} 

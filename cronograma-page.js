@@ -689,25 +689,36 @@ document.body.addEventListener('click', async (e) => {
         const planoId = btnRegenerar.dataset.id;
         const plano = planosDisponiveis.find(p => (p.jobId || p.id) === planoId);
         
-        if (plano && confirm(`Tem certeza que deseja regenerar o plano "${plano.concurso_foco || 'Plano de Estudos'}"?`)) {
-            try {
-                btnRegenerar.disabled = true;
-                btnRegenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                
-                const result = await regenerarItem(state.user.uid, 'plans', planoId);
-                showToast("Plano regenerado! Aguarde o processamento...", "success");
-                
-                // Atualiza a lista para mostrar o novo item
-                setTimeout(() => {
-                    // Recarrega o histórico para mostrar o novo item
-                    ouvirHistoricoDePlanos();
-                }, 1000);
-                
-            } catch (error) {
-                console.error("Erro ao regenerar plano:", error);
-                showToast("Erro ao regenerar plano. Tente novamente.", "error");
-                btnRegenerar.disabled = false;
-                btnRegenerar.innerHTML = '<i class="fas fa-redo"></i>';
+        if (plano) {
+            const confirmed = await window.confirmCustom({
+                title: 'Regenerar Plano',
+                message: `Tem certeza que deseja regenerar o plano "${plano.concurso_foco || 'Plano de Estudos'}"?`,
+                confirmText: 'Regenerar',
+                cancelText: 'Cancelar',
+                confirmClass: 'btn-primary',
+                icon: 'fas fa-redo'
+            });
+            
+            if (confirmed) {
+                try {
+                    btnRegenerar.disabled = true;
+                    btnRegenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    
+                    const result = await regenerarItem(state.user.uid, 'plans', planoId);
+                    showToast("Plano regenerado! Aguarde o processamento...", "success");
+                    
+                    // Atualiza a lista para mostrar o novo item
+                    setTimeout(() => {
+                        // Recarrega o histórico para mostrar o novo item
+                        ouvirHistoricoDePlanos();
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error("Erro ao regenerar plano:", error);
+                    showToast("Erro ao regenerar plano. Tente novamente.", "error");
+                    btnRegenerar.disabled = false;
+                    btnRegenerar.innerHTML = '<i class="fas fa-redo"></i>';
+                }
             }
         }
     } else if (refinarBtn) {

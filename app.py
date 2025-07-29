@@ -1897,13 +1897,9 @@ def regenerar_item(user_id, collection_name, item_id):
         
         item_data = item_doc.to_dict()
         
-        # Cria um novo item com os mesmos dados originais
-        novo_item_ref = db.collection('users').document(user_id).collection(collection_name).document()
-        novo_item_id = novo_item_ref.id
-        
         # Remove campos que não devem ser copiados
         dados_originais = item_data.copy()
-        campos_para_remover = ['status', 'criadoEm', 'jobId', 'error']
+        campos_para_remover = ['status', 'criadoEm', 'jobId', 'error', 'id']
         for campo in campos_para_remover:
             dados_originais.pop(campo, None)
         
@@ -1912,32 +1908,32 @@ def regenerar_item(user_id, collection_name, item_id):
         dados_originais['criadoEm'] = firestore.SERVER_TIMESTAMP
         dados_originais['regenerado_de'] = item_id
         
-        # Salva o novo item
-        novo_item_ref.set(dados_originais)
+        # Atualiza o item existente em vez de criar um novo
+        item_ref.update(dados_originais)
         
         # Inicia o processamento baseado no tipo de item
         if collection_name == 'plans':
             # Regenera cronograma
-            thread = threading.Thread(target=processar_plano_em_background, args=(user_id, novo_item_id, dados_originais))
+            thread = threading.Thread(target=processar_plano_em_background, args=(user_id, item_id, dados_originais))
             thread.start()
         elif collection_name == 'sessoesExercicios':
             # Regenera exercícios
-            thread = threading.Thread(target=processar_exercicios_em_background, args=(user_id, novo_item_id, dados_originais))
+            thread = threading.Thread(target=processar_exercicios_em_background, args=(user_id, item_id, dados_originais))
             thread.start()
         elif collection_name == 'discursivasCorrigidas':
             # Regenera discursiva
-            thread = threading.Thread(target=processar_enunciado_em_background, args=(user_id, novo_item_id, dados_originais))
+            thread = threading.Thread(target=processar_enunciado_em_background, args=(user_id, item_id, dados_originais))
             thread.start()
         elif collection_name == 'historicoDicas':
             # Regenera dica
             # Para dicas, vamos apenas marcar como completed já que são simples
-            novo_item_ref.update({'status': 'completed'})
+            item_ref.update({'status': 'completed'})
         
-        print(f"Item {item_id} regenerado como {novo_item_id} na coleção {collection_name}")
+        print(f"Item {item_id} regenerado na coleção {collection_name}")
         return jsonify({
             "success": True, 
             "message": "Item regenerado com sucesso",
-            "novo_item_id": novo_item_id
+            "item_id": item_id
         }), 200
         
     except Exception as e:
