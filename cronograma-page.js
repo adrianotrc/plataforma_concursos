@@ -539,7 +539,9 @@ diasSemanaCheckboxes.forEach(checkbox => { checkbox.addEventListener('change', (
 
 formCronograma?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!currentUser) { showToast("Você precisa estar logado.", "error"); return; }
+    // Usa auth.currentUser diretamente ao invés de confiar na variável global
+    const user = auth.currentUser;
+    if (!user) { showToast("Você precisa estar logado.", "error"); return; }
     const btnGerar = formCronograma.querySelector('button[type="submit"]');
     const materiasSelecionadas = [...document.querySelectorAll('#materias-checkbox-container input:checked')].map(cb => cb.value);
     const materiasEmTags = [...document.querySelectorAll('#materias-container .materia-tag')].map(tag => tag.textContent.replace('×', '').trim());
@@ -574,7 +576,7 @@ formCronograma?.addEventListener('submit', async (e) => {
     // --- FIM DA CORREÇÃO DE DATAS ---
 
     const dadosParaApi = {
-        userId: currentUser.uid,
+        userId: user.uid,
         concurso_objetivo: document.getElementById('concurso-objetivo').value,
         fase_concurso: document.getElementById('fase-concurso').value,
         materias: todasMaterias,
