@@ -149,6 +149,26 @@ window.confirmCustom = async (options) => {
                     resolve(false);
                 }
             });
+            
+            // Força o modal a aparecer corretamente após criação
+            setTimeout(() => {
+                const modal = document.querySelector('.confirmation-modal');
+                if (modal) {
+                    console.log('Forçando estilo do modal');
+                    modal.style.position = 'fixed';
+                    modal.style.top = '0';
+                    modal.style.left = '0';
+                    modal.style.right = '0';
+                    modal.style.bottom = '0';
+                    modal.style.width = '100vw';
+                    modal.style.height = '100vh';
+                    modal.style.zIndex = '9999999';
+                    modal.style.margin = '0';
+                    modal.style.padding = '0';
+                    modal.style.transform = 'none';
+                    modal.style.overflow = 'visible';
+                }
+            }, 50);
         });
     } else {
         console.log('ProcessingUI não disponível, usando confirm nativo');
