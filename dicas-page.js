@@ -1,7 +1,7 @@
 // SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO dicas-page.js
 
 import { auth, db } from './firebase-config.js';
-import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada, excluirItem, regenerarItem } from './api.js'; 
+import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada, excluirItem } from './api.js'; 
 import { state } from './main-app.js';
 import { collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 

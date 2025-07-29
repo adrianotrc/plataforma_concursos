@@ -2,7 +2,7 @@
 
 import { auth, db } from './firebase-config.js';
 import { collection, doc, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarFlashcardsAsync, responderFlashcard, getUsageLimits, excluirItem, regenerarItem } from './api.js';
+import { gerarFlashcardsAsync, responderFlashcard, getUsageLimits, excluirItem } from './api.js';
 import { state } from './main-app.js';
 
 // ELEMENTOS DOM
@@ -210,11 +210,6 @@ function renderHistorico(decks){
           <button class="btn btn-primary btn-abrir-deck" data-id="${deck.deckId}" ${deck.status!=='completed'?'disabled':''}>${btnLabel}</button>
           ${deck.status !== 'processing' ? `
             <div class="action-buttons">
-              ${deck.status === 'failed' ? `
-                <button class="btn btn-outline btn-regenerar" data-id="${deck.deckId}" title="Regenerar deck">
-                  <i class="fas fa-redo"></i>
-                </button>
-              ` : ''}
               <button class="btn btn-outline btn-excluir" data-id="${deck.deckId}" title="Excluir deck">
                 <i class="fas fa-trash"></i>
               </button>
@@ -321,7 +316,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 // Event listeners para botões de ação dos flashcards
 document.body.addEventListener('click', async (e) => {
   const btnExcluir = e.target.closest('.btn-excluir');
-  const btnRegenerar = e.target.closest('.btn-regenerar');
+  
   
   if (btnExcluir) {
     const deckId = btnExcluir.dataset.id;
@@ -351,33 +346,7 @@ document.body.addEventListener('click', async (e) => {
     }
   }
   
-  if (btnRegenerar) {
-    const deckId = btnRegenerar.dataset.id;
-    const confirmed = await window.confirmCustom({
-      title: 'Regenerar Deck',
-      message: 'Tem certeza que deseja regenerar este deck de flashcards?',
-      confirmText: 'Regenerar',
-      cancelText: 'Cancelar',
-      confirmClass: 'btn-primary',
-      icon: 'fas fa-redo'
-    });
-    
-    if (confirmed) {
-      try {
-        btnRegenerar.disabled = true;
-        btnRegenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        
-        const result = await regenerarItem(auth.currentUser.uid, 'flashcards', deckId);
-        showToast("Deck regenerado! Aguarde o processamento...", "success");
-        
-      } catch (error) {
-        console.error("Erro ao regenerar deck:", error);
-        showToast("Erro ao regenerar deck. Tente novamente.", "error");
-        btnRegenerar.disabled = false;
-        btnRegenerar.innerHTML = '<i class="fas fa-redo"></i>';
-      }
-    }
-  }
+
 });
 
 function mostrarCartao(){

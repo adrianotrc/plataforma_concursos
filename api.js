@@ -230,8 +230,3 @@ export async function excluirItem(userId, collectionName, itemId) {
     });
 }
 
-export async function regenerarItem(userId, collectionName, itemId) {
-    return fetchApi(`/regenerar-item/${userId}/${collectionName}/${itemId}`, {
-        method: 'POST',
-    });
-}

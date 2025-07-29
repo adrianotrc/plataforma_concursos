@@ -2,7 +2,7 @@
 
 import { auth, db } from './firebase-config.js';
 import { collection, onSnapshot, query, orderBy, limit, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarEnunciadoDiscursivaAsync, corrigirDiscursivaAsync, getUsageLimits, excluirItem, regenerarItem } from './api.js';
+import { gerarEnunciadoDiscursivaAsync, corrigirDiscursivaAsync, getUsageLimits, excluirItem } from './api.js';
 import { state } from './main-app.js';
 
 // --- ELEMENTOS DO DOM ---
@@ -122,11 +122,6 @@ function renderHistorico(sessoes) {
                     <button class="btn btn-primary btn-rever-correcao" data-id="${item.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
                     ${!isProcessing ? `
                         <div class="action-buttons">
-                            ${hasFailed ? `
-                                <button class="btn btn-outline btn-regenerar" data-id="${item.id}" title="Regenerar discursiva">
-                                    <i class="fas fa-redo"></i>
-                                </button>
-                            ` : ''}
                             <button class="btn btn-outline btn-excluir" data-id="${item.id}" title="Excluir discursiva">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -263,7 +258,7 @@ document.body.addEventListener('click', async (e) => {
     const reverBtn = e.target.closest('.btn-rever-correcao');
     const fecharBtn = e.target.closest('#btn-fechar-visualizacao');
     const btnExcluir = e.target.closest('.btn-excluir');
-    const btnRegenerar = e.target.closest('.btn-regenerar');
+
 
     if (corrigirBtn) {
         const resposta = respostaTextarea.value;
@@ -337,34 +332,8 @@ document.body.addEventListener('click', async (e) => {
                 showToast("Erro ao excluir discursiva. Tente novamente.", "error");
                 btnExcluir.disabled = false;
                 btnExcluir.innerHTML = '<i class="fas fa-trash"></i>';
-            }
-        }
-    } else if (btnRegenerar) {
-        const itemId = btnRegenerar.dataset.id;
-        const confirmed = await window.confirmCustom({
-            title: 'Regenerar Discursiva',
-            message: 'Tem certeza que deseja regenerar esta discursiva?',
-            confirmText: 'Regenerar',
-            cancelText: 'Cancelar',
-            confirmClass: 'btn-primary',
-            icon: 'fas fa-redo'
-        });
-        
-        if (confirmed) {
-            try {
-                btnRegenerar.disabled = true;
-                btnRegenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                
-                const result = await regenerarItem(state.user.uid, 'discursivasCorrigidas', itemId);
-                showToast("Discursiva regenerada! Aguarde o processamento...", "success");
-                
-            } catch (error) {
-                console.error("Erro ao regenerar discursiva:", error);
-                showToast("Erro ao regenerar discursiva. Tente novamente.", "error");
-                btnRegenerar.disabled = false;
-                btnRegenerar.innerHTML = '<i class="fas fa-redo"></i>';
-            }
-        }
+                      }
+      }
     } else if (fecharBtn) {
         enunciadoContainer.style.display = 'none';
         areaResposta.style.display = 'none';
