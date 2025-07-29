@@ -127,14 +127,133 @@ class ConfirmationModal {
     }
 }
 
-// Função simples e direta para confirmação
+// Modal moderno baseado no processing-ui.js
+class ModernConfirmationModal {
+    constructor() {
+        this.modal = null;
+        this.resolve = null;
+        this.reject = null;
+    }
+
+    show(options = {}) {
+        const {
+            title = 'Confirmar Ação',
+            message = 'Tem certeza que deseja realizar esta ação?',
+            confirmText = 'Confirmar',
+            cancelText = 'Cancelar',
+            confirmClass = 'btn-primary',
+            cancelClass = 'btn-outline',
+            icon = 'fas fa-question-circle'
+        } = options;
+
+        console.log('Modal moderno sendo criado com opções:', options);
+
+        return new Promise((resolve, reject) => {
+            this.resolve = resolve;
+            this.reject = reject;
+
+            // Remove modal existente se houver
+            this.hide();
+
+            // Cria o modal usando a estrutura do processing-ui
+            this.modal = document.createElement('div');
+            this.modal.className = 'confirmation-modal';
+            this.modal.innerHTML = `
+                <div class="confirmation-content">
+                    <div class="confirmation-icon">
+                        <i class="${icon}"></i>
+                    </div>
+                    <h3 class="confirmation-title">${title}</h3>
+                    <p class="confirmation-message">${message}</p>
+                    <div class="confirmation-actions">
+                        <button class="btn ${cancelClass}" id="btn-cancel-confirmation">${cancelText}</button>
+                        <button class="btn ${confirmClass}" id="btn-confirm-action">${confirmText}</button>
+                    </div>
+                </div>
+            `;
+
+            // Adiciona ao DOM
+            document.body.appendChild(this.modal);
+
+            // Event listeners
+            const confirmBtn = this.modal.querySelector('#btn-confirm-action');
+            const cancelBtn = this.modal.querySelector('#btn-cancel-confirmation');
+
+            const handleConfirm = () => {
+                this.hide();
+                resolve(true);
+            };
+
+            const handleCancel = () => {
+                this.hide();
+                resolve(false);
+            };
+
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+
+            // Fecha ao clicar fora do modal
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) {
+                    handleCancel();
+                }
+            });
+
+            // Fecha com ESC
+            const handleKeydown = (e) => {
+                if (e.key === 'Escape') {
+                    handleCancel();
+                }
+            };
+            document.addEventListener('keydown', handleKeydown);
+
+            // Remove event listener quando modal for fechado
+            this.modal.addEventListener('removed', () => {
+                document.removeEventListener('keydown', handleKeydown);
+            });
+
+            // Mostra o modal com animação
+            setTimeout(() => {
+                this.modal.classList.add('show');
+                confirmBtn.focus();
+            }, 10);
+
+            console.log('Modal moderno adicionado ao DOM');
+        });
+    }
+
+    hide() {
+        if (this.modal) {
+            this.modal.classList.remove('show');
+            setTimeout(() => {
+                if (this.modal && this.modal.parentNode) {
+                    this.modal.parentNode.removeChild(this.modal);
+                    this.modal.dispatchEvent(new Event('removed'));
+                }
+                this.modal = null;
+            }, 300);
+        }
+    }
+}
+
+// Instância global
+window.modernConfirmationModal = new ModernConfirmationModal();
+
+// Função helper para facilitar o uso
 window.confirmCustom = async (options) => {
     console.log('confirmCustom chamado com:', options);
     
-    // Fallback direto para confirm nativo por enquanto
-    const message = options.message || 'Tem certeza que deseja realizar esta ação?';
-    const confirmed = confirm(message);
-    return confirmed;
+    if (!window.modernConfirmationModal) {
+        window.modernConfirmationModal = new ModernConfirmationModal();
+    }
+    
+    try {
+        return await window.modernConfirmationModal.show(options);
+    } catch (error) {
+        console.error('Erro no modal moderno, usando confirm nativo:', error);
+        const message = options.message || 'Tem certeza que deseja realizar esta ação?';
+        return confirm(message);
+    }
 };
 
 // Garante que o modal esteja disponível quando o DOM estiver pronto

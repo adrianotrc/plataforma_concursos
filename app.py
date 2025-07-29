@@ -1883,9 +1883,12 @@ def excluir_item(user_id, collection_name, item_id):
 def regenerar_item(user_id, collection_name, item_id):
     """Regenera um item específico baseado nos dados originais"""
     try:
+        print(f"REGENERAÇÃO INICIADA: {collection_name}/{item_id} para usuário {user_id}")
+        
         # Valida a coleção permitida
         colecoes_permitidas = ['plans', 'sessoesExercicios', 'discursivasCorrigidas', 'historicoDicas']
         if collection_name not in colecoes_permitidas:
+            print(f"ERRO: Coleção {collection_name} não permitida")
             return jsonify({"error": "Coleção não permitida"}), 400
         
         # Busca o item original
@@ -1893,15 +1896,20 @@ def regenerar_item(user_id, collection_name, item_id):
         item_doc = item_ref.get()
         
         if not item_doc.exists:
+            print(f"ERRO: Item {item_id} não encontrado na coleção {collection_name}")
             return jsonify({"error": "Item não encontrado"}), 404
         
         item_data = item_doc.to_dict()
+        print(f"Dados originais do item: {list(item_data.keys())}")
         
         # Remove campos que não devem ser copiados
         dados_originais = item_data.copy()
         campos_para_remover = ['status', 'criadoEm', 'jobId', 'error', 'id']
         for campo in campos_para_remover:
             dados_originais.pop(campo, None)
+        
+        print(f"Campos removidos: {campos_para_remover}")
+        print(f"Dados para regeneração: {list(dados_originais.keys())}")
         
         # Adiciona campos necessários para regeneração
         dados_originais['status'] = 'processing'
@@ -1910,26 +1918,28 @@ def regenerar_item(user_id, collection_name, item_id):
         
         # Atualiza o item existente em vez de criar um novo
         item_ref.update(dados_originais)
+        print(f"Item atualizado com status 'processing'")
         
         # Inicia o processamento baseado no tipo de item
         if collection_name == 'plans':
-            # Regenera cronograma
+            print(f"Iniciando regeneração de cronograma para {item_id}")
             thread = threading.Thread(target=processar_plano_em_background, args=(user_id, item_id, dados_originais))
             thread.start()
         elif collection_name == 'sessoesExercicios':
-            # Regenera exercícios
+            print(f"Iniciando regeneração de exercícios para {item_id}")
             thread = threading.Thread(target=processar_exercicios_em_background, args=(user_id, item_id, dados_originais))
             thread.start()
         elif collection_name == 'discursivasCorrigidas':
-            # Regenera discursiva
+            print(f"Iniciando regeneração de discursiva para {item_id}")
             thread = threading.Thread(target=processar_enunciado_em_background, args=(user_id, item_id, dados_originais))
             thread.start()
         elif collection_name == 'historicoDicas':
+            print(f"Marcando dica como completed para {item_id}")
             # Regenera dica
             # Para dicas, vamos apenas marcar como completed já que são simples
             item_ref.update({'status': 'completed'})
         
-        print(f"Item {item_id} regenerado na coleção {collection_name}")
+        print(f"Item {item_id} regenerado com sucesso na coleção {collection_name}")
         return jsonify({
             "success": True, 
             "message": "Item regenerado com sucesso",
@@ -1937,7 +1947,8 @@ def regenerar_item(user_id, collection_name, item_id):
         }), 200
         
     except Exception as e:
-        print(f"Erro ao regenerar item: {e}")
+        print(f"ERRO ao regenerar item: {e}")
+        print(f"Traceback completo: {traceback.format_exc()}")
         return jsonify({"error": "Erro interno ao regenerar item"}), 500
 
 if __name__ == "__main__":
