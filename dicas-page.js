@@ -1,7 +1,7 @@
 // SUBSTITUA O CONTEÚDO INTEIRO DO ARQUIVO dicas-page.js
 
 import { auth, db } from './firebase-config.js';
-import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada } from './api.js'; 
+import { getUsageLimits, gerarDicasPorCategoria, gerarDicaPersonalizada, excluirItem, regenerarItem } from './api.js'; 
 import { state } from './main-app.js';
 import { collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -63,7 +63,7 @@ async function carregarHistoricoDicas() {
     querySnapshot.forEach(doc => dicas.push(doc.data()));
     
     if (dicas.length > 0) {
-        historicoContainer.innerHTML = dicas.map(item => {
+        historicoContainer.innerHTML = dicas.map((item, index) => {
              const iconePorCategoria = {
                 gestao_de_tempo: 'fa-clock',
                 metodos_de_estudo: 'fa-brain',
@@ -78,6 +78,11 @@ async function carregarHistoricoDicas() {
                     <div class="tip-content">
                         <div class="tip-title">${item.categoria.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
                         <div class="tip-description">${item.dicas[0]}</div>
+                    </div>
+                    <div class="tip-actions">
+                        <button class="btn btn-outline btn-excluir" data-index="${index}" title="Excluir dica">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             `;
@@ -194,6 +199,41 @@ geradorDicasForm?.addEventListener('submit', async (e) => {
             showToast("✅ Dicas geradas com sucesso!", 'success');
         }
     });
+});
+
+// Event listener para botões de excluir dicas
+document.body.addEventListener('click', async (e) => {
+    const btnExcluir = e.target.closest('.btn-excluir');
+    
+    if (btnExcluir) {
+        const index = parseInt(btnExcluir.dataset.index);
+        if (confirm('Tem certeza que deseja excluir esta dica?')) {
+            try {
+                btnExcluir.disabled = true;
+                btnExcluir.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                // Busca o documento específico para excluir
+                const q = query(collection(db, `users/${state.user.uid}/historicoDicas`), orderBy("criadoEm", "desc"), limit(5));
+                const querySnapshot = await getDocs(q);
+                const docs = querySnapshot.docs;
+                
+                if (index >= 0 && index < docs.length) {
+                    const docToDelete = docs[index];
+                    await excluirItem(state.user.uid, 'historicoDicas', docToDelete.id);
+                    showToast("Dica excluída com sucesso!", "success");
+                    
+                    // Recarrega o histórico
+                    await carregarHistoricoDicas();
+                }
+                
+            } catch (error) {
+                console.error("Erro ao excluir dica:", error);
+                showToast("Erro ao excluir dica. Tente novamente.", "error");
+                btnExcluir.disabled = false;
+                btnExcluir.innerHTML = '<i class="fas fa-trash"></i>';
+            }
+        }
+    }
 });
 
 // --- INICIALIZAÇÃO ---

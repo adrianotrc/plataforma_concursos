@@ -714,6 +714,75 @@ body {
     border-radius: 6px;
     margin-bottom: 10px;
 }
+
+.plano-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.btn-excluir, .btn-regenerar {
+    padding: 6px 8px;
+    font-size: 0.875rem;
+    min-width: auto;
+}
+
+.btn-excluir:hover {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #dc2626;
+}
+
+.btn-regenerar:hover {
+    background-color: #f0f9ff;
+    color: #2563eb;
+    border-color: #2563eb;
+}
+
+/* Estilos para botões de ação em exercícios */
+.exercise-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Estilos para botões de ação em discursivas e dicas */
+.tip-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Estilos para botões de ação em exercícios */
+.exercise-history-item .action-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.exercise-history-item .btn-excluir,
+.exercise-history-item .btn-regenerar {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    min-width: auto;
+}
+
+/* Estilos para botões de ação em discursivas e dicas */
+.tip-item .action-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.tip-item .btn-excluir,
+.tip-item .btn-regenerar {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    min-width: auto;
+}
 .plano-item:last-child {
     margin-bottom: 0;
 }

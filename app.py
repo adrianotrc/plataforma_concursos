@@ -1850,6 +1850,100 @@ def calcular_metricas_progresso(user_id, plano_id):
         print(f"Erro ao calcular métricas: {e}")
         return jsonify({"erro": "Erro interno do servidor"}), 500
 
+# --- ROTAS PARA EXCLUIR E REGENERAR ITENS ---
+
+@app.route("/excluir-item/<user_id>/<collection_name>/<item_id>", methods=['DELETE'])
+@cross_origin(supports_credentials=True)
+def excluir_item(user_id, collection_name, item_id):
+    """Exclui um item específico de uma coleção do usuário"""
+    try:
+        # Valida a coleção permitida
+        colecoes_permitidas = ['plans', 'sessoesExercicios', 'discursivasCorrigidas', 'historicoDicas', 'flashcards']
+        if collection_name not in colecoes_permitidas:
+            return jsonify({"error": "Coleção não permitida"}), 400
+        
+        # Exclui o item
+        item_ref = db.collection('users').document(user_id).collection(collection_name).document(item_id)
+        item_doc = item_ref.get()
+        
+        if not item_doc.exists:
+            return jsonify({"error": "Item não encontrado"}), 404
+        
+        item_ref.delete()
+        
+        print(f"Item {item_id} excluído da coleção {collection_name} do usuário {user_id}")
+        return jsonify({"success": True, "message": "Item excluído com sucesso"}), 200
+        
+    except Exception as e:
+        print(f"Erro ao excluir item: {e}")
+        return jsonify({"error": "Erro interno ao excluir item"}), 500
+
+@app.route("/regenerar-item/<user_id>/<collection_name>/<item_id>", methods=['POST'])
+@cross_origin(supports_credentials=True)
+def regenerar_item(user_id, collection_name, item_id):
+    """Regenera um item específico baseado nos dados originais"""
+    try:
+        # Valida a coleção permitida
+        colecoes_permitidas = ['plans', 'sessoesExercicios', 'discursivasCorrigidas', 'historicoDicas']
+        if collection_name not in colecoes_permitidas:
+            return jsonify({"error": "Coleção não permitida"}), 400
+        
+        # Busca o item original
+        item_ref = db.collection('users').document(user_id).collection(collection_name).document(item_id)
+        item_doc = item_ref.get()
+        
+        if not item_doc.exists:
+            return jsonify({"error": "Item não encontrado"}), 404
+        
+        item_data = item_doc.to_dict()
+        
+        # Cria um novo item com os mesmos dados originais
+        novo_item_ref = db.collection('users').document(user_id).collection(collection_name).document()
+        novo_item_id = novo_item_ref.id
+        
+        # Remove campos que não devem ser copiados
+        dados_originais = item_data.copy()
+        campos_para_remover = ['status', 'criadoEm', 'jobId', 'error']
+        for campo in campos_para_remover:
+            dados_originais.pop(campo, None)
+        
+        # Adiciona campos necessários para regeneração
+        dados_originais['status'] = 'processing'
+        dados_originais['criadoEm'] = firestore.SERVER_TIMESTAMP
+        dados_originais['regenerado_de'] = item_id
+        
+        # Salva o novo item
+        novo_item_ref.set(dados_originais)
+        
+        # Inicia o processamento baseado no tipo de item
+        if collection_name == 'plans':
+            # Regenera cronograma
+            thread = threading.Thread(target=processar_plano_em_background, args=(user_id, novo_item_id, dados_originais))
+            thread.start()
+        elif collection_name == 'sessoesExercicios':
+            # Regenera exercícios
+            thread = threading.Thread(target=processar_exercicios_em_background, args=(user_id, novo_item_id, dados_originais))
+            thread.start()
+        elif collection_name == 'discursivasCorrigidas':
+            # Regenera discursiva
+            thread = threading.Thread(target=processar_enunciado_em_background, args=(user_id, novo_item_id, dados_originais))
+            thread.start()
+        elif collection_name == 'historicoDicas':
+            # Regenera dica
+            # Para dicas, vamos apenas marcar como completed já que são simples
+            novo_item_ref.update({'status': 'completed'})
+        
+        print(f"Item {item_id} regenerado como {novo_item_id} na coleção {collection_name}")
+        return jsonify({
+            "success": True, 
+            "message": "Item regenerado com sucesso",
+            "novo_item_id": novo_item_id
+        }), 200
+        
+    except Exception as e:
+        print(f"Erro ao regenerar item: {e}")
+        return jsonify({"error": "Erro interno ao regenerar item"}), 500
+
 if __name__ == "__main__":
     import sys
     

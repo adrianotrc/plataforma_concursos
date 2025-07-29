@@ -221,3 +221,17 @@ export async function calcularMetricasProgresso(userId, planoId) {
         method: 'GET',
     });
 }
+
+// --- FUNÇÕES PARA EXCLUIR E REGENERAR ITENS ---
+
+export async function excluirItem(userId, collectionName, itemId) {
+    return fetchApi(`/excluir-item/${userId}/${collectionName}/${itemId}`, {
+        method: 'DELETE',
+    });
+}
+
+export async function regenerarItem(userId, collectionName, itemId) {
+    return fetchApi(`/regenerar-item/${userId}/${collectionName}/${itemId}`, {
+        method: 'POST',
+    });
+}

@@ -2,7 +2,7 @@
 
 import { auth, db } from './firebase-config.js';
 import { collection, serverTimestamp, query, orderBy, onSnapshot, doc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarExerciciosAsync, getUsageLimits, avaliarQuestao } from './api.js';
+import { gerarExerciciosAsync, getUsageLimits, avaliarQuestao, excluirItem, regenerarItem } from './api.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-exercicios');
@@ -181,7 +181,21 @@ function renderizarHistorico(sessoes) {
                 </div>
                 <div class="exercise-time">
                     <p>${resumo.criadoEm?.toDate().toLocaleDateString('pt-BR')}</p>
-                    <button class="btn btn-primary btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
+                    <div class="exercise-actions">
+                        <button class="btn btn-primary btn-rever-sessao" data-session-id="${sessao.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>${buttonText}</button>
+                        ${!isProcessing ? `
+                            <div class="action-buttons">
+                                ${hasFailed ? `
+                                    <button class="btn btn-outline btn-regenerar" data-session-id="${sessao.id}" title="Regenerar exercícios">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-outline btn-excluir" data-session-id="${sessao.id}" title="Excluir sessão">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
             </div>
         `;
@@ -308,6 +322,9 @@ formExercicios?.addEventListener('submit', async (e) => {
 
 document.body.addEventListener('click', async (e) => {
     const feedbackBtn = e.target.closest('.btn-feedback');
+    const btnExcluir = e.target.closest('.btn-excluir');
+    const btnRegenerar = e.target.closest('.btn-regenerar');
+    
     if (feedbackBtn) {
         feedbackBtn.disabled = true;
         const parentActions = feedbackBtn.parentElement;
@@ -325,6 +342,45 @@ document.body.addEventListener('click', async (e) => {
         }
         return; // Impede que outros handlers sejam acionados
     }
+    
+    if (btnExcluir) {
+        const sessionId = btnExcluir.dataset.sessionId;
+        if (confirm('Tem certeza que deseja excluir esta sessão de exercícios?')) {
+            try {
+                btnExcluir.disabled = true;
+                btnExcluir.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                await excluirItem(currentUser.uid, 'sessoesExercicios', sessionId);
+                showToast("Sessão excluída com sucesso!", "success");
+                
+            } catch (error) {
+                console.error("Erro ao excluir sessão:", error);
+                showToast("Erro ao excluir sessão. Tente novamente.", "error");
+                btnExcluir.disabled = false;
+                btnExcluir.innerHTML = '<i class="fas fa-trash"></i>';
+            }
+        }
+    }
+    
+    if (btnRegenerar) {
+        const sessionId = btnRegenerar.dataset.sessionId;
+        if (confirm('Tem certeza que deseja regenerar esta sessão de exercícios?')) {
+            try {
+                btnRegenerar.disabled = true;
+                btnRegenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                const result = await regenerarItem(currentUser.uid, 'sessoesExercicios', sessionId);
+                showToast("Sessão regenerada! Aguarde o processamento...", "success");
+                
+            } catch (error) {
+                console.error("Erro ao regenerar sessão:", error);
+                showToast("Erro ao regenerar sessão. Tente novamente.", "error");
+                btnRegenerar.disabled = false;
+                btnRegenerar.innerHTML = '<i class="fas fa-redo"></i>';
+            }
+        }
+    }
+    
     const reverBtn = e.target.closest('.btn-rever-sessao');
     const corrigirBtn = e.target.closest('#btn-corrigir-exercicios');
     if (corrigirBtn) {

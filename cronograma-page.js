@@ -1,6 +1,6 @@
 import { auth, db } from './firebase-config.js';
 import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { gerarPlanoDeEstudos, getUsageLimits, refinarPlanoDeEstudosAsync, registrarProgresso, obterProgresso, calcularMetricasProgresso } from './api.js';
+import { gerarPlanoDeEstudos, getUsageLimits, refinarPlanoDeEstudosAsync, registrarProgresso, obterProgresso, calcularMetricasProgresso, excluirItem, regenerarItem } from './api.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-cronograma');
@@ -322,9 +322,23 @@ function renderizarHistorico(planos) {
                     <h3>${plano.concurso_foco || 'Plano de Estudos'} ${statusIcon}</h3>
                     <p>${subtexto}</p>
                 </div>
-                <button class="btn btn-primary btn-abrir-plano" data-id="${plano.jobId || plano.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>
-                    ${plano.status === 'processing' ? 'Gerando...' : plano.status === 'processing_refinement' ? 'Refinando...' : (hasFailed ? 'Falhou' : 'Abrir')}
-                </button>
+                <div class="plano-actions">
+                    <button class="btn btn-primary btn-abrir-plano" data-id="${plano.jobId || plano.id}" ${isProcessing || hasFailed ? 'disabled' : ''}>
+                        ${plano.status === 'processing' ? 'Gerando...' : plano.status === 'processing_refinement' ? 'Refinando...' : (hasFailed ? 'Falhou' : 'Abrir')}
+                    </button>
+                    ${!isProcessing ? `
+                        <div class="action-buttons">
+                            ${hasFailed ? `
+                                <button class="btn btn-outline btn-regenerar" data-id="${plano.jobId || plano.id}" title="Regenerar plano">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-outline btn-excluir" data-id="${plano.jobId || plano.id}" title="Excluir plano">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
             </div>
         `;
     }).join('');
@@ -632,6 +646,8 @@ document.body.addEventListener('click', async (e) => {
     const exportarBtn = e.target.closest('#btn-exportar-excel');
     const refinarBtn = e.target.closest('#btn-refinar-plano');
     const cancelarRefinamentoBtn = e.target.closest('#btn-cancelar-refinamento');
+    const btnExcluir = e.target.closest('.btn-excluir');
+    const btnRegenerar = e.target.closest('.btn-regenerar');
 
     if (abrirBtn && !abrirBtn.disabled) {
         const planoId = abrirBtn.dataset.id;
@@ -643,6 +659,54 @@ document.body.addEventListener('click', async (e) => {
                 exibirPlanoNaTela(docSnap.data());
             } else {
                 showToast("Não foi possível encontrar este plano.", "error");
+            }
+        }
+    } else if (btnExcluir) {
+        const planoId = btnExcluir.dataset.id;
+        const plano = planosDisponiveis.find(p => (p.jobId || p.id) === planoId);
+        
+        if (plano && confirm(`Tem certeza que deseja excluir o plano "${plano.concurso_foco || 'Plano de Estudos'}"?`)) {
+            try {
+                btnExcluir.disabled = true;
+                btnExcluir.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                await excluirItem(state.user.uid, 'plans', planoId);
+                showToast("Plano excluído com sucesso!", "success");
+                
+                // Remove o item da lista local
+                planosDisponiveis = planosDisponiveis.filter(p => (p.jobId || p.id) !== planoId);
+                renderizarHistorico(planosDisponiveis);
+                
+            } catch (error) {
+                console.error("Erro ao excluir plano:", error);
+                showToast("Erro ao excluir plano. Tente novamente.", "error");
+                btnExcluir.disabled = false;
+                btnExcluir.innerHTML = '<i class="fas fa-trash"></i>';
+            }
+        }
+    } else if (btnRegenerar) {
+        const planoId = btnRegenerar.dataset.id;
+        const plano = planosDisponiveis.find(p => (p.jobId || p.id) === planoId);
+        
+        if (plano && confirm(`Tem certeza que deseja regenerar o plano "${plano.concurso_foco || 'Plano de Estudos'}"?`)) {
+            try {
+                btnRegenerar.disabled = true;
+                btnRegenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                const result = await regenerarItem(state.user.uid, 'plans', planoId);
+                showToast("Plano regenerado! Aguarde o processamento...", "success");
+                
+                // Atualiza a lista para mostrar o novo item
+                setTimeout(() => {
+                    // Recarrega o histórico para mostrar o novo item
+                    ouvirHistoricoDePlanos();
+                }, 1000);
+                
+            } catch (error) {
+                console.error("Erro ao regenerar plano:", error);
+                showToast("Erro ao regenerar plano. Tente novamente.", "error");
+                btnRegenerar.disabled = false;
+                btnRegenerar.innerHTML = '<i class="fas fa-redo"></i>';
             }
         }
     } else if (refinarBtn) {
