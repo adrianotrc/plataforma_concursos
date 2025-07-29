@@ -315,7 +315,16 @@ document.body.addEventListener('click', async (e) => {
         }
     } else if (btnExcluir) {
         const itemId = btnExcluir.dataset.id;
-        if (confirm('Tem certeza que deseja excluir esta discursiva?')) {
+        const confirmed = await window.confirmCustom({
+            title: 'Excluir Discursiva',
+            message: 'Tem certeza que deseja excluir esta discursiva?',
+            confirmText: 'Excluir',
+            cancelText: 'Cancelar',
+            confirmClass: 'btn-danger',
+            icon: 'fas fa-trash'
+        });
+        
+        if (confirmed) {
             try {
                 btnExcluir.disabled = true;
                 btnExcluir.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -332,7 +341,16 @@ document.body.addEventListener('click', async (e) => {
         }
     } else if (btnRegenerar) {
         const itemId = btnRegenerar.dataset.id;
-        if (confirm('Tem certeza que deseja regenerar esta discursiva?')) {
+        const confirmed = await window.confirmCustom({
+            title: 'Regenerar Discursiva',
+            message: 'Tem certeza que deseja regenerar esta discursiva?',
+            confirmText: 'Regenerar',
+            cancelText: 'Cancelar',
+            confirmClass: 'btn-primary',
+            icon: 'fas fa-redo'
+        });
+        
+        if (confirmed) {
             try {
                 btnRegenerar.disabled = true;
                 btnRegenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';

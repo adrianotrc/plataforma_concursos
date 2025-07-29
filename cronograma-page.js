@@ -1,6 +1,7 @@
 import { auth, db } from './firebase-config.js';
 import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { gerarPlanoDeEstudos, getUsageLimits, refinarPlanoDeEstudosAsync, registrarProgresso, obterProgresso, calcularMetricasProgresso, excluirItem, regenerarItem } from './api.js';
+import { state } from './main-app.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-cronograma');

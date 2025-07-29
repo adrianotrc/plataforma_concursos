@@ -207,7 +207,16 @@ document.body.addEventListener('click', async (e) => {
     
     if (btnExcluir) {
         const index = parseInt(btnExcluir.dataset.index);
-        if (confirm('Tem certeza que deseja excluir esta dica?')) {
+        const confirmed = await window.confirmCustom({
+            title: 'Excluir Dica',
+            message: 'Tem certeza que deseja excluir esta dica?',
+            confirmText: 'Excluir',
+            cancelText: 'Cancelar',
+            confirmClass: 'btn-danger',
+            icon: 'fas fa-trash'
+        });
+        
+        if (confirmed) {
             try {
                 btnExcluir.disabled = true;
                 btnExcluir.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';

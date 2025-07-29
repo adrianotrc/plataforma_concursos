@@ -3,6 +3,7 @@
 import { auth, db } from './firebase-config.js';
 import { collection, serverTimestamp, query, orderBy, onSnapshot, doc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { gerarExerciciosAsync, getUsageLimits, avaliarQuestao, excluirItem, regenerarItem } from './api.js';
+import { state } from './main-app.js';
 
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-exercicios');
@@ -345,12 +346,21 @@ document.body.addEventListener('click', async (e) => {
     
     if (btnExcluir) {
         const sessionId = btnExcluir.dataset.sessionId;
-        if (confirm('Tem certeza que deseja excluir esta sessão de exercícios?')) {
+        const confirmed = await window.confirmCustom({
+            title: 'Excluir Sessão',
+            message: 'Tem certeza que deseja excluir esta sessão de exercícios?',
+            confirmText: 'Excluir',
+            cancelText: 'Cancelar',
+            confirmClass: 'btn-danger',
+            icon: 'fas fa-trash'
+        });
+        
+        if (confirmed) {
             try {
                 btnExcluir.disabled = true;
                 btnExcluir.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 
-                await excluirItem(currentUser.uid, 'sessoesExercicios', sessionId);
+                await excluirItem(state.user.uid, 'sessoesExercicios', sessionId);
                 showToast("Sessão excluída com sucesso!", "success");
                 
             } catch (error) {
@@ -364,12 +374,21 @@ document.body.addEventListener('click', async (e) => {
     
     if (btnRegenerar) {
         const sessionId = btnRegenerar.dataset.sessionId;
-        if (confirm('Tem certeza que deseja regenerar esta sessão de exercícios?')) {
+        const confirmed = await window.confirmCustom({
+            title: 'Regenerar Sessão',
+            message: 'Tem certeza que deseja regenerar esta sessão de exercícios?',
+            confirmText: 'Regenerar',
+            cancelText: 'Cancelar',
+            confirmClass: 'btn-primary',
+            icon: 'fas fa-redo'
+        });
+        
+        if (confirmed) {
             try {
                 btnRegenerar.disabled = true;
                 btnRegenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 
-                const result = await regenerarItem(currentUser.uid, 'sessoesExercicios', sessionId);
+                const result = await regenerarItem(state.user.uid, 'sessoesExercicios', sessionId);
                 showToast("Sessão regenerada! Aguarde o processamento...", "success");
                 
             } catch (error) {

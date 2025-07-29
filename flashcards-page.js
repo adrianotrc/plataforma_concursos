@@ -325,7 +325,16 @@ document.body.addEventListener('click', async (e) => {
   
   if (btnExcluir) {
     const deckId = btnExcluir.dataset.id;
-    if (confirm('Tem certeza que deseja excluir este deck de flashcards?')) {
+    const confirmed = await window.confirmCustom({
+      title: 'Excluir Deck',
+      message: 'Tem certeza que deseja excluir este deck de flashcards?',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
+      confirmClass: 'btn-danger',
+      icon: 'fas fa-trash'
+    });
+    
+    if (confirmed) {
       try {
         btnExcluir.disabled = true;
         btnExcluir.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -344,7 +353,16 @@ document.body.addEventListener('click', async (e) => {
   
   if (btnRegenerar) {
     const deckId = btnRegenerar.dataset.id;
-    if (confirm('Tem certeza que deseja regenerar este deck de flashcards?')) {
+    const confirmed = await window.confirmCustom({
+      title: 'Regenerar Deck',
+      message: 'Tem certeza que deseja regenerar este deck de flashcards?',
+      confirmText: 'Regenerar',
+      cancelText: 'Cancelar',
+      confirmClass: 'btn-primary',
+      icon: 'fas fa-redo'
+    });
+    
+    if (confirmed) {
       try {
         btnRegenerar.disabled = true;
         btnRegenerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
