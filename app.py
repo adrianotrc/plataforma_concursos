@@ -21,7 +21,7 @@ load_dotenv()
 
 # --- Configurações Iniciais ---
 app = Flask(__name__)
-CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500", "https://iaprovas.com.br", "https://www.iaprovas.com.br"], supports_credentials=True)
+CORS(app, origins=["http://127.0.0.1:5500", "http://127.0.0.1:5501", "http://localhost:5500", "http://localhost:5501", "https://iaprovas.com.br", "https://www.iaprovas.com.br"], supports_credentials=True)
 
 # --- Inicialização dos Serviços ---
 try:
@@ -127,13 +127,22 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             except ValueError:
                 numero_de_semanas = 4
         
+        # Processa técnicas preferidas para inclusão no prompt
+        tecnicas_preferidas_str = ""
+        if dados_usuario.get('tecnicas_preferidas') and len(dados_usuario['tecnicas_preferidas']) > 0:
+            tecnicas_list = ", ".join(dados_usuario['tecnicas_preferidas'])
+            tecnicas_preferidas_str = f"\n6. **TÉCNICAS PREFERIDAS:** O aluno indicou preferência pelas seguintes técnicas: {tecnicas_list}. PRIORIZE essas técnicas sempre que possível, mas mantenha a variedade pedagógica necessária."
+            # Debug temporário - remover depois
+            print(f"DEBUG: Técnicas preferidas recebidas: {dados_usuario['tecnicas_preferidas']}")
+        else:
+            print("DEBUG: Nenhuma técnica preferida foi selecionada ou enviada.")
+        
         # --- PROMPT FINAL REFORÇADO ---
         prompt = (
             "Você é um coach especialista em criar planos de estudo para concursos, baseando-se na metodologia do 'Guia Definitivo de Aprovação'. "
             "Sua tarefa é criar um plano de estudos em formato JSON, com base nos dados do aluno e nas regras estritas abaixo.\n\n"
             f"DADOS DO ALUNO:\n{json.dumps(dados_usuario, indent=2)}\n\n"
             "REGRAS DE ESTRUTURA JSON (OBRIGATÓRIO):\n"
-            # As regras de estrutura permanecem as mesmas
             "1. A resposta DEVE ser um único objeto JSON.\n"
             "2. A chave principal deve ser 'plano_de_estudos'.\n"
             "3. O objeto 'plano_de_estudos' DEVE conter as chaves: 'concurso_foco', 'resumo_estrategico', e 'cronograma_semanal_detalhado'.\n"
@@ -142,11 +151,14 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             "6. Cada objeto em 'dias_de_estudo' DEVE ter 'dia_semana' e uma lista chamada 'atividades'.\n"
             "7. Cada objeto em 'atividades' DEVE ter as chaves 'materia', 'topico_sugerido', 'tipo_de_estudo', e 'duracao_minutos'.\n\n"
             "REGRAS DE CONTEÚDO E LÓGICA (CRÍTICO SEGUIR TODAS):\n"
-            "1. **VARIEDADE DE MÉTODOS (REGRA MAIS IMPORTANTE):** O plano DEVE ser pedagogicamente rico. É OBRIGATÓRIO que você use uma mistura inteligente dos seguintes métodos de estudo: 'Estudo de Teoria', 'Resolução de Exercícios', 'Revisão Ativa', 'Criação de Mapa Mental' e 'Leitura de Lei Seca'. Um plano que usa apenas um ou dois métodos é considerado uma falha. Aplique o método mais adequado para cada matéria e momento do estudo.\n"
-            "2. **DIAS E TEMPO DE ESTUDO:** Gere atividades para TODOS os dias da semana informados em `dados_usuario['disponibilidade_semanal_minutos']`. O campo 'dia_semana' na sua resposta deve ser EXATAMENTE igual à chave recebida. Use 100% do tempo de cada dia de forma flexível.\n"
-            f"3. **MATÉRIAS:** O plano DEVE incluir TODAS as matérias listadas pelo aluno.\n"
-            f"4. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
-            "5. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto, explicando a lógica de progressão aplicada no plano."
+            "1. **VARIEDADE DE MÉTODOS (REGRA MAIS IMPORTANTE):** O plano DEVE ser pedagogicamente rico. É OBRIGATÓRIO que você use uma mistura inteligente dos seguintes métodos de estudo: 'Estudo de Teoria', 'Resolução de Exercícios', 'Revisão com Autoexplicação', 'Criação de Mapa Mental' e 'Leitura de Lei Seca'. Um plano que usa apenas um ou dois métodos é considerado uma falha. Aplique o método mais adequado para cada matéria e momento do estudo.\n"
+            "2. **DISTRIBUIÇÃO DE TEMPO (REGRA CRÍTICA):** Para cada dia da semana, você DEVE distribuir EXATAMENTE o tempo total informado em `disponibilidade_semanal_minutos`. Por exemplo: se o aluno informou 130 minutos para domingo, você DEVE criar atividades que somem EXATAMENTE 130 minutos. Cada atividade deve ter a duração especificada em `duracao_sessao_minutos` (ex: 30 min), e a última atividade pode ter duração menor para completar o tempo total. NUNCA ultrapasse o tempo total do dia.\n"
+            "3. **DIAS E TEMPO DE ESTUDO:** Gere atividades para TODOS os dias da semana informados em `dados_usuario['disponibilidade_semanal_minutos']`. O campo 'dia_semana' na sua resposta deve ser EXATAMENTE igual à chave recebida. Use 100% do tempo de cada dia, mas NUNCA ultrapasse.\n"
+            f"4. **MATÉRIAS:** O plano DEVE incluir TODAS as matérias listadas pelo aluno.\n"
+            f"5. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
+            "6. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto, explicando a lógica de progressão aplicada no plano.\n"
+            "7. **NÃO REPETIÇÃO DE MATÉRIAS:** NUNCA repita a mesma matéria no mesmo dia. Cada atividade em um dia deve ser de uma matéria diferente."
+            f"{tecnicas_preferidas_str}"
         )
         system_message = "Você é um assistente que gera planos de estudo em formato JSON, seguindo rigorosamente a estrutura e a lógica pedagógica de progressão de estudos solicitada."
         
@@ -174,7 +186,7 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             'error': str(e)
         })
 
-def processar_refinamento_em_background(user_id, job_id, original_plan, feedback_text):
+def processar_refinamento_em_background(user_id, job_id, original_plan, feedback_text, tipo_refinamento):
     """Função de background para refinar um plano existente com base no feedback."""
     print(f"BACKGROUND JOB (REFINAMENTO) INICIADO: {job_id} para usuário {user_id}")
     job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
@@ -196,45 +208,102 @@ def processar_refinamento_em_background(user_id, job_id, original_plan, feedback
         original_plan.pop('jobId', None)
         original_plan.pop('criadoEm', None)
 
+        # Processa técnicas preferidas para o prompt de refinamento
+        tecnicas_refinamento_str = ""
+        if original_plan.get('tecnicas_preferidas') and len(original_plan['tecnicas_preferidas']) > 0:
+            tecnicas_list = ", ".join(original_plan['tecnicas_preferidas'])
+            tecnicas_refinamento_str = f"\n\n### TÉCNICAS PREFERIDAS DO ALUNO:\nO aluno indicou preferência por: {tecnicas_list}. Mantenha essas preferências nos ajustes sempre que possível."
+        
+        # Determina o tipo de refinamento baseado na seleção do usuário
+        tipo_instrucao = ""
+        if tipo_refinamento == "tempo-total":
+            tipo_instrucao = "\n### TIPO DE AJUSTE: ALTERAÇÃO DE TEMPO TOTAL DOS DIAS\nO usuário selecionou 'Alterar tempo total dos dias'. INTERPRETE o pedido como uma solicitação para modificar o tempo total disponível para cada dia de estudo. Ajuste `disponibilidade_semanal_minutos` conforme solicitado."
+        elif tipo_refinamento == "duracao-sessoes":
+            tipo_instrucao = "\n### TIPO DE AJUSTE: ALTERAÇÃO DE DURAÇÃO DAS SESSÕES\nO usuário selecionou 'Alterar duração das sessões'. INTERPRETE o pedido como uma solicitação para modificar apenas `duracao_sessao_minutos`. IMPORTANTE: Mantenha o tempo total dos dias inalterado. Se o tempo total do dia for 25 min e você mudar para ciclos de 10 min, crie 2 atividades de 10 min + 1 de 5 min = 25 min total. NUNCA ultrapasse o tempo total original. CRÍTICO: Redistribua DIFERENTES matérias para cada atividade, NÃO multiplique a mesma matéria. Use matérias diferentes do plano original para cada sessão."
+            tipo_instrucao += "\n\n### ALGORITMO OBRIGATÓRIO PARA MUDANÇA DE DURAÇÃO DE SESSÕES:\n1. Identifique todas as matérias do plano original (ex: Direito Constitucional, Português, Matemática, etc.)\n2. Para cada dia, pegue as matérias que estavam programadas para aquele dia\n3. Redistribua essas matérias em sessões menores usando a nova duração\n4. Se faltarem matérias, pegue outras do plano original que não estavam naquele dia\n5. NUNCA repita a mesma matéria no mesmo dia\n6. NUNCA ultrapasse o tempo total original do dia"
+        elif tipo_refinamento == "mover-dias":
+            tipo_instrucao = "\n### TIPO DE AJUSTE: MOVER ATIVIDADES ENTRE DIAS\nO usuário selecionou 'Mover atividades entre dias'. INTERPRETE o pedido como uma solicitação para transferir atividades de um dia para outro, mantendo duração e métodos."
+        else:
+            tipo_instrucao = "\n### TIPO DE AJUSTE: OUTROS\nO usuário selecionou 'Outros ajustes'. INTERPRETE o pedido conforme descrito no texto."
+        
         prompt = f'''Você é um coach especialista em otimizar planos de estudo para concursos. Sua tarefa é ajustar um plano de estudos em formato JSON existente, seguindo fielmente o pedido do aluno.
-
-### PLANO ORIGINAL (JSON):
-{json.dumps(original_plan, indent=2)}
-
-### PEDIDO DE AJUSTE DO ALUNO:
-"""
-{feedback_text}
-"""
+        
+        ### REGRA FUNDAMENTAL SOBRE REDISTRIBUIÇÃO DE MATÉRIAS:
+        Quando você precisar criar múltiplas atividades em um dia (ex: mudar duração de sessões), SEMPRE use matérias diferentes do plano original. NUNCA multiplique a mesma matéria várias vezes. Exemplo: se o plano original tem Direito Constitucional, Português, Matemática e você precisa criar 3 atividades, use uma matéria diferente para cada atividade.
+        
+        ### PLANO ORIGINAL (JSON):
+        {json.dumps(original_plan, indent=2)}
+        
+        {tipo_instrucao}
+        
+        ### PEDIDO DE AJUSTE DO ALUNO:
+        """
+        {feedback_text}
+        """{tecnicas_refinamento_str}
 
 ### REGRAS CRÍTICAS (OBRIGATÓRIO CUMPRIR TODAS):
-1. SE o aluno pedir MUDANÇA DE TEMPO (ex.: "2 horas aos domingos", "45 minutos nas terças"):
-   • Reescreva completamente o cronograma aplicando os novos tempos.
-   • Cada atividade deve ter 25 min. 2 h = 4 atividades; 45 min = 2 atividades.
-   • Redistribua TODAS as matérias originais somente nos dias solicitados.
+1. **DISTRIBUIÇÃO DE TEMPO (REGRA CRÍTICA):** Para cada dia da semana, você DEVE distribuir EXATAMENTE o tempo total informado em `disponibilidade_semanal_minutos`. Por exemplo: se o aluno informou 130 minutos para domingo, você DEVE criar atividades que somem EXATAMENTE 130 minutos. Cada atividade deve ter a duração especificada em `duracao_sessao_minutos` (ex: 30 min), e a última atividade pode ter duração menor para completar o tempo total. NUNCA ultrapasse o tempo total do dia.
 
-2. SE o aluno pedir MUDANÇA DE DIA (ex.: "mover tudo de segunda para terça"):
+2. SE o aluno pedir MUDANÇA DE TEMPO (ex.: "2 horas aos domingos", "45 minutos nas terças", "limitar todos os dias a 25 minutos"):
+   • Reescreva completamente o cronograma aplicando os novos tempos.
+   • Se o pedido for para "limitar" ou "reduzir" o tempo total dos dias, ajuste `disponibilidade_semanal_minutos` para o novo valor.
+   • Se o pedido for para mudar a duração das sessões, ajuste `duracao_sessao_minutos` para o novo valor.
+   • Cada atividade deve ter a duração especificada em `duracao_sessao_minutos`.
+   • Redistribua TODAS as matérias originais nos dias com tempo disponível.
+   • RESPEITE EXATAMENTE o tempo total informado para cada dia.
+   • Se o tempo total for reduzido, mantenha as matérias mais importantes e remova as menos prioritárias.
+
+3. SE o aluno pedir MUDANÇA DE DURAÇÃO DE SESSÕES (ex.: "mudar ciclos para 10 minutos"):
+   • Apenas ajuste `duracao_sessao_minutos` para o novo valor.
+   • MANTENHA o tempo total dos dias inalterado.
+   • Redistribua as atividades para usar a nova duração de sessão.
+   • Exemplo: se dia tem 25 min total e você muda para ciclos de 10 min, crie 2 atividades de 10 min + 1 de 5 min = 25 min total.
+   • NUNCA ultrapasse o tempo total original do dia.
+   • CRÍTICO: Use DIFERENTES matérias do plano original para cada atividade. NÃO multiplique a mesma matéria várias vezes.
+
+4. SE o aluno pedir MUDANÇA DE DIA (ex.: "mover tudo de segunda para terça"):
    • Copie todas as atividades do(s) dia(s) de origem e cole no(s) novo(s) dia(s).
    • Preserve duração, método e ordem relativa.
    • Deixe vazio o dia que ficou sem atividades.
 
-3. SE o aluno pedir outra alteração (mudar método, matéria específica, etc.):
+5. SE o aluno pedir outra alteração (mudar método, matéria específica, etc.):
    • Modifique APENAS as atividades mencionadas.
    • Mantenha todo o resto exatamente igual.
 
-4. NÃO crie matérias nem atividades extras.
-5. NÃO altere dias ou tempos não solicitados.
-6. Atualize 'resumo_estrategico' adicionando ao final uma linha iniciada por "Ajuste realizado:" explicando a mudança.
+6. NÃO crie matérias nem atividades extras.
+7. NÃO altere dias ou tempos não solicitados.
+8. Atualize 'resumo_estrategico' adicionando ao final uma linha iniciada por "Ajuste realizado:" explicando a mudança.
+9. SEMPRE considere as técnicas preferidas do aluno ao fazer ajustes nos métodos de estudo.
+10. NÃO REPITA a mesma matéria no mesmo dia. Cada atividade em um dia deve ser de uma matéria diferente.
 
 Lista oficial de nomes de dias (use exatamente estes): Domingo, Segunda-feira, Terça-feira, Quarta-feira, Quinta-feira, Sexta-feira, Sábado.
 
-### EXEMPLO RÁPIDO:
-Pedido: "Quero estudar Português às quartas em vez de terças".
-→ Copie TODAS as atividades de Terça-feira para Quarta-feira, mantenha horários e métodos, deixe Terça-feira vazia.
+### EXEMPLOS DE INTERPRETAÇÃO:
+1. Pedido: "Quero estudar Português às quartas em vez de terças"
+   → Copie TODAS as atividades de Terça-feira para Quarta-feira, mantenha horários e métodos, deixe Terça-feira vazia.
+
+2. Pedido: "Limitar todos os dias a 25 minutos"
+   → Reduza `disponibilidade_semanal_minutos` de cada dia para 25 minutos, ajuste `duracao_sessao_minutos` para 25, mantenha apenas 1 atividade por dia.
+
+3. Pedido: "Mudar ciclos para 10 minutos"
+   → Apenas ajuste `duracao_sessao_minutos` para 10, mantenha o tempo total dos dias. Ex: se dia tem 25 min total, crie 2 atividades de 10 min + 1 de 5 min = 25 min total. Use matérias diferentes para cada atividade (ex: Direito Constitucional, Português, Matemática).
+
+4. Pedido: "Reduzir domingo para 60 minutos"
+   → Ajuste apenas `disponibilidade_semanal_minutos` do domingo para 60, redistribua as atividades.
+
+### EXEMPLO ESPECÍFICO DE REDISTRIBUIÇÃO:
+Plano original: Domingo tem 30 min total, 1 atividade de Direito Constitucional (30 min)
+Pedido: "Mudar ciclos para 10 minutos"
+Resultado CORRETO: 
+- Direito Constitucional (10 min)
+- Português (10 min) 
+- Matemática (10 min)
+= 30 min total, 3 matérias diferentes
 
 ### FORMATO DE SAÍDA
 Retorne UM ÚNICO objeto JSON com a chave 'plano_de_estudos'. Nenhum texto fora do JSON.
 '''
-        system_message = "Você é um assistente especializado em ajustar planos de estudo. Quando o usuário pedir mudanças de tempo, reescreva completamente o plano. Quando pedir mudanças específicas, modifique apenas o necessário. Sempre retorne JSON válido."
+        system_message = "Você é um assistente especializado em ajustar planos de estudo. INTERPRETE CORRETAMENTE os pedidos: 'limitar tempo' = reduzir tempo total dos dias; 'mudar ciclos' = alterar duração das sessões; 'mudar dias' = mover atividades entre dias. Quando o usuário pedir mudanças de tempo, reescreva completamente o plano. Quando pedir mudanças específicas, modifique apenas o necessário. Sempre retorne JSON válido."
 
         resultado_ia = call_openai_api(prompt, system_message)
 
@@ -249,6 +318,7 @@ Retorne UM ÚNICO objeto JSON com a chave 'plano_de_estudos'. Nenhum texto fora 
         plano_refinado['fase_concurso'] = original_plan.get('fase_concurso')
         plano_refinado['disponibilidade_semanal_minutos'] = original_plan.get('disponibilidade_semanal_minutos')
         plano_refinado['duracao_sessao_minutos'] = original_plan.get('duracao_sessao_minutos', 25)
+        plano_refinado['tecnicas_preferidas'] = original_plan.get('tecnicas_preferidas', [])
 
         job_ref.update(plano_refinado)
         print(f"BACKGROUND JOB (REFINAMENTO) CONCLUÍDO: {job_id}")
@@ -267,6 +337,7 @@ def refinar_plano_estudos_async():
     job_id = dados_req.get("jobId")
     original_plan = dados_req.get("originalPlan")
     feedback_text = dados_req.get("feedbackText")
+    tipo_refinamento = dados_req.get("tipoRefinamento", "outros")
 
     if not all([user_id, job_id, original_plan, feedback_text]):
         return jsonify({"erro": "Dados insuficientes para refinar o plano."}), 400
@@ -282,7 +353,7 @@ def refinar_plano_estudos_async():
     job_ref.update({'status': 'processing_refinement'})
 
     # Inicia a thread para o trabalho pesado
-    thread = threading.Thread(target=processar_refinamento_em_background, args=(user_id, job_id, original_plan, feedback_text))
+    thread = threading.Thread(target=processar_refinamento_em_background, args=(user_id, job_id, original_plan, feedback_text, tipo_refinamento))
     thread.start()
 
     return jsonify({"status": "processing_refinement", "jobId": job_id}), 202

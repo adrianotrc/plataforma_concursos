@@ -142,6 +142,75 @@
                             </div>
                         </div>
                         
+                        <!-- Nova seção de técnicas de estudo preferidas -->
+                        <div class="form-field-group">
+                            <label>Técnicas de estudo que você prefere (opcional):</label>
+                            <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 12px;">
+                                <i class="fas fa-info-circle"></i> 
+                                Selecione as técnicas que você mais gosta ou que têm funcionado melhor para você. 
+                                A IA priorizará essas técnicas no seu cronograma.
+                            </p>
+                            <div id="tecnicas-checkbox-container" class="materias-checkbox-grid">
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-estudo-teoria" name="tecnicas" value="Estudo de Teoria">
+                                    <label for="tecnica-estudo-teoria">Estudo de Teoria</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-resolucao-exercicios" name="tecnicas" value="Resolução de Exercícios">
+                                    <label for="tecnica-resolucao-exercicios">Resolução de Exercícios</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-revisao-ativa" name="tecnicas" value="Revisão com Autoexplicação">
+                                    <label for="tecnica-revisao-ativa">Revisão com Autoexplicação</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-mapa-mental" name="tecnicas" value="Criação de Mapa Mental">
+                                    <label for="tecnica-mapa-mental">Criação de Mapa Mental</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-lei-seca" name="tecnicas" value="Leitura de Lei Seca">
+                                    <label for="tecnica-lei-seca">Leitura de Lei Seca</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-flashcards" name="tecnicas" value="Estudo com Flashcards">
+                                    <label for="tecnica-flashcards">Estudo com Flashcards</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-resumos" name="tecnicas" value="Elaboração de Resumos">
+                                    <label for="tecnica-resumos">Elaboração de Resumos</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-fichamentos" name="tecnicas" value="Fichamento e Esquemas">
+                                    <label for="tecnica-fichamentos">Fichamento e Esquemas</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-simulados" name="tecnicas" value="Simulados Cronometrados">
+                                    <label for="tecnica-simulados">Simulados Cronometrados</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-grupo-estudo" name="tecnicas" value="Estudo em Grupo">
+                                    <label for="tecnica-grupo-estudo">Estudo em Grupo</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-explicacao-oral" name="tecnicas" value="Técnica de Ensino (Explicar em Voz Alta)">
+                                    <label for="tecnica-explicacao-oral">Técnica de Ensino (Explicar em Voz Alta)</label>
+                                </div>
+
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-anotacoes-marginais" name="tecnicas" value="Marcação e Comentários no Material">
+                                    <label for="tecnica-anotacoes-marginais">Marcação e Comentários no Material</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-debates" name="tecnicas" value="Discussão de Questões Polêmicas">
+                                    <label for="tecnica-debates">Discussão de Questões Polêmicas</label>
+                                </div>
+                                <div class="materia-checkbox-item">
+                                    <input type="checkbox" id="tecnica-casos-praticos" name="tecnicas" value="Estudo de Casos Concretos">
+                                    <label for="tecnica-casos-praticos">Estudo de Casos Concretos</label>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="form-field-group">
                             <label>Em quais dias da semana você pretende estudar? Para os dias que forem selecionados, especifique a quantidade de minutos de estudo.</label>
                             <div class="dias-semana-grid">
@@ -158,7 +227,6 @@
                         <div class="form-field-group"> <label for="duracao-sessao-estudo">Quantos minutos você pretende se dedicar a cada matéria por sessão de estudo?</label><select id="duracao-sessao-estudo" required><option value="25" selected>25 minutos (Pomodoro Curto)</option><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="50">50 minutos</option><option value="60">60 minutos (1 hora)</option><option value="75">75 minutos (1h 15min)</option><option value="90">90 minutos (1h 30min)</option><option value="120">120 minutos (2 horas)</option></select></div>
                         <div class="form-grid"><div class="form-field-group"><label for="data-inicio">Qual será a sua data de início dos estudos? (opcional)</label><input type="date" id="data-inicio"></div><div class="form-field-group"><label for="data-termino">Qual será a sua data de término dos estudos (opcional)?</label><input type="date" id="data-termino"></div></div>
                         <div class="form-field-group"><label for="dificuldades-materias">Você tem matérias específicas onde sente mais dificuldade ou facilidade? (Opcional)</label><textarea id="dificuldades-materias" rows="2" placeholder="Ex: Muita dificuldade em Contabilidade, facilidade em Português."></textarea></div>
-                        <div class="form-field-group"><label for="outras-consideracoes">Há alguma outra informação relevante para o plano? (Opcional)</label><textarea id="outras-consideracoes" rows="2" placeholder="Ex: Prefiro fazer exercícios pela manhã e estudar teoria à noite."></textarea></div>
 
                         <div class="form-actions"><button type="submit" class="btn btn-primary">Gerar Cronograma</button><button id="btn-fechar-form-cronograma" type="button" class="btn btn-ghost">Cancelar</button></div>
                     </form>
@@ -175,5 +243,62 @@
     <script src="debug-processing.js"></script>
     <script type="module" src="cronograma-page.js"></script>
     <script src="confirmation-modal.js"></script>
+    <style>
+        .refinamento-opcoes {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .opcao-refinamento {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .opcao-refinamento:hover {
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+        
+        .opcao-refinamento input[type="radio"] {
+            display: none;
+        }
+        
+        .opcao-refinamento input[type="radio"]:checked + label {
+            color: #3b82f6;
+        }
+        
+        .opcao-refinamento input[type="radio"]:checked + label .opcao-refinamento {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        .opcao-refinamento label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            margin: 0;
+        }
+        
+        .opcao-refinamento label i {
+            font-size: 1.2em;
+            margin-bottom: 4px;
+        }
+        
+        .opcao-refinamento label strong {
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+        
+        .opcao-refinamento label small {
+            color: #6b7280;
+            font-size: 0.85em;
+        }
+    </style>
 </body>
 </html>

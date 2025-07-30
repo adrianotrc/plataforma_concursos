@@ -378,7 +378,44 @@ function exibirPlanoNaTela(plano) {
             <div id="container-refinamento" class="feature-card" style="display: none; margin-top: 20px;" data-debug="container-criado">
                 <form id="form-refinamento">
                     <div class="form-field-group">
-                        <label for="feedback-input">Que ajustes você gostaria de fazer neste plano?</label>
+                        <label>Que tipo de ajuste você deseja fazer?</label>
+                        <div class="refinamento-opcoes">
+                            <div class="opcao-refinamento">
+                                <input type="radio" id="opcao-tempo-total" name="tipo-refinamento" value="tempo-total">
+                                <label for="opcao-tempo-total">
+                                    <i class="fas fa-clock"></i>
+                                    <strong>Alterar tempo total dos dias</strong>
+                                    <small>Ex: "Reduzir domingo para 60 minutos"</small>
+                                </label>
+                            </div>
+                            <div class="opcao-refinamento">
+                                <input type="radio" id="opcao-duracao-sessoes" name="tipo-refinamento" value="duracao-sessoes">
+                                <label for="opcao-duracao-sessoes">
+                                    <i class="fas fa-stopwatch"></i>
+                                    <strong>Alterar duração das sessões</strong>
+                                    <small>Ex: "Mudar ciclos para 25 minutos"</small>
+                                </label>
+                            </div>
+                            <div class="opcao-refinamento">
+                                <input type="radio" id="opcao-mover-dias" name="tipo-refinamento" value="mover-dias">
+                                <label for="opcao-mover-dias">
+                                    <i class="fas fa-exchange-alt"></i>
+                                    <strong>Mover atividades entre dias</strong>
+                                    <small>Ex: "Mover tudo de segunda para terça"</small>
+                                </label>
+                            </div>
+                            <div class="opcao-refinamento">
+                                <input type="radio" id="opcao-outros" name="tipo-refinamento" value="outros" checked>
+                                <label for="opcao-outros">
+                                    <i class="fas fa-edit"></i>
+                                    <strong>Outros ajustes</strong>
+                                    <small>Ex: "Mais exercícios de Direito Administrativo"</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-field-group">
+                        <label for="feedback-input">Descreva o ajuste desejado:</label>
                         <textarea id="feedback-input" rows="3" placeholder="Ex: 'Gostaria de estudar Português às segundas e ter mais exercícios de Direito Administrativo.'" required></textarea>
                     </div>
                     <div class="form-actions">
@@ -547,6 +584,13 @@ formCronograma?.addEventListener('submit', async (e) => {
     const materiasEmTags = [...document.querySelectorAll('#materias-container .materia-tag')].map(tag => tag.textContent.replace('×', '').trim());
     const todasMaterias = [...new Set([...materiasSelecionadas, ...materiasEmTags])];
     if (todasMaterias.length === 0) { showToast("Adicione pelo menos uma matéria.", "error"); return; }
+    
+    // Captura técnicas de estudo preferidas
+    const tecnicasPreferidas = [...document.querySelectorAll('#tecnicas-checkbox-container input:checked')].map(cb => cb.value);
+    
+    // Debug temporário - remover depois
+    console.log('Técnicas preferidas selecionadas:', tecnicasPreferidas);
+    
     const disponibilidade = {};
     document.querySelectorAll('.dias-semana-grid .dia-horario-item').forEach(item => {
         const checkbox = item.querySelector('input[type="checkbox"]');
@@ -580,12 +624,13 @@ formCronograma?.addEventListener('submit', async (e) => {
         concurso_objetivo: document.getElementById('concurso-objetivo').value,
         fase_concurso: document.getElementById('fase-concurso').value,
         materias: todasMaterias,
+        tecnicas_preferidas: tecnicasPreferidas,
         disponibilidade_semanal_minutos: disponibilidade,
         duracao_sessao_minutos: parseInt(document.getElementById('duracao-sessao-estudo').value),
         data_inicio: dataInicio,
         data_termino: dataTermino,
         dificuldades_materias: document.getElementById('dificuldades-materias').value || 'Nenhuma informada.',
-        outras_consideracoes: document.getElementById('outras-consideracoes').value || 'Nenhuma.',
+        
     };
     // Usa o novo sistema de processamento
     console.log('Verificando processingUI antes do uso:', window.processingUI);
@@ -813,6 +858,9 @@ document.body.addEventListener('submit', async (e) => {
             return;
         }
 
+        // Captura o tipo de refinamento selecionado
+        const tipoRefinamento = document.querySelector('input[name="tipo-refinamento"]:checked').value;
+        
         const btnAjustar = e.target.querySelector('button[type="submit"]');
         btnAjustar.disabled = true;
         btnAjustar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ajustando...';
@@ -821,7 +869,8 @@ document.body.addEventListener('submit', async (e) => {
             userId: currentUser.uid,
             jobId: planoAbertoAtual.jobId || planoAbertoAtual.id,
             originalPlan: planoAbertoAtual,
-            feedbackText: feedbackText
+            feedbackText: feedbackText,
+            tipoRefinamento: tipoRefinamento
         };
 
         try {

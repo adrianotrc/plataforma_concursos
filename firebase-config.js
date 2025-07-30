@@ -21,5 +21,16 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Configurações específicas para desenvolvimento
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    // Configurações para ambiente de desenvolvimento
+    auth.useDeviceLanguage();
+    // Desabilita verificações de domínio para desenvolvimento
+    auth.settings.appVerificationDisabledForTesting = true;
+    
+    // Configurações adicionais para desenvolvimento local
+    console.log('Firebase configurado para desenvolvimento local');
+}
+
 // Exporta as instâncias para que outros arquivos possam usá-las
 export { auth, db };

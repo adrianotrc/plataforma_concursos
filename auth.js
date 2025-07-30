@@ -50,6 +50,7 @@ if (formLogin) {
         errorMessage.style.display = 'none';
 
         try {
+            console.log('Tentando login com:', { email, hostname: window.location.hostname, origin: window.location.origin });
             const userCredential = await signInWithEmailAndPassword(auth, email, senha);
             const user = userCredential.user;
 
