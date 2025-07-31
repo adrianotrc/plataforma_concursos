@@ -144,7 +144,7 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             "Você é um coach especialista em criar planos de estudo para concursos, baseando-se na metodologia do 'Guia Definitivo de Aprovação'. "
             "Sua tarefa é criar um plano de estudos em formato JSON, com base nos dados do aluno e nas regras estritas abaixo.\n\n"
             f"DADOS DO ALUNO:\n{json.dumps(dados_usuario, indent=2)}\n\n"
-            "⚠️ **ATENÇÃO CRÍTICA SOBRE MATÉRIAS:** A lista de matérias em `dados_usuario['materias']` contém TODAS as matérias que o aluno quer estudar, incluindo matérias adicionadas manualmente. VOCÊ DEVE INCLUIR TODAS ELAS no cronograma.\n\n"
+            "⚠️ **ATENÇÃO CRÍTICA SOBRE MATÉRIAS E TÓPICOS:** A lista de matérias em `dados_usuario['materias']` contém as matérias e tópicos específicos que o aluno quer estudar. VOCÊ DEVE INCLUIR TODAS AS MATÉRIAS e priorizar os tópicos especificados pelo aluno.\n\n"
             "REGRAS DE ESTRUTURA JSON (OBRIGATÓRIO):\n"
             "1. A resposta DEVE ser um único objeto JSON.\n"
             "2. A chave principal deve ser 'plano_de_estudos'.\n"
@@ -157,7 +157,7 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
             "1. **VARIEDADE DE MÉTODOS (REGRA MAIS IMPORTANTE):** O plano DEVE ser pedagogicamente rico. É OBRIGATÓRIO que você use uma mistura inteligente dos seguintes métodos de estudo: 'Estudo de Teoria', 'Resolução de Exercícios', 'Revisão com Autoexplicação', 'Criação de Mapa Mental' e 'Leitura de Lei Seca'. Um plano que usa apenas um ou dois métodos é considerado uma falha. Aplique o método mais adequado para cada matéria e momento do estudo.\n"
             "2. **DISTRIBUIÇÃO DE TEMPO (REGRA CRÍTICA):** Para cada dia da semana, você DEVE distribuir EXATAMENTE o tempo total informado em `disponibilidade_semanal_minutos`. Por exemplo: se o aluno informou 130 minutos para domingo, você DEVE criar atividades que somem EXATAMENTE 130 minutos. Cada atividade deve ter a duração especificada em `duracao_sessao_minutos` (ex: 30 min), e a última atividade pode ter duração menor para completar o tempo total. NUNCA ultrapasse o tempo total do dia.\n"
             "3. **DIAS E TEMPO DE ESTUDO:** Gere atividades para TODOS os dias da semana informados em `dados_usuario['disponibilidade_semanal_minutos']`. O campo 'dia_semana' na sua resposta deve ser EXATAMENTE igual à chave recebida. Use 100% do tempo de cada dia, mas NUNCA ultrapasse.\n"
-            f"4. **MATÉRIAS:** O plano DEVE incluir TODAS as matérias listadas pelo aluno em `dados_usuario['materias']`. Esta lista inclui tanto matérias pré-selecionadas quanto matérias adicionadas manualmente pelo usuário. NÃO IGNORE NENHUMA MATÉRIA desta lista. Cada matéria deve aparecer pelo menos uma vez no cronograma.\n"
+            f"4. **MATÉRIAS E TÓPICOS:** O plano DEVE incluir TODAS as matérias listadas pelo aluno em `dados_usuario['materias']`. Para cada matéria, priorize os tópicos específicos informados pelo aluno. Se uma matéria tem tópicos definidos, foque nesses tópicos. Se não tem tópicos específicos, use os tópicos mais fundamentais da matéria.\n"
             f"5. **DURAÇÃO DO PLANO:** O plano deve ter EXATAMENTE {numero_de_semanas} semanas.\n"
             "6. **RESUMO ESTRATÉGICO:** Crie um 'resumo_estrategico' curto, explicando a lógica de progressão aplicada no plano.\n"
             "7. **NÃO REPETIÇÃO DE MATÉRIAS:** NUNCA repita a mesma matéria no mesmo dia. Cada atividade em um dia deve ser de uma matéria diferente."
@@ -173,7 +173,16 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
         plano_final = resultado_ia['plano_de_estudos']
         
         # Verifica se todas as matérias foram incluídas
-        materias_solicitadas = set(dados_usuario.get('materias', []))
+        materias_solicitadas_raw = dados_usuario.get('materias', [])
+        materias_solicitadas = set()
+        
+        # Extrai nomes das matérias da nova estrutura
+        for materia_data in materias_solicitadas_raw:
+            if isinstance(materia_data, dict):
+                materias_solicitadas.add(materia_data.get('nome', ''))
+            elif isinstance(materia_data, str):
+                materias_solicitadas.add(materia_data)
+        
         materias_incluidas = set()
         
         for semana in plano_final.get('cronograma_semanal_detalhado', []):

@@ -3,6 +3,277 @@ import { collection, doc, getDoc, addDoc, serverTimestamp, query, orderBy, onSna
 import { gerarPlanoDeEstudos, getUsageLimits, refinarPlanoDeEstudosAsync, registrarProgresso, obterProgresso, calcularMetricasProgresso, excluirItem } from './api.js';
 import { state } from './main-app.js';
 
+// Base de dados de tópicos por matéria
+const TOPICOS_POR_MATERIA = {
+  "Direito Administrativo": [
+    "Conceitos e princípios",
+    "Organização da Administração",
+    "Poderes e Deveres Administrativos",
+    "Atos Administrativos",
+    "Agentes Públicos",
+    "Processo Administrativo Federal",
+    "Licitações e contratos administrativos",
+    "Controle Interno e Externo",
+    "Responsabilidade Civil do Estado",
+    "Improbidade Administrativa",
+    "Lei de Acesso à Informação",
+    "Lei Geral de Proteção de Dados"
+  ],
+  "Língua Portuguesa": [
+    "Gramática normativa",
+    "Fonética e fonologia",
+    "Morfologia",
+    "Sintaxe",
+    "Semântica",
+    "Literatura",
+    "Tipos de textos e gêneros textuais",
+    "Produção e interpretação de texto",
+    "Intertextualidade",
+    "Citações e transcrições",
+    "Redação Oficial"
+  ],
+  "Raciocínio Lógico Matemático": [
+    "Estruturas lógicas e noções básicas de lógica",
+    "Lógica de argumentação e análise crítica",
+    "Lógica sentencial ou proposicional",
+    "Operações com conjuntos",
+    "Análise, interpretação e utilização de dados",
+    "Características e relações matemáticas",
+    "Noções básicas de Contagem e Probabilidades"
+  ],
+  "Língua Inglesa": [
+    "Conhecimento e uso das formas contemporâneas",
+    "Compreensão e interpretação de textos variados",
+    "Itens gramaticais relevantes",
+    "Palavras e expressões equivalentes",
+    "Elementos de referência"
+  ],
+  "Direito Constitucional": [
+    "Teoria da Constituição",
+    "Poder Constituinte",
+    "Princípios Fundamentais",
+    "Direitos e Garantias Fundamentais",
+    "Organização do Estado",
+    "Poderes da União",
+    "Processo Legislativo",
+    "Controle de Constitucionalidade"
+  ],
+  "Matemática": [
+    "Conjuntos numéricos",
+    "Funções",
+    "Equações e inequações",
+    "Geometria plana e espacial",
+    "Trigonometria",
+    "Análise combinatória",
+    "Probabilidade",
+    "Estatística"
+  ],
+  "Informática": [
+    "Conceitos básicos de informática",
+    "Sistemas operacionais",
+    "Editores de texto",
+    "Planilhas eletrônicas",
+    "Internet e intranet",
+    "Segurança da informação",
+    "Redes de computadores"
+  ],
+  "Direito Civil": [
+    "Lei de Introdução às Normas do Direito Brasileiro",
+    "Pessoas Naturais",
+    "Pessoas Jurídicas",
+    "Bens",
+    "Fatos Jurídicos",
+    "Negócio Jurídico",
+    "Atos Ilícitos",
+    "Prescrição e Decadência",
+    "Prova",
+    "Direito das Obrigações",
+    "Contratos",
+    "Responsabilidade Civil",
+    "Direito das Coisas",
+    "Direito de Família",
+    "Direito das Sucessões"
+  ],
+  "Direito Penal": [
+    "Aplicação da Lei Penal",
+    "Do Crime",
+    "Do Concurso de Pessoas",
+    "Das Penas",
+    "Das Medidas de Segurança",
+    "Da Ação Penal",
+    "Da Extinção da Punibilidade",
+    "Crimes contra a Pessoa",
+    "Crimes contra o Patrimônio",
+    "Crimes contra a Administração Pública",
+    "Crimes contra a Fé Pública",
+    "Crimes contra a Ordem Econômica"
+  ],
+  "Direito Processual Civil": [
+    "Normas Processuais Civis",
+    "Da Jurisdição",
+    "Da Ação",
+    "Do Processo",
+    "Dos Atos Processuais",
+    "Da Formação, Suspensão e Extinção do Processo",
+    "Do Procedimento Ordinário",
+    "Dos Procedimentos Especiais",
+    "Dos Recursos",
+    "Da Execução",
+    "Dos Procedimentos Especiais de Jurisdição Voluntária"
+  ],
+  "Direito Processual Penal": [
+    "Aplicação da Lei Processual Penal",
+    "Inquérito Policial",
+    "Ação Penal",
+    "Competência",
+    "Provas",
+    "Prisão e Liberdade Provisória",
+    "Processo e Julgamento dos Crimes de Responsabilidade",
+    "Habeas Corpus",
+    "Recursos em Geral",
+    "Execução Penal"
+  ],
+  "Direito Previdenciário": [
+    "Seguridade Social",
+    "Benefícios Previdenciários",
+    "Cálculos Previdenciários",
+    "Contribuições Previdenciárias",
+    "Plano de Benefícios da Previdência Social",
+    "Benefícios por Incapacidade",
+    "Aposentadoria por Idade",
+    "Aposentadoria por Tempo de Contribuição",
+    "Aposentadoria Especial",
+    "Pensão por Morte",
+    "Auxílio-Doença",
+    "Auxílio-Acidente",
+    "Salário-Família",
+    "Salário-Maternidade"
+  ],
+  "Direito do Trabalho": [
+    "Princípios do Direito do Trabalho",
+    "Fontes do Direito do Trabalho",
+    "Aplicação das Normas Trabalhistas",
+    "Contrato Individual do Trabalho",
+    "Alteração do Contrato de Trabalho",
+    "Suspensão e Interrupção do Contrato",
+    "Rescisão do Contrato de Trabalho",
+    "Jornada de Trabalho",
+    "Salário e Remuneração",
+    "Férias",
+    "13º Salário",
+    "FGTS",
+    "Segurança e Medicina do Trabalho",
+    "Sindicatos",
+    "Greve",
+    "Justiça do Trabalho"
+  ],
+  "Direito Tributário": [
+    "Sistema Tributário Nacional",
+    "Competência Tributária",
+    "Limitações ao Poder de Tributar",
+    "Impostos da União",
+    "Impostos dos Estados",
+    "Impostos dos Municípios",
+    "Contribuições Sociais",
+    "Contribuições de Intervenção no Domínio Econômico",
+    "Contribuições de Interesse das Categorias Profissionais",
+    "Obrigação Tributária",
+    "Responsabilidade Tributária",
+    "Crédito Tributário",
+    "Suspensão da Exigibilidade",
+    "Extinção do Crédito Tributário",
+    "Exclusão do Crédito Tributário",
+    "Garantias e Privilégios do Crédito Tributário",
+    "Administração Tributária"
+  ],
+  "Contabilidade": [
+    "Conceitos Fundamentais",
+    "Patrimônio",
+    "Contas",
+    "Plano de Contas",
+    "Escrituração Contábil",
+    "Demonstrações Contábeis",
+    "Balanço Patrimonial",
+    "Demonstração do Resultado do Exercício",
+    "Demonstração das Mutações do Patrimônio Líquido",
+    "Demonstração dos Fluxos de Caixa",
+    "Notas Explicativas",
+    "Análise das Demonstrações Contábeis",
+    "Auditoria",
+    "Normas Brasileiras de Contabilidade"
+  ],
+  "Administração": [
+    "Teorias da Administração",
+    "Planejamento",
+    "Organização",
+    "Direção",
+    "Controle",
+    "Gestão de Pessoas",
+    "Comportamento Organizacional",
+    "Liderança",
+    "Motivação",
+    "Comunicação Organizacional",
+    "Gestão de Conflitos",
+    "Desenvolvimento Organizacional",
+    "Gestão da Qualidade",
+    "Gestão de Projetos",
+    "Gestão de Processos",
+    "Gestão Estratégica"
+  ],
+  "Economia": [
+    "Conceitos Fundamentais",
+    "Microeconomia",
+    "Macroeconomia",
+    "Teoria da Demanda",
+    "Teoria da Oferta",
+    "Estruturas de Mercado",
+    "Teoria da Produção",
+    "Teoria dos Custos",
+    "Teoria da Distribuição",
+    "Política Monetária",
+    "Política Fiscal",
+    "Política Cambial",
+    "Política Comercial",
+    "Sistema Financeiro Nacional",
+    "Indicadores Econômicos",
+    "Comércio Internacional"
+  ],
+  "Estatística": [
+    "Conceitos Básicos",
+    "Estatística Descritiva",
+    "Medidas de Tendência Central",
+    "Medidas de Dispersão",
+    "Medidas de Assimetria e Curtose",
+    "Probabilidade",
+    "Distribuições de Probabilidade",
+    "Amostragem",
+    "Estimação",
+    "Testes de Hipóteses",
+    "Correlação e Regressão",
+    "Análise de Variância",
+    "Controle Estatístico de Qualidade",
+    "Séries Temporais",
+    "Índices Estatísticos"
+  ],
+  "Legislação": [
+    "Lei de Acesso à Informação",
+    "Lei Geral de Proteção de Dados",
+    "Lei de Responsabilidade Fiscal",
+    "Lei de Licitações",
+    "Lei de Improbidade Administrativa",
+    "Lei de Diretrizes e Bases da Educação",
+    "Lei de Diretrizes Orçamentárias",
+    "Lei de Execução Penal",
+    "Lei de Falências",
+    "Lei de Arbitragem",
+    "Lei de Propriedade Industrial",
+    "Lei de Direitos Autorais",
+    "Lei de Biossegurança",
+    "Lei de Crimes Ambientais",
+    "Lei de Parcerias Público-Privadas"
+  ]
+};
+
 // --- ELEMENTOS DO DOM ---
 const btnAbrirForm = document.getElementById('btn-abrir-form-cronograma');
 const containerForm = document.getElementById('container-form-novo-plano');
@@ -578,6 +849,37 @@ async function renderUsageInfo() {
 
 // --- LÓGICA DE EVENTOS ---
 
+// Event listeners para a nova interface de tópicos
+document.addEventListener('change', (e) => {
+    if (e.target.matches('#materias-checkbox-container input[type="checkbox"]')) {
+        atualizarConfiguracaoTopicos();
+    }
+});
+
+// Event listener para adicionar matéria personalizada
+document.getElementById('btn-add-materia-personalizada')?.addEventListener('click', adicionarMateriaPersonalizada);
+
+// Event listeners para tópicos
+document.addEventListener('click', (e) => {
+    if (e.target.matches('.btn-add-topico')) {
+        adicionarTopicoPersonalizado(e.target.closest('.materia-card'));
+    }
+    if (e.target.matches('.btn-paste-edital')) {
+        abrirModalPasteEdital(e.target.closest('.materia-card'));
+    }
+});
+
+// Event listener para remover tópicos personalizados (delegation)
+document.addEventListener('click', (e) => {
+    if (e.target.matches('.remove-topico')) {
+        const topicoElement = e.target.closest('.topico-personalizado');
+        if (topicoElement) {
+            topicoElement.remove();
+        }
+    }
+});
+
+// Event listeners antigos mantidos para compatibilidade
 formCronograma?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === materiasInput) { e.preventDefault(); adicionarMateriaTag(); } });
 materiasInput?.addEventListener('keyup', (e) => { if (e.key === ',') adicionarMateriaTag(); });
 diasSemanaCheckboxes.forEach(checkbox => { checkbox.addEventListener('change', (e) => { const inputMinutos = e.target.closest('.dia-horario-item').querySelector('input[type="number"]'); if (inputMinutos) { inputMinutos.disabled = !e.target.checked; if (!e.target.checked) inputMinutos.value = ''; } }); });
@@ -588,10 +890,13 @@ formCronograma?.addEventListener('submit', async (e) => {
     const user = auth.currentUser;
     if (!user) { showToast("Você precisa estar logado.", "error"); return; }
     const btnGerar = formCronograma.querySelector('button[type="submit"]');
-    const materiasSelecionadas = [...document.querySelectorAll('#materias-checkbox-container input:checked')].map(cb => cb.value);
-    const materiasEmTags = [...document.querySelectorAll('#materias-container .materia-tag')].map(tag => tag.textContent.replace('×', '').trim());
-    const todasMaterias = [...new Set([...materiasSelecionadas, ...materiasEmTags])];
-    if (todasMaterias.length === 0) { showToast("Adicione pelo menos uma matéria.", "error"); return; }
+    
+    // Nova lógica de captura de matérias com tópicos
+    const materiasConfiguradas = capturarMateriasComTopicos();
+    if (materiasConfiguradas.length === 0) { 
+        showToast("Adicione pelo menos uma matéria.", "error"); 
+        return; 
+    }
     
     // Captura técnicas de estudo preferidas
     const tecnicasPreferidas = [...document.querySelectorAll('#tecnicas-checkbox-container input:checked')].map(cb => cb.value);
@@ -631,7 +936,7 @@ formCronograma?.addEventListener('submit', async (e) => {
         userId: user.uid,
         concurso_objetivo: document.getElementById('concurso-objetivo').value,
         fase_concurso: document.getElementById('fase-concurso').value,
-        materias: todasMaterias,
+        materias: materiasConfiguradas, // Nova estrutura com tópicos
         tecnicas_preferidas: tecnicasPreferidas,
         disponibilidade_semanal_minutos: disponibilidade,
         duracao_sessao_minutos: parseInt(document.getElementById('duracao-sessao-estudo').value),
@@ -1422,3 +1727,402 @@ document.body.addEventListener('click', (e) => {
         if (container) container.style.display = 'none';
     }
 });
+
+// --- NOVAS FUNÇÕES PARA INTERFACE DE TÓPICOS ---
+
+function atualizarConfiguracaoTopicos() {
+    const materiasSelecionadas = [...document.querySelectorAll('#materias-checkbox-container input:checked')].map(cb => cb.value);
+    const containerTopicos = document.getElementById('configuracao-topicos');
+    const containerMateriasTopicos = document.getElementById('materias-topicos-container');
+    
+    if (materiasSelecionadas.length > 0) {
+        containerTopicos.style.display = 'block';
+        containerMateriasTopicos.innerHTML = '';
+        
+        materiasSelecionadas.forEach(materia => {
+            const materiaCard = criarCardMateria(materia);
+            containerMateriasTopicos.appendChild(materiaCard);
+        });
+    } else {
+        containerTopicos.style.display = 'none';
+    }
+}
+
+function criarCardMateria(materia) {
+    const card = document.createElement('div');
+    card.className = 'materia-card';
+    card.dataset.materia = materia;
+    
+    const topicos = TOPICOS_POR_MATERIA[materia] || [];
+    
+    card.innerHTML = `
+        <div class="materia-header">
+            <h4>${materia}</h4>
+            <label class="toggle">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="topicos-container">
+            ${topicos.length > 0 ? `
+                <div class="topicos-predefinidos">
+                    ${topicos.map(topico => `
+                        <div class="topico-checkbox-item">
+                            <input type="checkbox" id="topico-${materia.replace(/\s+/g, '-')}-${topico.replace(/\s+/g, '-')}" value="${topico}">
+                            <label for="topico-${materia.replace(/\s+/g, '-')}-${topico.replace(/\s+/g, '-')}">${topico}</label>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : `
+                <div class="topicos-predefinidos" style="display: none;"></div>
+            `}
+            <div class="topicos-personalizados">
+                <button type="button" class="btn-add-topico">
+                    <i class="fas fa-plus"></i> Adicionar tópico
+                </button>
+                <button type="button" class="btn-paste-edital">
+                    <i class="fas fa-paste"></i> Colar do edital
+                </button>
+            </div>
+            <div class="topicos-personalizados-lista"></div>
+        </div>
+    `;
+    
+    return card;
+}
+
+function adicionarMateriaPersonalizada() {
+    // Cria modal no padrão do site
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Matéria Personalizada</h3>
+                <button type="button" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-field-group">
+                    <label for="nova-materia">Nome da matéria:</label>
+                    <input type="text" id="nova-materia" placeholder="Ex: Direito Previdenciário" required>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost">Cancelar</button>
+                <button type="button" class="btn btn-primary">Adicionar</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    
+    // Event listeners
+    const closeBtn = modal.querySelector('.modal-close');
+    const cancelBtn = modal.querySelector('.btn-ghost');
+    const confirmBtn = modal.querySelector('.btn-primary');
+    const input = modal.querySelector('#nova-materia');
+    
+    closeBtn.addEventListener('click', () => modal.remove());
+    cancelBtn.addEventListener('click', () => modal.remove());
+    confirmBtn.addEventListener('click', () => confirmarAdicionarMateria(confirmBtn));
+    
+    // Foca no input
+    input.focus();
+    
+    // Enter para confirmar
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            confirmarAdicionarMateria(confirmBtn);
+        }
+    });
+}
+
+function confirmarAdicionarMateria(button) {
+    const modal = button.closest('.modal-overlay');
+    const materiaInput = modal.querySelector('#nova-materia');
+    const materia = materiaInput.value.trim();
+    
+    if (!materia) {
+        showToast('Por favor, digite o nome da matéria.', 'error');
+        return;
+    }
+    
+    // Adiciona checkbox para a nova matéria
+    const container = document.getElementById('materias-checkbox-container');
+    const checkboxId = `materia-${materia.replace(/\s+/g, '-').toLowerCase()}`;
+    
+    const checkboxItem = document.createElement('div');
+    checkboxItem.className = 'materia-checkbox-item';
+    checkboxItem.innerHTML = `
+        <input type="checkbox" id="${checkboxId}" value="${materia}">
+        <label for="${checkboxId}">${materia}</label>
+    `;
+    
+    container.appendChild(checkboxItem);
+    
+    // Marca automaticamente e atualiza tópicos
+    document.getElementById(checkboxId).checked = true;
+    atualizarConfiguracaoTopicos();
+    
+    modal.remove();
+    showToast(`Matéria "${materia}" adicionada!`, 'success');
+}
+
+function adicionarTopicoPersonalizado(materiaCard) {
+    const materia = materiaCard.dataset.materia;
+    
+    // Cria modal no padrão do site
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Tópico - ${materia}</h3>
+                <button type="button" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-field-group">
+                    <label for="novo-topico">Nome do tópico:</label>
+                    <input type="text" id="novo-topico" placeholder="Ex: Conceitos básicos" required>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost">Cancelar</button>
+                <button type="button" class="btn btn-primary">Adicionar</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    
+    // Event listeners
+    const closeBtn = modal.querySelector('.modal-close');
+    const cancelBtn = modal.querySelector('.btn-ghost');
+    const confirmBtn = modal.querySelector('.btn-primary');
+    const input = modal.querySelector('#novo-topico');
+    
+    closeBtn.addEventListener('click', () => modal.remove());
+    cancelBtn.addEventListener('click', () => modal.remove());
+    confirmBtn.addEventListener('click', () => confirmarAdicionarTopico(confirmBtn, materia));
+    
+    // Foca no input
+    input.focus();
+    
+    // Enter para confirmar
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            confirmarAdicionarTopico(confirmBtn, materia);
+        }
+    });
+}
+
+function confirmarAdicionarTopico(button, materia) {
+    const modal = button.closest('.modal-overlay');
+    const topicoInput = modal.querySelector('#novo-topico');
+    const topico = topicoInput.value.trim();
+    
+    if (!topico) {
+        showToast('Por favor, digite o nome do tópico.', 'error');
+        return;
+    }
+    
+    const materiaCard = document.querySelector(`.materia-card[data-materia="${materia}"]`);
+    const container = materiaCard.querySelector('.topicos-personalizados-lista');
+    
+    const topicoElement = document.createElement('div');
+    topicoElement.className = 'topico-checkbox-item topico-personalizado';
+    topicoElement.innerHTML = `
+        <input type="checkbox" id="topico-personalizado-${materia.replace(/\s+/g, '-')}-${topico.replace(/\s+/g, '-')}" value="${topico}" checked>
+        <label for="topico-personalizado-${materia.replace(/\s+/g, '-')}-${topico.replace(/\s+/g, '-')}">${topico}</label>
+        <span class="remove-topico">×</span>
+    `;
+    
+    container.appendChild(topicoElement);
+    
+    modal.remove();
+    showToast(`Tópico "${topico}" adicionado!`, 'success');
+}
+
+// Função removida - agora usa event delegation
+
+function abrirModalPasteEdital(materiaCard) {
+    const materia = materiaCard.dataset.materia;
+    
+    // Cria modal no padrão do site
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Colar Tópicos do Edital - ${materia}</h3>
+                <button type="button" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 16px; color: #6b7280; font-size: 0.9em;">
+                    Cole aqui o texto do edital relacionado a <strong>${materia}</strong>. 
+                    A IA irá extrair automaticamente os tópicos relevantes.
+                </p>
+                <div class="form-field-group">
+                    <label for="texto-edital">Texto do edital:</label>
+                    <textarea id="texto-edital" rows="8" placeholder="Cole aqui o texto do edital..."></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost">Cancelar</button>
+                <button type="button" class="btn btn-primary">Processar</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    
+    // Event listeners
+    const closeBtn = modal.querySelector('.modal-close');
+    const cancelBtn = modal.querySelector('.btn-ghost');
+    const confirmBtn = modal.querySelector('.btn-primary');
+    const textarea = modal.querySelector('#texto-edital');
+    
+    closeBtn.addEventListener('click', () => modal.remove());
+    cancelBtn.addEventListener('click', () => modal.remove());
+    confirmBtn.addEventListener('click', () => processarTextoEdital(confirmBtn, materia));
+    
+    // Foca no textarea
+    textarea.focus();
+}
+
+function processarTextoEdital(button, materia) {
+    const modal = button.closest('.modal-overlay');
+    const textarea = modal.querySelector('#texto-edital');
+    const texto = textarea.value.trim();
+    
+    if (!texto) {
+        showToast('Por favor, cole o texto do edital.', 'error');
+        return;
+    }
+    
+    // Mostra loading
+    const confirmBtn = modal.querySelector('.btn-primary');
+    const originalText = confirmBtn.textContent;
+    confirmBtn.textContent = 'Processando...';
+    confirmBtn.disabled = true;
+    
+    // Simula processamento da IA (por enquanto)
+    setTimeout(() => {
+        const topicos = simularProcessamentoIA(texto);
+        
+        // Adiciona os tópicos processados
+        const materiaCard = document.querySelector(`.materia-card[data-materia="${materia}"]`);
+        const container = materiaCard.querySelector('.topicos-personalizados-lista');
+        
+        topicos.forEach(topico => {
+            const topicoElement = document.createElement('div');
+            topicoElement.className = 'topico-checkbox-item topico-personalizado';
+            topicoElement.innerHTML = `
+                <input type="checkbox" id="topico-edital-${materia.replace(/\s+/g, '-')}-${topico.replace(/\s+/g, '-')}" value="${topico}" checked>
+                <label for="topico-edital-${materia.replace(/\s+/g, '-')}-${topico.replace(/\s+/g, '-')}">${topico}</label>
+                <span class="remove-topico">×</span>
+            `;
+            container.appendChild(topicoElement);
+        });
+        
+        modal.remove();
+        
+        if (topicos.length > 0) {
+            showToast(`${topicos.length} tópicos extraídos do edital!`, 'success');
+        } else {
+            showToast('Nenhum tópico foi encontrado no texto. Tente colar um texto mais específico.', 'warning');
+        }
+    }, 1000); // Simula tempo de processamento
+}
+
+function simularProcessamentoIA(texto) {
+    // Simulação melhorada - em produção seria uma chamada para a IA
+    const topicos = [];
+    const linhas = texto.split('\n');
+    
+    linhas.forEach(linha => {
+        // Padrão 1: "1. Tópico"
+        let match = linha.match(/^\d+\.\s*(.+)/);
+        if (match) {
+            topicos.push(match[1].trim());
+            return;
+        }
+        
+        // Padrão 2: "1) Tópico"
+        match = linha.match(/^\d+\)\s*(.+)/);
+        if (match) {
+            topicos.push(match[1].trim());
+            return;
+        }
+        
+        // Padrão 3: "- Tópico"
+        match = linha.match(/^[-•]\s*(.+)/);
+        if (match) {
+            topicos.push(match[1].trim());
+            return;
+        }
+        
+        // Padrão 4: Linha que contém palavras-chave
+        const palavrasChave = ['conceito', 'princípio', 'organização', 'poder', 'ato', 'agente', 'processo', 'licitação', 'contrato', 'controle', 'responsabilidade', 'improbidade', 'lei', 'norma', 'regulamento', 'decreto', 'portaria', 'resolução'];
+        const linhaLower = linha.toLowerCase();
+        
+        if (palavrasChave.some(palavra => linhaLower.includes(palavra)) && linha.trim().length > 10) {
+            topicos.push(linha.trim());
+        }
+    });
+    
+    // Se não encontrou nenhum tópico, tenta extrair frases que parecem tópicos
+    if (topicos.length === 0) {
+        const frases = texto.split(/[.!?]/).filter(frase => 
+            frase.trim().length > 15 && 
+            frase.trim().length < 100 &&
+            !frase.trim().toLowerCase().includes('artigo') &&
+            !frase.trim().toLowerCase().includes('inciso')
+        );
+        
+        frases.slice(0, 5).forEach(frase => {
+            const fraseLimpa = frase.trim();
+            if (fraseLimpa) {
+                topicos.push(fraseLimpa);
+            }
+        });
+    }
+    
+    return topicos;
+}
+
+function capturarMateriasComTopicos() {
+    const materiasConfiguradas = [];
+    
+    // Captura matérias dos checkboxes
+    const materiasSelecionadas = [...document.querySelectorAll('#materias-checkbox-container input:checked')].map(cb => cb.value);
+    
+    materiasSelecionadas.forEach(materia => {
+        const materiaCard = document.querySelector(`.materia-card[data-materia="${materia}"]`);
+        if (materiaCard) {
+            const ativa = materiaCard.querySelector('.toggle input').checked;
+            if (ativa) {
+                const topicos = [];
+                
+                // Captura tópicos pré-definidos selecionados
+                const topicosPredefinidos = materiaCard.querySelectorAll('.topicos-predefinidos input:checked');
+                topicosPredefinidos.forEach(cb => topicos.push(cb.value));
+                
+                // Captura tópicos personalizados (checkboxes marcados)
+                const topicosPersonalizados = materiaCard.querySelectorAll('.topico-personalizado input:checked');
+                topicosPersonalizados.forEach(cb => topicos.push(cb.value));
+                
+                materiasConfiguradas.push({
+                    nome: materia,
+                    ativa: true,
+                    topicos: topicos
+                });
+            }
+        }
+    });
+    
+    return materiasConfiguradas;
+}
