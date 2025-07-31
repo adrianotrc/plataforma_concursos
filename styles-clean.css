@@ -1086,6 +1086,50 @@ body {
     margin-bottom: 24px;
 }
 
+.faq-contact-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.contact-email {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(29, 78, 216, 0.3);
+    transition: all 0.3s ease;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.contact-email:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(29, 78, 216, 0.4);
+}
+
+.contact-email i {
+    color: white;
+    font-size: 1.2rem;
+}
+
+.email-link {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.email-link:hover {
+    color: #fbbf24;
+    text-decoration: underline;
+}
+
 /* Cookie Banner */
 .cookie-consent-banner {
     position: fixed;
@@ -1194,6 +1238,16 @@ body {
     .cookie-consent-banner {
         flex-direction: column;
         text-align: center;
+    }
+    
+    .contact-email {
+        padding: 12px 16px;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .email-link {
+        font-size: 1rem;
     }
 }
 
