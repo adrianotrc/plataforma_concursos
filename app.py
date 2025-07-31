@@ -58,7 +58,9 @@ for plano in ['trial', 'basico', 'intermediario', 'premium']:
 
 def check_usage_and_update(user_id, feature):
     try:
-        today_str = datetime.utcnow().strftime('%Y-%m-%d')
+        # Usa horário de Brasília (UTC-3) para reset à meia-noite
+        brasilia_tz = timezone(timedelta(hours=-3))
+        today_str = datetime.now(brasilia_tz).strftime('%Y-%m-%d')
         user_ref = db.collection('users').document(user_id)
         user_doc = user_ref.get()
         if not user_doc.exists: return False, "Usuário não encontrado."
@@ -1581,7 +1583,9 @@ def delete_user_account():
 @cross_origin(supports_credentials=True)
 def get_usage_limits(user_id):
     try:
-        today_str = datetime.utcnow().strftime('%Y-%m-%d')
+        # Usa horário de Brasília (UTC-3) para reset à meia-noite
+        brasilia_tz = timezone(timedelta(hours=-3))
+        today_str = datetime.now(brasilia_tz).strftime('%Y-%m-%d')
         user_ref = db.collection('users').document(user_id)
         user_doc = user_ref.get()
 
@@ -1712,7 +1716,9 @@ def srs_update(card_doc, quality):
         ease = max(1.3, ease - 0.2)
         lapses += 1
 
-    next_review = datetime.utcnow() + timedelta(days=interval)
+    # Usa horário de Brasília para consistência
+    brasilia_tz = timezone(timedelta(hours=-3))
+    next_review = datetime.now(brasilia_tz) + timedelta(days=interval)
     return {
         'ease': ease,
         'interval': interval,
