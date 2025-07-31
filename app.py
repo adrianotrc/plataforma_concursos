@@ -108,6 +108,389 @@ def get_embedding(text, model="text-embedding-3-small"):
        print(f"ERRO ao gerar embedding para a busca: {e}")
        return None
 
+# --- FUNÇÕES DE PRÉ-PROCESSAMENTO MATEMÁTICO ---
+def preprocessar_estrutura_cronograma(dados_usuario):
+    """
+    Calcula estrutura matemática perfeita antes de enviar para IA
+    """
+    disponibilidade = dados_usuario['disponibilidade_semanal_minutos']
+    duracao_sessao = dados_usuario['duracao_sessao_minutos']
+    
+    estrutura_dias = {}
+    
+    for dia, tempo_total in disponibilidade.items():
+        # Calcula quantas sessões completas cabem
+        sessoes_completas = tempo_total // duracao_sessao
+        resto = tempo_total % duracao_sessao
+        
+        sessoes = []
+        # Adiciona sessões completas
+        for i in range(sessoes_completas):
+            sessoes.append({
+                'posicao': i + 1,
+                'duracao': duracao_sessao
+            })
+        
+        # Adiciona sessão de resto se houver
+        if resto > 0:
+            sessoes.append({
+                'posicao': len(sessoes) + 1,
+                'duracao': resto
+            })
+            
+        estrutura_dias[dia] = {
+            'tempo_total': tempo_total,
+            'sessoes_calculadas': sessoes,
+            'total_sessoes': len(sessoes)
+        }
+    
+    return estrutura_dias
+
+def extrair_materias_e_topicos(materias):
+    """
+    Extrai e formata matérias com seus tópicos específicos (OBRIGATÓRIOS) e configuração individual
+    """
+    materias_formatadas = []
+    
+    for materia in materias:
+        if isinstance(materia, dict):
+            nome_materia = materia.get('nome', '')
+            topicos_especificos = materia.get('topicos', [])
+            permitir_complementares = materia.get('permitir_topicos_complementares', True)
+            
+            if topicos_especificos and len(topicos_especificos) > 0:
+                # Matéria COM tópicos específicos
+                orientacao_complementar = "✅ Pode sugerir tópicos complementares" if permitir_complementares else "🚫 Use APENAS os tópicos especificados - PROIBIDO sugerir outros"
+                materias_formatadas.append(f"**{nome_materia}**:\n  🎯 TÓPICOS OBRIGATÓRIOS: {', '.join(topicos_especificos)}\n  📋 Tópicos complementares: {orientacao_complementar}")
+            else:
+                # Matéria SEM tópicos específicos
+                if permitir_complementares:
+                    materias_formatadas.append(f"**{nome_materia}**: 💡 SEJA ESPECÍFICO E DETALHADO! Use tópicos relevantes e específicos da matéria. EVITE termos genéricos como 'Fundamentos' ou 'Conceitos Básicos'. VARIE os tópicos e métodos em cada sessão.")
+                else:
+                    # Situação problemática: sem tópicos + proibido sugerir = ERRO!
+                    materias_formatadas.append(f"**{nome_materia}**: ⚠️ PROBLEMA: Nenhum tópico especificado mas proibido sugerir outros. Use tópicos mais básicos e fundamentais.")
+        elif isinstance(materia, str):
+            materias_formatadas.append(f"**{materia}**: 💡 SEJA ESPECÍFICO! Use tópicos relevantes e detalhados da matéria")
+    
+    return "\n".join(materias_formatadas) if materias_formatadas else "Nenhuma matéria especificada"
+
+def criar_orientacoes_por_fase(fase_concurso):
+    """
+    Cria orientações específicas baseadas na fase de preparação (FASES ATUAIS DO FORMULÁRIO)
+    """
+    orientacoes = {
+        "base_sem_edital_especifico": """
+**FASE EXPLORATÓRIA - Base Sem Edital Específico**
+- FOQUE em construir base sólida em todas as matérias fundamentais (70% teoria, 30% exercícios)
+- Use mais "Estudo de Teoria" e "Criação de Mapa Mental" para compreender conceitos
+- Priorize amplitude sobre profundidade - explore diferentes matérias
+- Use "Vídeoaulas" e "Leitura de PDFs" para formar base conceitual
+- Introduza exercícios básicos gradualmente para fixação""",
+        
+        "pre_edital_com_foco": """
+**FASE DE PREPARAÇÃO DIRECIONADA - Pré-Edital com Foco**
+- EQUILIBRE teoria direcionada e exercícios variados (50% teoria, 50% exercícios)
+- Use "Revisão com Autoexplicação" e "Exercícios de Fixação" para consolidar
+- Aprofunde conhecimentos específicos do cargo alvo usando edital anterior
+- Intensifique exercícios nas matérias de maior peso/dificuldade
+- Use "Flashcards" para memorização de pontos-chave""",
+        
+        "pos_edital_publicado": """
+**FASE DE RETA FINAL - Pós-Edital Publicado**
+- PRIORIZE exercícios e simulados intensivos (30% teoria, 70% exercícios)
+- Use mais "Resolução de Exercícios" e "Simulados" para simular condições reais
+- Foque APENAS nos tópicos específicos do edital publicado
+- Use "Revisão Focada" para revisar pontos identificados como fracos
+- Elimine tópicos não constantes no edital - seja estratégico"""
+    }
+    
+    return orientacoes.get(fase_concurso, """
+**ESTRATÉGIA PADRÃO**
+- Use uma abordagem equilibrada entre teoria e exercícios
+- Adapte conforme seu nível de conhecimento atual
+- Priorize consistência sobre intensidade""")
+
+def validar_topicos_obrigatorios(cronograma_gerado, materias_originais):
+    """
+    Valida se todos os tópicos obrigatórios especificados pelo usuário foram incluídos
+    """
+    topicos_obrigatorios = {}
+    topicos_encontrados = {}
+    
+    # Extrai tópicos obrigatórios das matérias originais
+    for materia in materias_originais:
+        if isinstance(materia, dict):
+            nome_materia = materia.get('nome', '')
+            topicos_especificos = materia.get('topicos', [])
+            if topicos_especificos:
+                topicos_obrigatorios[nome_materia] = set(topicos_especificos)
+                topicos_encontrados[nome_materia] = set()
+    
+    # Verifica quais tópicos foram incluídos no cronograma
+    if 'cronograma_semanal_detalhado' in cronograma_gerado:
+        for semana in cronograma_gerado['cronograma_semanal_detalhado']:
+            for dia in semana.get('dias_de_estudo', []):
+                for atividade in dia.get('atividades', []):
+                    materia = atividade.get('materia', '')
+                    topico = atividade.get('topico_sugerido', '')
+                    
+                    if materia in topicos_encontrados:
+                        topicos_encontrados[materia].add(topico)
+    
+    # Verifica quais tópicos estão faltando
+    topicos_faltando = {}
+    for materia, obrigatorios in topicos_obrigatorios.items():
+        encontrados = topicos_encontrados.get(materia, set())
+        faltando = obrigatorios - encontrados
+        if faltando:
+            topicos_faltando[materia] = list(faltando)
+    
+    return {
+        'validacao_aprovada': len(topicos_faltando) == 0,
+        'topicos_faltando': topicos_faltando,
+        'resumo': f"Validação: {'✅ Aprovada' if len(topicos_faltando) == 0 else '❌ Reprovada'} - {len(topicos_obrigatorios)} matérias com tópicos obrigatórios verificadas"
+    }
+
+def analisar_distribuicao_materias(materias, estrutura_dias):
+    """
+    Analisa se precisaremos repetir matérias e sugere estratégia
+    """
+    # Extrai nomes das matérias
+    nomes_materias = []
+    for materia in materias:
+        if isinstance(materia, dict):
+            nomes_materias.append(materia.get('nome', ''))
+        elif isinstance(materia, str):
+            nomes_materias.append(materia)
+    
+    total_materias = len(nomes_materias)
+    analise_por_dia = {}
+    
+    for dia, estrutura in estrutura_dias.items():
+        total_sessoes = estrutura['total_sessoes']
+        
+        if total_sessoes <= total_materias:
+            # Matérias suficientes, sem repetição necessária
+            estrategia = "sem_repeticao"
+            materias_sugeridas = nomes_materias[:total_sessoes]
+        else:
+            # Precisará repetir matérias
+            estrategia = "repeticao_necessaria"
+            # Distribui matérias de forma inteligente
+            materias_sugeridas = []
+            for i in range(total_sessoes):
+                materia_index = i % total_materias
+                materias_sugeridas.append(nomes_materias[materia_index])
+        
+        analise_por_dia[dia] = {
+            'estrategia': estrategia,
+            'materias_sugeridas': materias_sugeridas,
+            'total_sessoes': total_sessoes
+        }
+    
+    return analise_por_dia
+
+def criar_prompt_preenchimento(dados_usuario, estrutura_calculada, analise_materias, numero_de_semanas, tecnicas_preferidas_str):
+    """
+    Prompt focado em preenchimento, não em cálculos
+    """
+    
+    # Processa matérias com tópicos específicos (OBRIGATÓRIOS) - configuração individual por matéria
+    materias_detalhadas = extrair_materias_e_topicos(dados_usuario.get('materias', []))
+    
+    prompt = f"""Você é um especialista em criar cronogramas de estudo baseado na metodologia do 'Guia Definitivo de Aprovação'. 
+Sua tarefa é PREENCHER uma estrutura já calculada matematicamente.
+
+### ESTRUTURA PRÉ-CALCULADA PARA CADA DIA:
+{json.dumps(estrutura_calculada, indent=2, ensure_ascii=False)}
+
+### ANÁLISE DE DISTRIBUIÇÃO DE MATÉRIAS:
+{json.dumps(analise_materias, indent=2, ensure_ascii=False)}
+
+### DADOS COMPLETOS DO ALUNO:
+- Concurso: {dados_usuario.get('concurso_objetivo', 'Concurso Público')}
+- Fase de preparação: {dados_usuario.get('fase_concurso', 'Não informado')}
+- Técnicas preferidas: {dados_usuario.get('tecnicas_preferidas', [])}
+- Duração total: {numero_de_semanas} semanas
+- Dificuldades específicas: {dados_usuario.get('dificuldades_materias', 'Nenhuma informada')}
+
+### MATÉRIAS E TÓPICOS ESPECÍFICOS:
+{materias_detalhadas}
+
+### SUA TAREFA - PREENCHER CADA SESSÃO:
+Para cada sessão pré-calculada, você deve atribuir:
+1. MATÉRIA (use as sugeridas na análise)
+2. TÓPICO específico (OBRIGATÓRIO usar os tópicos listados pelo aluno)
+3. MÉTODO de estudo adequado à fase e técnicas preferidas
+
+### REGRAS DE PREENCHIMENTO:
+1. ✅ PODE repetir matérias quando necessário (se mais sessões que matérias)
+2. ✅ PODE usar tópicos diferentes da mesma matéria
+3. ✅ PODE usar métodos diferentes para a mesma matéria
+4. ❌ EVITE apenas: mesma matéria + mesmo tópico + mesmo método no mesmo dia
+5. 🎯 PRIORIZE variedade pedagógica e progressão natural
+6. 📚 DISTRIBUA matérias equilibradamente ao longo das semanas
+7. 🚨 **TÓPICOS OBRIGATÓRIOS**: Use TODOS os tópicos específicos listados pelo aluno
+8. ⚠️ **REGRAS INDIVIDUAIS**: Cada matéria tem sua própria regra sobre tópicos complementares - respeite rigorosamente
+9. 💡 **SEJA ESPECÍFICO**: NUNCA use termos genéricos como "Fundamentos" - sempre use tópicos específicos
+10. 🔄 **VARIE SEMPRE**: Para matérias repetidas, use tópicos e métodos diferentes
+11. 📅 **FASE DE PREPARAÇÃO**: Adapte a intensidade e métodos conforme a fase do aluno
+{tecnicas_preferidas_str}
+
+### ORIENTAÇÕES POR FASE DE PREPARAÇÃO:
+{criar_orientacoes_por_fase(dados_usuario.get('fase_concurso', 'Não informado'))}
+
+### MÉTODOS DISPONÍVEIS:
+- Estudo de Teoria
+- Resolução de Exercícios  
+- Revisão com Autoexplicação
+- Criação de Mapa Mental
+- Leitura de Lei Seca
+
+### INSTRUÇÕES CRÍTICAS PARA CRIATIVIDADE E ESPECIFICIDADE:
+
+**🚨 REGRA FUNDAMENTAL: SEJA ESPECÍFICO, NÃO GENÉRICO**
+
+**❌ NUNCA USE (tópicos genéricos):**
+- "Fundamentos de [matéria]"
+- "Conceitos Básicos"
+- "Noções Gerais" 
+- "Introdução à [matéria]"
+
+**✅ SEMPRE USE (tópicos específicos):**
+- Para Raciocínio Lógico: "Lógica Proposicional", "Análise Combinatória", "Sequências Lógicas"
+- Para Português: "Concordância Verbal", "Regência Nominal", "Crase"
+- Para Dir. Constitucional: "Direitos Fundamentais", "Poder Executivo", "Controle de Constitucionalidade"
+- Para Dir. Administrativo: "Atos Administrativos", "Licitações", "Agentes Públicos"
+
+**🔄 VARIAÇÃO OBRIGATÓRIA:**
+- Se uma matéria aparece múltiplas vezes, use tópicos DIFERENTES
+- Se repetir matéria + tópico, use método DIFERENTE
+- Exemplo: "Lógica Proposicional" + "Teoria", depois "Análise Combinatória" + "Exercícios"
+
+**📚 MÉTODOS VARIADOS:**
+- Estudo de Teoria
+- Resolução de Exercícios  
+- Exercícios de Fixação
+- Revisão com Autoexplicação
+- Criação de Mapa Mental
+- Leitura de Lei Seca
+- Simulados
+- Vídeoaulas
+
+**🎯 PARA TÓPICOS OBRIGATÓRIOS:**
+Se especificado "Artigo 5º" → "Artigo 5º - Direitos e Deveres Individuais"
+Se especificado "Concordância" → "Concordância Verbal e Nominal"
+
+### FORMATO DE SAÍDA - ESTRUTURA EXATA:
+{{
+  "plano_de_estudos": {{
+    "concurso_foco": "{dados_usuario.get('concurso_objetivo', 'Concurso Público')}",
+    "resumo_estrategico": "Explicação da lógica aplicada no cronograma, incluindo como foram priorizados os tópicos específicos e adaptações para a fase de preparação",
+    "cronograma_semanal_detalhado": [
+      {{
+        "semana_numero": 1,
+        "dias_de_estudo": [
+          {{
+            "dia_semana": "Domingo",
+            "atividades": [
+              {{
+                "materia": "Nome da Matéria",
+                "topico_sugerido": "Use tópicos prioritários listados pelo aluno quando disponíveis", 
+                "tipo_de_estudo": "Método adequado à fase e técnicas preferidas",
+                "duracao_minutos": [duração exata calculada]
+              }}
+            ]
+          }}
+        ]
+      }}
+    ]
+  }}
+}}
+
+IMPORTANTE: 
+- Use EXATAMENTE as durações calculadas na estrutura pré-calculada
+- NÃO FAÇA CÁLCULOS matemáticos
+- PREENCHA {numero_de_semanas} semanas completas
+- Use TODOS os dias da estrutura calculada
+- Retorne APENAS JSON válido"""
+    
+    return prompt
+
+def validar_cronograma_matematicamente(plano_gerado, dados_originais):
+    """
+    Verifica se IA respeitou os cálculos matemáticos
+    """
+    erros = []
+    disponibilidade_original = dados_originais['disponibilidade_semanal_minutos']
+    
+    for semana in plano_gerado.get('cronograma_semanal_detalhado', []):
+        for dia_estudo in semana.get('dias_de_estudo', []):
+            dia_nome = dia_estudo['dia_semana']
+            
+            if dia_nome not in disponibilidade_original:
+                erros.append(f"Dia '{dia_nome}' não estava na disponibilidade original")
+                continue
+                
+            tempo_esperado = disponibilidade_original[dia_nome]
+            tempo_calculado = sum(ativ['duracao_minutos'] for ativ in dia_estudo.get('atividades', []))
+            
+            if tempo_calculado != tempo_esperado:
+                erros.append(f"{dia_nome}: Esperado {tempo_esperado}min, calculado {tempo_calculado}min")
+    
+    return erros
+
+def auto_corrigir_cronograma(plano_gerado, dados_originais):
+    """
+    Corrige automaticamente problemas matemáticos simples
+    """
+    disponibilidade = dados_originais['disponibilidade_semanal_minutos']
+    duracao_sessao = dados_originais['duracao_sessao_minutos']
+    
+    for semana in plano_gerado.get('cronograma_semanal_detalhado', []):
+        for dia_estudo in semana.get('dias_de_estudo', []):
+            dia_nome = dia_estudo['dia_semana']
+            if dia_nome not in disponibilidade:
+                continue
+                
+            tempo_esperado = disponibilidade[dia_nome]
+            atividades = dia_estudo.get('atividades', [])
+            
+            # Recalcula durações se necessário
+            tempo_atual = sum(ativ['duracao_minutos'] for ativ in atividades)
+            
+            if tempo_atual != tempo_esperado:
+                print(f"Auto-corrigindo {dia_nome}: {tempo_atual}min → {tempo_esperado}min")
+                # Aplica correção automática
+                sessoes_completas = tempo_esperado // duracao_sessao
+                resto = tempo_esperado % duracao_sessao
+                
+                # Ajusta atividades existentes
+                for i, atividade in enumerate(atividades):
+                    if i < sessoes_completas:
+                        atividade['duracao_minutos'] = duracao_sessao
+                    elif i == sessoes_completas and resto > 0:
+                        atividade['duracao_minutos'] = resto
+                
+                # Remove atividades extras se houver
+                expected_activities = sessoes_completas + (1 if resto > 0 else 0)
+                dia_estudo['atividades'] = atividades[:expected_activities]
+    
+    return plano_gerado
+
+def adicionar_sessao_ids(plano_gerado):
+    """
+    Adiciona sessaoId único para cada atividade (compatibilidade com progresso)
+    """
+    import uuid
+    
+    for semana in plano_gerado.get('cronograma_semanal_detalhado', []):
+        for dia_estudo in semana.get('dias_de_estudo', []):
+            for atividade in dia_estudo.get('atividades', []):
+                atividade['sessaoId'] = str(uuid.uuid4())
+    
+    return plano_gerado
+
 # --- Função de Trabalho em Segundo Plano ---
 def processar_plano_em_background(user_id, job_id, dados_usuario):
     print(f"BACKGROUND JOB INICIADO: {job_id} para usuário {user_id}")
@@ -213,6 +596,125 @@ def processar_plano_em_background(user_id, job_id, dados_usuario):
         traceback.print_exc()
         job_ref.update({
             'status': 'failed', 
+            'error': str(e)
+        })
+
+def processar_plano_em_background_v2(user_id, job_id, dados_usuario):
+    """
+    Versão melhorada com pré-processamento e validação
+    """
+    print(f"BACKGROUND JOB V2 INICIADO: {job_id} para usuário {user_id}")
+    job_ref = db.collection('users').document(user_id).collection('plans').document(job_id)
+    
+    try:
+        # Lógica de cálculo de semanas (mantida)
+        numero_de_semanas = 4
+        data_inicio_str = dados_usuario.get('data_inicio')
+        data_termino_str = dados_usuario.get('data_termino')
+        if data_inicio_str and data_termino_str:
+            try:
+                data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+                data_termino = datetime.strptime(data_termino_str, '%Y-%m-%d')
+                if data_termino > data_inicio:
+                    diferenca_dias = (data_termino - data_inicio).days
+                    numero_de_semanas = math.ceil((diferenca_dias + 1) / 7)
+            except ValueError:
+                numero_de_semanas = 4
+        
+        # Processa técnicas preferidas
+        tecnicas_preferidas_str = ""
+        if dados_usuario.get('tecnicas_preferidas') and len(dados_usuario['tecnicas_preferidas']) > 0:
+            tecnicas_list = ", ".join(dados_usuario['tecnicas_preferidas'])
+            tecnicas_preferidas_str = f"\n7. **TÉCNICAS PREFERIDAS:** O aluno indicou preferência por: {tecnicas_list}. PRIORIZE essas técnicas sempre que possível."
+        
+        # 1. PRÉ-PROCESSAMENTO MATEMÁTICO
+        print(f"Iniciando pré-processamento para {len(dados_usuario.get('materias', []))} matérias...")
+        estrutura_calculada = preprocessar_estrutura_cronograma(dados_usuario)
+        analise_materias = analisar_distribuicao_materias(dados_usuario.get('materias', []), estrutura_calculada)
+        
+        print(f"Estrutura calculada: {estrutura_calculada}")
+        print(f"Análise de matérias: {analise_materias}")
+        
+        # 2. PROMPT FOCADO EM PREENCHIMENTO
+        prompt = criar_prompt_preenchimento(dados_usuario, estrutura_calculada, analise_materias, numero_de_semanas, tecnicas_preferidas_str)
+        system_message = "Você preenche estruturas de cronograma pré-calculadas com conteúdo pedagógico inteligente. Retorne apenas JSON válido."
+        
+        # 3. CHAMADA DA IA
+        print("Enviando estrutura pré-calculada para IA...")
+        resultado_ia = call_openai_api(prompt, system_message)
+        
+        if 'plano_de_estudos' not in resultado_ia:
+            raise ValueError("A resposta da IA não continha a estrutura de plano esperada.")
+        
+        plano_gerado = resultado_ia['plano_de_estudos']
+        
+        # 4. VALIDAÇÃO MATEMÁTICA
+        erros = validar_cronograma_matematicamente(plano_gerado, dados_usuario)
+        
+        # 5. AUTO-CORREÇÃO SE NECESSÁRIO
+        if erros:
+            print(f"⚠️ Erros detectados: {erros}. Aplicando auto-correção...")
+            plano_gerado = auto_corrigir_cronograma(plano_gerado, dados_usuario)
+            # Valida novamente após correção
+            erros_pos_correcao = validar_cronograma_matematicamente(plano_gerado, dados_usuario)
+            if erros_pos_correcao:
+                print(f"⚠️ Erros persistem após correção: {erros_pos_correcao}")
+            else:
+                print("✅ Cronograma corrigido com sucesso!")
+        else:
+            print("✅ Cronograma gerado corretamente na primeira tentativa!")
+        
+        # 6. ADICIONA SESSAO IDS PARA COMPATIBILIDADE
+        plano_final = adicionar_sessao_ids(plano_gerado)
+        
+        # 7. VERIFICAÇÃO DE MATÉRIAS (mantida para compatibilidade)
+        materias_solicitadas_raw = dados_usuario.get('materias', [])
+        materias_solicitadas = set()
+        
+        for materia_data in materias_solicitadas_raw:
+            if isinstance(materia_data, dict):
+                materias_solicitadas.add(materia_data.get('nome', ''))
+            elif isinstance(materia_data, str):
+                materias_solicitadas.add(materia_data)
+        
+        materias_incluidas = set()
+        for semana in plano_final.get('cronograma_semanal_detalhado', []):
+            for dia in semana.get('dias_de_estudo', []):
+                for atividade in dia.get('atividades', []):
+                    if atividade.get('materia'):
+                        materias_incluidas.add(atividade['materia'])
+        
+        materias_faltando = materias_solicitadas - materias_incluidas
+        if materias_faltando:
+            print(f"⚠️ AVISO: Matérias não incluídas no cronograma: {materias_faltando}")
+            if 'resumo_estrategico' in plano_final:
+                plano_final['resumo_estrategico'] += f" NOTA: As seguintes matérias precisam ser incluídas em futuras revisões: {', '.join(materias_faltando)}."
+        
+        # 7.5. VALIDAÇÃO DE TÓPICOS OBRIGATÓRIOS
+        validacao_topicos = validar_topicos_obrigatorios(plano_final, materias_solicitadas_raw)
+        print(f"📋 {validacao_topicos['resumo']}")
+        
+        if not validacao_topicos['validacao_aprovada']:
+            print(f"❌ TÓPICOS OBRIGATÓRIOS FALTANDO: {validacao_topicos['topicos_faltando']}")
+            if 'resumo_estrategico' in plano_final:
+                plano_final['resumo_estrategico'] += f" IMPORTANTE: Este cronograma pode precisar de ajustes para incluir todos os tópicos obrigatórios especificados pelo usuário."
+        
+        # 8. PRESERVA CAMPOS ORIGINAIS (COMPATIBILIDADE TOTAL)
+        plano_final['status'] = 'completed'
+        plano_final['fase_concurso'] = dados_usuario.get('fase_concurso')
+        plano_final['disponibilidade_semanal_minutos'] = dados_usuario.get('disponibilidade_semanal_minutos')
+        plano_final['duracao_sessao_minutos'] = dados_usuario.get('duracao_sessao_minutos', 25)
+        plano_final['tecnicas_preferidas'] = dados_usuario.get('tecnicas_preferidas', [])
+        
+        # 9. SALVA RESULTADO
+        job_ref.update(plano_final)
+        print(f"✅ BACKGROUND JOB V2 CONCLUÍDO: {job_id}")
+        
+    except Exception as e:
+        print(f"!!! ERRO NO BACKGROUND JOB V2 {job_id}: {e} !!!")
+        traceback.print_exc()
+        job_ref.update({
+            'status': 'failed',
             'error': str(e)
         })
 
@@ -435,7 +937,7 @@ def gerar_plano_iniciar_job():
     }
     job_ref.set(placeholder_data)
 
-    thread = threading.Thread(target=processar_plano_em_background, args=(user_id, job_id, dados_usuario))
+    thread = threading.Thread(target=processar_plano_em_background_v2, args=(user_id, job_id, dados_usuario))
     thread.start()
 
     return jsonify({"status": "processing", "jobId": job_id}), 202

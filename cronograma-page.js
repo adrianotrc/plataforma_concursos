@@ -936,7 +936,7 @@ formCronograma?.addEventListener('submit', async (e) => {
         userId: user.uid,
         concurso_objetivo: document.getElementById('concurso-objetivo').value,
         fase_concurso: document.getElementById('fase-concurso').value,
-        materias: materiasConfiguradas, // Nova estrutura com tópicos
+        materias: materiasConfiguradas, // Nova estrutura com tópicos E configuração individual
         tecnicas_preferidas: tecnicasPreferidas,
         disponibilidade_semanal_minutos: disponibilidade,
         duracao_sessao_minutos: parseInt(document.getElementById('duracao-sessao-estudo').value),
@@ -1758,10 +1758,17 @@ function criarCardMateria(materia) {
     card.innerHTML = `
         <div class="materia-header">
             <h4>${materia}</h4>
-            <label class="toggle">
-                <input type="checkbox" checked>
-                <span class="slider"></span>
-            </label>
+            <div class="toggle-container">
+                <label class="toggle-label">A IA pode sugerir tópicos complementares?</label>
+                <div class="toggle-with-labels">
+                    <span class="toggle-side-label toggle-no">Não</span>
+                    <label class="toggle">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-side-label toggle-yes">Sim</span>
+                </div>
+            </div>
         </div>
         <div class="topicos-container">
             ${topicos.length > 0 ? `
@@ -1787,6 +1794,29 @@ function criarCardMateria(materia) {
             <div class="topicos-personalizados-lista"></div>
         </div>
     `;
+    
+    // Adiciona lógica para atualizar as labels do toggle
+    const toggleInput = card.querySelector('.toggle input');
+    const labelNo = card.querySelector('.toggle-side-label.toggle-no');
+    const labelYes = card.querySelector('.toggle-side-label.toggle-yes');
+    
+    function updateToggleLabels() {
+        if (toggleInput.checked) {
+            // Toggle ON = "Sim" ativo
+            labelNo.classList.remove('active-no');
+            labelYes.classList.add('active-yes');
+        } else {
+            // Toggle OFF = "Não" ativo  
+            labelYes.classList.remove('active-yes');
+            labelNo.classList.add('active-no');
+        }
+    }
+    
+    // Aplica estado inicial
+    updateToggleLabels();
+    
+    // Adiciona listener para mudanças
+    toggleInput.addEventListener('change', updateToggleLabels);
     
     return card;
 }
@@ -2103,24 +2133,25 @@ function capturarMateriasComTopicos() {
     materiasSelecionadas.forEach(materia => {
         const materiaCard = document.querySelector(`.materia-card[data-materia="${materia}"]`);
         if (materiaCard) {
-            const ativa = materiaCard.querySelector('.toggle input').checked;
-            if (ativa) {
-                const topicos = [];
-                
-                // Captura tópicos pré-definidos selecionados
-                const topicosPredefinidos = materiaCard.querySelectorAll('.topicos-predefinidos input:checked');
-                topicosPredefinidos.forEach(cb => topicos.push(cb.value));
-                
-                // Captura tópicos personalizados (checkboxes marcados)
-                const topicosPersonalizados = materiaCard.querySelectorAll('.topico-personalizado input:checked');
-                topicosPersonalizados.forEach(cb => topicos.push(cb.value));
-                
-                materiasConfiguradas.push({
-                    nome: materia,
-                    ativa: true,
-                    topicos: topicos
-                });
-            }
+            // Captura configuração de tópicos complementares (o toggle individual)
+            const permitirTopicosComplementares = materiaCard.querySelector('.toggle input').checked;
+            
+            const topicos = [];
+            
+            // Captura tópicos pré-definidos selecionados
+            const topicosPredefinidos = materiaCard.querySelectorAll('.topicos-predefinidos input:checked');
+            topicosPredefinidos.forEach(cb => topicos.push(cb.value));
+            
+            // Captura tópicos personalizados (checkboxes marcados)
+            const topicosPersonalizados = materiaCard.querySelectorAll('.topico-personalizado input:checked');
+            topicosPersonalizados.forEach(cb => topicos.push(cb.value));
+            
+            materiasConfiguradas.push({
+                nome: materia,
+                ativa: true,
+                topicos: topicos,
+                permitir_topicos_complementares: permitirTopicosComplementares
+            });
         }
     });
     

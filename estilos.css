@@ -81,3 +81,78 @@ a:hover {
     margin-right: 10px;
     font-weight: normal; /* Para não ficar negrito como os labels principais */
 }
+
+/* === ESTILOS PARA INTERFACE DE TÓPICOS COMPLEMENTARES === */
+.toggle-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: flex-end !important;
+    min-width: 220px !important;
+}
+
+.toggle-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: normal;
+    margin: 0;
+    margin-bottom: 4px;
+}
+
+.toggle-with-labels {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    flex-direction: row !important;
+    width: 100% !important;
+}
+
+.toggle-side-label {
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    user-select: none !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+}
+
+/* Garante que o toggle não quebre o flexbox */
+.toggle-with-labels .toggle {
+    margin: 0 !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+}
+
+/* Estado padrão das labels - ambas neutras */
+.toggle-side-label {
+    color: #9ca3af !important;
+}
+
+/* Classes dinâmicas que serão aplicadas via JavaScript */
+.toggle-side-label.active-yes {
+    color: #10b981 !important;
+    font-weight: 600 !important;
+}
+
+.toggle-side-label.active-no {
+    color: #ef4444 !important;
+    font-weight: 600 !important;
+}
+
+.materia-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.materia-header h4 {
+    margin: 0;
+    flex: 1;
+    font-size: 1.1rem;
+    color: #1f2937;
+}
