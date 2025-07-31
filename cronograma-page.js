@@ -113,7 +113,9 @@ function calcularMetricasPlano(plano) {
         const dataInicio = new Date(plano.data_inicio);
         const dataTermino = new Date(plano.data_termino);
         const diasPeriodo = Math.ceil((dataTermino - dataInicio) / (1000 * 60 * 60 * 24)) + 1;
-        periodoTexto = `${plano.data_inicio} a ${plano.data_termino} (${diasPeriodo} dias)`;
+        const dataInicioFormatada = new Date(plano.data_inicio).toLocaleDateString('pt-BR');
+        const dataTerminoFormatada = new Date(plano.data_termino).toLocaleDateString('pt-BR');
+        periodoTexto = `${dataInicioFormatada} a ${dataTerminoFormatada} (${diasPeriodo} dias)`;
     }
 
     // Calcular tempo semanal - CORREÇÃO
@@ -309,18 +311,25 @@ function renderizarHistorico(planos) {
         const hasFailed = plano.status === 'failed';
         let subtexto = `Gerado em: ${dataFormatada}`;
         if (plano.data_inicio && plano.data_termino) {
-             subtexto += ` | Período: ${plano.data_inicio} a ${plano.data_termino}`;
+            const dataInicioFormatada = new Date(plano.data_inicio).toLocaleDateString('pt-BR');
+            const dataTerminoFormatada = new Date(plano.data_termino).toLocaleDateString('pt-BR');
+            subtexto += ` | Período: ${dataInicioFormatada} a ${dataTerminoFormatada}`;
         }
         let statusIcon = '';
+        let statusText = '';
         if (isProcessing) {
             statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
+            statusText = '<span class="status-text status-elaboracao">Em elaboração</span>';
         } else if (hasFailed) {
             statusIcon = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
+            statusText = '<span class="status-text status-falhou">Falhou</span>';
+        } else {
+            statusText = '<span class="status-text status-disponivel">Disponível</span>';
         }
         return `
             <div class="plano-item">
                 <div>
-                    <h3>${plano.concurso_foco || 'Plano de Estudos'} ${statusIcon}</h3>
+                    <h3>${plano.concurso_foco || 'Plano de Estudos'} ${statusIcon} ${statusText}</h3>
                     <p>${subtexto}</p>
                 </div>
                 <div class="plano-actions">
@@ -464,8 +473,7 @@ function exibirPlanoNaTela(plano) {
     setTimeout(() => {
         const containerRefinamento = document.getElementById('container-refinamento');
         if (containerRefinamento) {
-            console.log('Container criado, display inicial:', containerRefinamento.style.display);
-            console.log('Container tem data-debug?', containerRefinamento.hasAttribute('data-debug'));
+            
         }
     }, 50);
 }
@@ -589,7 +597,7 @@ formCronograma?.addEventListener('submit', async (e) => {
     const tecnicasPreferidas = [...document.querySelectorAll('#tecnicas-checkbox-container input:checked')].map(cb => cb.value);
     
     // Debug temporário - remover depois
-    console.log('Técnicas preferidas selecionadas:', tecnicasPreferidas);
+    
     
     const disponibilidade = {};
     document.querySelectorAll('.dias-semana-grid .dia-horario-item').forEach(item => {
@@ -633,7 +641,7 @@ formCronograma?.addEventListener('submit', async (e) => {
         
     };
     // Usa o novo sistema de processamento
-    console.log('Verificando processingUI antes do uso:', window.processingUI);
+    
     if (!window.processingUI) {
         showToast("Erro: Sistema de processamento não disponível.", "error");
         return;
@@ -740,10 +748,8 @@ document.body.addEventListener('click', async (e) => {
       }
     } else if (refinarBtn) {
         // Removido - conflito com o event listener separado
-        console.log('Event listener duplicado detectado - ignorando');
     } else if (cancelarRefinamentoBtn) {
         // Removido - conflito com o event listener separado
-        console.log('Event listener duplicado detectado - ignorando');
     } else if (exportarBtn) {
         exportarPlanoParaExcel();
     } else if (fecharBtn) {
@@ -1131,10 +1137,10 @@ async function carregarMetricasProgresso(planoId) {
             progressoPorcentagem.textContent = `${metricasProgresso.porcentagemConclusao}%`;
         }
         
-        // Gera o gráfico de progresso de forma assíncrona
-        setTimeout(() => {
+        // Gera o gráfico de progresso de forma assíncrona com prioridade baixa
+        requestIdleCallback(() => {
             gerarGraficoProgresso(planoId);
-        }, 100);
+        }, { timeout: 2000 });
         
     } catch (error) {
         console.error('Erro ao carregar métricas de progresso:', error);

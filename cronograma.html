@@ -240,7 +240,6 @@
     <script type="module" src="main-app.js"></script>
     <script type="module" src="api.js"></script>
     <script src="processing-ui.js"></script>
-    <script src="debug-processing.js"></script>
     <script type="module" src="cronograma-page.js"></script>
     <script src="confirmation-modal.js"></script>
     <style>
@@ -298,6 +297,29 @@
         .opcao-refinamento label small {
             color: #6b7280;
             font-size: 0.85em;
+        }
+        
+        .status-text {
+            font-size: 0.85em;
+            font-weight: 500;
+            margin-left: 8px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        .status-elaboracao {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-disponivel {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-falhou {
+            background-color: #fee2e2;
+            color: #dc2626;
         }
     </style>
 </body>
