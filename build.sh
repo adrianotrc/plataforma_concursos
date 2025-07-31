@@ -2,13 +2,14 @@
 # exit on error
 set -o errexit
 
+echo "🚀 Iniciando build..."
+
 # Atualiza o pip para garantir compatibilidade
+echo "📦 Atualizando pip..."
 pip install --upgrade pip
 
-# Instala todas as dependências do projeto
-pip install -r requirements.txt
+# Instala dependências com cache otimizado
+echo "📦 Instalando dependências..."
+pip install --no-cache-dir -r requirements.txt
 
-# Executa o collectstatic do Django, uma boa prática para apps web,
-# embora não seja estritamente necessário para o Flask, não causa mal.
-# Se houver um manage.py, ele tentará rodar, senão, apenas continuará.
-# python manage.py collectstatic --no-input
+echo "✅ Build concluído com sucesso!"
