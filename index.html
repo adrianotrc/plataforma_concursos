@@ -42,6 +42,7 @@
                 <a href="#sobre">Sobre</a>
                 <button class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
             </nav>
+            <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
         </div>
     </header>
 
@@ -452,13 +453,48 @@
 
     <script>
         // Mobile menu toggle (JavaScript vanilla específico para esta página)
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const mobileNav = document.getElementById('mobileNav');
-        if (mobileMenuBtn && mobileNav) {
-            mobileMenuBtn.addEventListener('click', () => {
-                mobileNav.classList.toggle('show');
-            });
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileNav = document.getElementById('mobileNav');
+            const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+            const body = document.body;
+            
+            console.log('Menu mobile elements:', { mobileMenuBtn, mobileNav, mobileMenuOverlay }); // Debug
+            
+            if (mobileMenuBtn && mobileNav) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    console.log('Menu button clicked'); // Debug
+                    mobileNav.classList.toggle('show');
+                    if (mobileMenuOverlay) {
+                        mobileMenuOverlay.classList.toggle('show');
+                    }
+                    body.style.overflow = mobileNav.classList.contains('show') ? 'hidden' : '';
+                    console.log('Menu state:', mobileNav.classList.contains('show')); // Debug
+                });
+                
+                // Fecha menu ao clicar no overlay
+                if (mobileMenuOverlay) {
+                    mobileMenuOverlay.addEventListener('click', () => {
+                        mobileNav.classList.remove('show');
+                        mobileMenuOverlay.classList.remove('show');
+                        body.style.overflow = '';
+                    });
+                }
+                
+                // Fecha menu ao clicar em um link
+                mobileNav.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', () => {
+                        mobileNav.classList.remove('show');
+                        if (mobileMenuOverlay) {
+                            mobileMenuOverlay.classList.remove('show');
+                        }
+                        body.style.overflow = '';
+                    });
+                });
+            } else {
+                console.error('Menu mobile elements not found:', { mobileMenuBtn, mobileNav });
+            }
+        });
     </script>
     <div id="cookie-banner" class="cookie-consent-banner">
         <p>Nós utilizamos cookies essenciais e de preferência para garantir o melhor funcionamento da nossa plataforma. Ao continuar, você concorda com a nossa <a href="privacidade.html" target="_blank">Política de Privacidade</a>.</p>

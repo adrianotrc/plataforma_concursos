@@ -118,6 +118,20 @@ body {
     font-size: 1.5rem;
     color: #374151;
     cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    z-index: 1001;
+    position: relative;
+}
+
+.mobile-menu-btn:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: #1d4ed8;
+}
+
+.mobile-menu-btn:active {
+    transform: scale(0.95);
 }
 
 .nav-mobile {
@@ -126,10 +140,66 @@ body {
     gap: 16px;
     padding: 20px 0;
     border-top: 1px solid #e5e7eb;
+    background: #fff;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    animation: slideDown 0.3s ease-out;
 }
 
 .nav-mobile.show {
     display: flex;
+}
+
+.nav-mobile a {
+    color: #374151;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.nav-mobile a:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: #1d4ed8;
+}
+
+.nav-mobile .btn {
+    margin: 8px 20px;
+    width: calc(100% - 40px);
+}
+
+.mobile-menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mobile-menu-overlay.show {
+    display: block;
+    opacity: 1;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Hero Section */
