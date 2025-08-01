@@ -1680,9 +1680,6 @@ body.dark-mode .modal-content p {
 /* Estilos para a tabela de métricas */
 .metricas-table {
     width: 100%;
-}
-
-.metricas-table {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
@@ -1691,6 +1688,7 @@ body.dark-mode .modal-content p {
 .metricas-table table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 0; /* Permite que a tabela encolha */
 }
 
 .metricas-table tr {
@@ -1709,6 +1707,8 @@ body.dark-mode .modal-content p {
 .metricas-table td {
     padding: 10px 12px;
     vertical-align: top;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .metric-label {
@@ -1718,13 +1718,15 @@ body.dark-mode .modal-content p {
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 120px;
+    min-width: 0;
+    flex-shrink: 0;
 }
 
 .metric-label i {
     width: 16px;
     color: #6b7280;
     font-size: 0.875rem;
+    flex-shrink: 0;
 }
 
 .metric-value {
@@ -1732,6 +1734,9 @@ body.dark-mode .modal-content p {
     color: #1f2937;
     font-size: 0.875rem;
     line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
 }
 
 .metric-subtitle {
@@ -1739,6 +1744,7 @@ body.dark-mode .modal-content p {
     color: #6b7280;
     font-size: 0.75rem;
     margin-left: 4px;
+    display: inline-block;
 }
 
 /* Estilos para a seção de progresso */
@@ -2062,6 +2068,7 @@ body.dark-mode .modal-content p {
     .metricas-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 12px;
     }
     
     .cronograma-selector {
@@ -2075,6 +2082,183 @@ body.dark-mode .modal-content p {
     
     .metricas-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .metrica-item {
+        padding: 12px;
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+    
+    .metrica-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    
+    .metrica-content {
+        text-align: center;
+    }
+    
+    .metrica-label {
+        font-size: 0.875rem;
+        margin-bottom: 4px;
+    }
+    
+    .metrica-value {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .metrica-subtitle {
+        font-size: 0.75rem;
+    }
+    
+    /* Responsividade específica para tabela de métricas */
+    .metricas-table {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .metricas-table table {
+        width: 100%;
+    }
+    
+    .metricas-table td {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .metric-label {
+        font-size: 0.8rem;
+        min-width: 0;
+        flex-wrap: wrap;
+    }
+    
+    .metric-value {
+        font-size: 0.8rem;
+        word-break: break-word;
+    }
+    
+    .metric-subtitle {
+        font-size: 0.7rem;
+        display: block;
+        margin-left: 0;
+        margin-top: 2px;
+    }
+}
+
+@media (max-width: 480px) {
+    .metricas-cronograma-card {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .metricas-header h3 {
+        font-size: 1.125rem;
+    }
+    
+    .cronograma-selector label {
+        font-size: 0.8rem;
+    }
+    
+    .cronograma-selector select {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+    }
+    
+    .metrica-item {
+        padding: 10px;
+    }
+    
+    .metrica-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.875rem;
+    }
+    
+    .metrica-label {
+        font-size: 0.8rem;
+    }
+    
+    .metrica-value {
+        font-size: 0.9rem;
+    }
+    
+    .metrica-subtitle {
+        font-size: 0.7rem;
+    }
+    
+    /* Responsividade específica para tabela de métricas em celulares */
+    .metricas-table {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .metricas-table table {
+        width: 100%;
+        font-size: 0.75rem;
+    }
+    
+    .metricas-table td {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+    }
+    
+    .metric-label {
+        font-size: 0.75rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        min-width: 0;
+    }
+    
+    .metric-label i {
+        font-size: 0.75rem;
+    }
+    
+    .metric-value {
+        font-size: 0.75rem;
+        word-break: break-word;
+        line-height: 1.3;
+    }
+    
+    .metric-subtitle {
+        font-size: 0.65rem;
+        display: block;
+        margin-left: 0;
+        margin-top: 2px;
+        line-height: 1.2;
+    }
+}
+
+@media (max-width: 360px) {
+    .metricas-cronograma-card {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .metricas-table {
+        gap: 8px;
+    }
+    
+    .metricas-table td {
+        padding: 4px 6px;
+        font-size: 0.7rem;
+    }
+    
+    .metric-label {
+        font-size: 0.7rem;
+    }
+    
+    .metric-value {
+        font-size: 0.7rem;
+    }
+    
+    .metric-subtitle {
+        font-size: 0.6rem;
     }
 }
 

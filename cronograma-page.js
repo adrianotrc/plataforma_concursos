@@ -755,60 +755,204 @@ function exportarPlanoParaExcel() {
         return;
     }
 
-    const plano = planoAbertoAtual;
-    const wb = XLSX.utils.book_new();
-    const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00Z') : new Date();
-    let dataCorrente = new Date(dataInicioPlano);
-    dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay());
-    const diasDaSemanaOrdenados = ["Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"];
-
-    plano.cronograma_semanal_detalhado.forEach(semana => {
-        const dadosPlanilha = [];
-        const atividadesPorDia = (semana.dias_de_estudo || []).reduce((acc, dia) => {
-            const diaSemanaCorrigido = dia.dia_semana.endsWith(" Feira") ? dia.dia_semana.split(" ")[0] : dia.dia_semana;
-            acc[diaSemanaCorrigido] = (dia.atividades || []).map(atv =>
-                `${atv.materia || ''}\n${atv.topico_sugerido || ''}\n${atv.tipo_de_estudo || ''} (${atv.duracao_minutos} min)`
-            );
-            return acc;
-        }, {});
+    try {
+        const plano = planoAbertoAtual;
+        const wb = XLSX.utils.book_new();
         
-        const maxAtividades = Math.max(0, ...Object.values(atividadesPorDia).map(arr => arr.length));
-        const diaHeaderRow = [];
-        const dataHeaderRow = [];
-        diasDaSemanaOrdenados.forEach((dia, index) => {
-            const dataDoDia = new Date(dataCorrente);
-            dataDoDia.setDate(dataCorrente.getDate() + index);
-            diaHeaderRow.push(dia);
-            dataHeaderRow.push(dataDoDia.toLocaleDateString('pt-BR'));
-        });
-
-        dadosPlanilha.push(diaHeaderRow);
-        dadosPlanilha.push(dataHeaderRow);
+        // Configuração de data
+        const dataInicioPlano = plano.data_inicio ? new Date(plano.data_inicio + 'T00:00:00Z') : new Date();
+        let dataCorrente = new Date(dataInicioPlano);
+        dataCorrente.setDate(dataCorrente.getDate() - dataCorrente.getDay());
+        const diasDaSemanaOrdenados = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
         
-        for (let i = 0; i < maxAtividades; i++) {
-            const atividadeRow = [];
-            diasDaSemanaOrdenados.forEach(dia => {
-                atividadeRow.push(atividadesPorDia[dia]?.[i] || "");
+        // Processar cada semana
+        plano.cronograma_semanal_detalhado.forEach(semana => {
+            const dadosPlanilha = [];
+            
+            // Cabeçalho com informações
+            dadosPlanilha.push(["IAprovas - Plataforma de Estudos Inteligente"]);
+            dadosPlanilha.push([`Plano de Estudos: ${plano.concurso_foco || 'Concurso Público'}`]);
+            dadosPlanilha.push([`Período: ${dataInicioPlano.toLocaleDateString('pt-BR')} a ${plano.data_termino ? new Date(plano.data_termino + 'T00:00:00Z').toLocaleDateString('pt-BR') : 'N/A'}`]);
+            dadosPlanilha.push([]);
+            dadosPlanilha.push([`Semana ${semana.semana_numero}`]);
+            
+            // Cabeçalho dos dias
+            dadosPlanilha.push(diasDaSemanaOrdenados);
+            
+            // Datas
+            const dateRow = diasDaSemanaOrdenados.map((dia, index) => {
+                const dataDoDia = new Date(dataCorrente);
+                dataDoDia.setDate(dataCorrente.getDate() + index);
+                return dataDoDia.toLocaleDateString('pt-BR');
             });
-            dadosPlanilha.push(atividadeRow);
-        }
-        
-        const ws = XLSX.utils.aoa_to_sheet(dadosPlanilha);
-        ws['!cols'] = diasDaSemanaOrdenados.map(() => ({ wch: 35 }));
-        const estiloCelula = { alignment: { wrapText: true, vertical: 'top' } };
-        dadosPlanilha.forEach((row, r) => {
-            row.forEach((cell, c) => {
-                const cellAddress = XLSX.utils.encode_cell({ r, c });
-                if (!ws[cellAddress]) ws[cellAddress] = { t: 's', v: "" };
-                ws[cellAddress].s = estiloCelula;
-            });
+            dadosPlanilha.push(dateRow);
+            
+            // Processar atividades por dia
+            const atividadesPorDia = (semana.dias_de_estudo || []).reduce((acc, dia) => {
+                acc[dia.dia_semana] = dia.atividades || [];
+                return acc;
+            }, {});
+            
+            // Calcular máximo de atividades
+            const maxAtividades = Math.max(0, ...Object.values(atividadesPorDia).map(arr => arr.length));
+            
+            // Atividades
+            for (let i = 0; i < maxAtividades; i++) {
+                const atividadeRow = diasDaSemanaOrdenados.map(dia => {
+                    const atividades = atividadesPorDia[dia] || [];
+                    const atividade = atividades[i];
+                    
+                    if (atividade) {
+                        return `${atividade.materia || ''}\n${atividade.topico_sugerido || ''}\n${atividade.tipo_de_estudo || ''} (${atividade.duracao_minutos} min)`;
+                    } else {
+                        return "";
+                    }
+                });
+                dadosPlanilha.push(atividadeRow);
+            }
+            
+            // Criar planilha
+            const ws = XLSX.utils.aoa_to_sheet(dadosPlanilha);
+            
+            // Configurar largura das colunas
+            ws['!cols'] = diasDaSemanaOrdenados.map(() => ({ wch: 35 }));
+            
+            // Aplicar estilos com abordagem mais robusta
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            
+            for (let R = range.s.r; R <= range.e.r; R++) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellAddress]) ws[cellAddress] = { t: 's', v: "" };
+                    
+                    // Estilos específicos por linha com propriedades explícitas
+                    if (R === 0) {
+                        // Título principal
+                        ws[cellAddress].s = {
+                            font: { bold: true, size: 14, color: { rgb: '4F81BD' } },
+                            alignment: { horizontal: 'center', vertical: 'center' },
+                            border: {
+                                top: { style: 'thin', color: { rgb: '4F81BD' } },
+                                bottom: { style: 'thin', color: { rgb: '4F81BD' } },
+                                left: { style: 'thin', color: { rgb: '4F81BD' } },
+                                right: { style: 'thin', color: { rgb: '4F81BD' } }
+                            }
+                        };
+                    } else if (R >= 1 && R <= 3) {
+                        // Informações do plano
+                        ws[cellAddress].s = {
+                            font: { bold: true, size: 11 },
+                            alignment: { horizontal: 'left', vertical: 'center' },
+                            border: {
+                                top: { style: 'thin', color: { rgb: '4F81BD' } },
+                                bottom: { style: 'thin', color: { rgb: '4F81BD' } },
+                                left: { style: 'thin', color: { rgb: '4F81BD' } },
+                                right: { style: 'thin', color: { rgb: '4F81BD' } }
+                            }
+                        };
+                    } else if (R === 5) {
+                        // Título da semana
+                        ws[cellAddress].s = {
+                            font: { bold: true, size: 12, color: { rgb: '4F81BD' } },
+                            alignment: { horizontal: 'center', vertical: 'center' },
+                            border: {
+                                top: { style: 'thin', color: { rgb: '4F81BD' } },
+                                bottom: { style: 'thin', color: { rgb: '4F81BD' } },
+                                left: { style: 'thin', color: { rgb: '4F81BD' } },
+                                right: { style: 'thin', color: { rgb: '4F81BD' } }
+                            }
+                        };
+                    } else if (R === 6) {
+                        // Cabeçalho dos dias
+                        ws[cellAddress].s = {
+                            font: { bold: true, size: 12, color: { rgb: 'FFFFFF' } },
+                            fill: { fgColor: { rgb: '4F81BD' } },
+                            alignment: { horizontal: 'center', vertical: 'center' },
+                            border: {
+                                top: { style: 'thin', color: { rgb: '4F81BD' } },
+                                bottom: { style: 'thin', color: { rgb: '4F81BD' } },
+                                left: { style: 'thin', color: { rgb: '4F81BD' } },
+                                right: { style: 'thin', color: { rgb: '4F81BD' } }
+                            }
+                        };
+                    } else if (R === 7) {
+                        // Datas
+                        ws[cellAddress].s = {
+                            font: { bold: true, size: 10 },
+                            fill: { fgColor: { rgb: 'D0D8E8' } },
+                            alignment: { horizontal: 'center', vertical: 'center' },
+                            border: {
+                                top: { style: 'thin', color: { rgb: '4F81BD' } },
+                                bottom: { style: 'thin', color: { rgb: '4F81BD' } },
+                                left: { style: 'thin', color: { rgb: '4F81BD' } },
+                                right: { style: 'thin', color: { rgb: '4F81BD' } }
+                            }
+                        };
+                    } else if (R >= 8) {
+                        // Atividades
+                        ws[cellAddress].s = {
+                            font: { size: 10 },
+                            fill: { fgColor: { rgb: 'E6F3FF' } },
+                            alignment: { wrapText: true, vertical: 'top' },
+                            border: {
+                                top: { style: 'thin', color: { rgb: '4F81BD' } },
+                                bottom: { style: 'thin', color: { rgb: '4F81BD' } },
+                                left: { style: 'thin', color: { rgb: '4F81BD' } },
+                                right: { style: 'thin', color: { rgb: '4F81BD' } }
+                            }
+                        };
+                    }
+                }
+            }
+            
+            // Adicionar planilha ao workbook
+            XLSX.utils.book_append_sheet(wb, ws, `Semana ${semana.semana_numero}`);
+            dataCorrente.setDate(dataCorrente.getDate() + 7);
         });
-
-        XLSX.utils.book_append_sheet(wb, ws, `Semana ${semana.semana_numero}`);
-        dataCorrente.setDate(dataCorrente.getDate() + 7);
-    });
-
-    XLSX.writeFile(wb, `Plano_de_Estudos_${(plano.concurso_foco || 'IAprovas').replace(/ /g, '_')}.xlsx`);
+        
+        // Gerar arquivo XLSX com configurações otimizadas
+        const nomeArquivo = `Plano_de_Estudos_${(plano.concurso_foco || 'IAprovas').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        
+        // Configurações otimizadas para preservar estilos
+        const wopts = {
+            bookType: 'xlsx',
+            bookSST: false,
+            type: 'binary',
+            cellStyles: true,
+            compression: true
+        };
+        
+        // Forçar aplicação de estilos antes de salvar
+        Object.keys(wb.Sheets).forEach(sheetName => {
+            const sheet = wb.Sheets[sheetName];
+            if (sheet['!ref']) {
+                const range = XLSX.utils.decode_range(sheet['!ref']);
+                for (let R = range.s.r; R <= range.e.r; R++) {
+                    for (let C = range.s.c; C <= range.e.c; C++) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                        if (sheet[cellAddress] && sheet[cellAddress].s) {
+                            // Garantir que os estilos sejam aplicados
+                            sheet[cellAddress].s = {
+                                ...sheet[cellAddress].s,
+                                alignment: {
+                                    ...sheet[cellAddress].s.alignment,
+                                    wrapText: true
+                                }
+                            };
+                        }
+                    }
+                }
+            }
+        });
+        
+        XLSX.writeFile(wb, nomeArquivo, wopts);
+        
+        showToast("Planilha XLSX exportada com sucesso!", "success");
+        
+    } catch (error) {
+        console.error("Erro ao exportar planilha:", error);
+        showToast("Erro ao exportar planilha. Tente novamente.", "error");
+    }
 }
 
 async function renderUsageInfo() {
@@ -1055,8 +1199,6 @@ document.body.addEventListener('click', async (e) => {
         // Removido - conflito com o event listener separado
     } else if (cancelarRefinamentoBtn) {
         // Removido - conflito com o event listener separado
-    } else if (exportarBtn) {
-        exportarPlanoParaExcel();
     } else if (fecharBtn) {
         containerExibicao.style.display = 'none';
         containerExibicao.innerHTML = '';

@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="dashboard-lovable.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-FCHSYJJ7FB"></script>
     <script>
@@ -221,13 +222,13 @@
                         <div class="form-field-group">
                             <label>Em quais dias da semana você pretende estudar? Para os dias que forem selecionados, especifique a quantidade de minutos de estudo.</label>
                             <div class="dias-semana-grid">
+                                <div class="dia-horario-item"><input type="checkbox" id="check-domingo" value="Domingo"><label for="check-domingo">Dom</label><input type="number" data-dia="Domingo" min="0" max="1440" step="1" placeholder="min" disabled></div>
                                 <div class="dia-horario-item"><input type="checkbox" id="check-segunda" value="Segunda"><label for="check-segunda">Seg</label><input type="number" data-dia="Segunda" min="0" max="1440" step="1" placeholder="min" disabled></div>
                                 <div class="dia-horario-item"><input type="checkbox" id="check-terca" value="Terca"><label for="check-terca">Ter</label><input type="number" data-dia="Terca" min="0" max="1440" step="1" placeholder="min" disabled></div>
                                 <div class="dia-horario-item"><input type="checkbox" id="check-quarta" value="Quarta"><label for="check-quarta">Qua</label><input type="number" data-dia="Quarta" min="0" max="1440" step="1" placeholder="min" disabled></div>
                                 <div class="dia-horario-item"><input type="checkbox" id="check-quinta" value="Quinta"><label for="check-quinta">Qui</label><input type="number" data-dia="Quinta" min="0" max="1440" step="1" placeholder="min" disabled></div>
                                 <div class="dia-horario-item"><input type="checkbox" id="check-sexta" value="Sexta"><label for="check-sexta">Sex</label><input type="number" data-dia="Sexta" min="0" max="1440" step="1" placeholder="min" disabled></div>
                                 <div class="dia-horario-item"><input type="checkbox" id="check-sabado" value="Sabado"><label for="check-sabado">Sáb</label><input type="number" data-dia="Sabado" min="0" max="1440" step="1" placeholder="min" disabled></div>
-                                <div class="dia-horario-item"><input type="checkbox" id="check-domingo" value="Domingo"><label for="check-domingo">Dom</label><input type="number" data-dia="Domingo" min="0" max="1440" step="1" placeholder="min" disabled></div>
                             </div>
                         </div>
                         
