@@ -2286,26 +2286,49 @@ body.dark-mode .modal-content p {
     
     .semana-progresso {
         flex-direction: column;
-        gap: 8px;
-        padding: 8px;
+        gap: 12px;
+        padding: 12px;
+        align-items: stretch;
     }
     
     .semana-label {
         min-width: auto;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 8px;
     }
     
     .semana-barras {
-        height: 16px;
+        height: 24px;
+        min-height: 24px;
+        width: 100%;
+        border-radius: 12px;
     }
     
     .semana-stats {
-        flex-direction: column;
-        gap: 4px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 8px;
     }
     
     .stat-barra {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .stat-barra i {
+        width: 10px;
+        height: 10px;
+    }
+    
+    .stat-barra span {
+        font-weight: 500;
     }
 }
 
@@ -2323,19 +2346,83 @@ body.dark-mode .modal-content p {
     }
     
     .semana-progresso {
-        padding: 6px;
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    .semana-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 6px;
+    }
+    
+    .semana-barras {
+        height: 20px;
+        min-height: 20px;
+        border-radius: 10px;
+    }
+    
+    .semana-stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-top: 6px;
+    }
+    
+    .stat-barra {
+        font-size: 0.7rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+    }
+    
+    .stat-barra i {
+        width: 8px;
+        height: 8px;
+    }
+    
+    .stat-barra span {
+        font-weight: 500;
+    }
+}
+
+@media (max-width: 360px) {
+    .progresso-grafico h4 {
+        font-size: 0.8rem;
+    }
+    
+    .semana-progresso {
+        padding: 8px;
+        gap: 8px;
     }
     
     .semana-label {
         font-size: 0.75rem;
+        margin-bottom: 4px;
     }
     
     .semana-barras {
-        height: 14px;
+        height: 18px;
+        min-height: 18px;
+        border-radius: 9px;
+    }
+    
+    .semana-stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        margin-top: 4px;
     }
     
     .stat-barra {
         font-size: 0.65rem;
+        gap: 2px;
+    }
+    
+    .stat-barra i {
+        width: 6px;
+        height: 6px;
     }
 }
 
