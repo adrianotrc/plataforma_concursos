@@ -2262,6 +2262,83 @@ body.dark-mode .modal-content p {
     }
 }
 
+/* Responsividade específica para o gráfico de progresso */
+@media (max-width: 768px) {
+    .progresso-grafico {
+        margin-top: 16px;
+        padding-top: 16px;
+    }
+    
+    .progresso-grafico h4 {
+        font-size: 0.9rem;
+        margin-bottom: 12px;
+    }
+    
+    .grafico-legenda {
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px;
+    }
+    
+    .legenda-item {
+        font-size: 0.8rem;
+    }
+    
+    .semana-progresso {
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px;
+    }
+    
+    .semana-label {
+        min-width: auto;
+        font-size: 0.8rem;
+    }
+    
+    .semana-barras {
+        height: 16px;
+    }
+    
+    .semana-stats {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .stat-barra {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .progresso-grafico h4 {
+        font-size: 0.85rem;
+    }
+    
+    .grafico-legenda {
+        padding: 6px;
+    }
+    
+    .legenda-item {
+        font-size: 0.75rem;
+    }
+    
+    .semana-progresso {
+        padding: 6px;
+    }
+    
+    .semana-label {
+        font-size: 0.75rem;
+    }
+    
+    .semana-barras {
+        height: 14px;
+    }
+    
+    .stat-barra {
+        font-size: 0.65rem;
+    }
+}
+
 /* === ESTILOS PARA O CRONOGRAMA EM TABELA === */
 
 .plano-header {

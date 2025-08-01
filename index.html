@@ -720,25 +720,8 @@
                 observer.observe(el);
             });
 
-            // Melhorias na navegação mobile
-            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-            const mobileNav = document.getElementById('mobileNav');
-            const body = document.body;
-
-            if (mobileMenuBtn && mobileNav) {
-                mobileMenuBtn.addEventListener('click', () => {
-                    mobileNav.classList.toggle('show');
-                    body.style.overflow = mobileNav.classList.contains('show') ? 'hidden' : '';
-                });
-
-                // Fecha menu ao clicar em um link
-                mobileNav.querySelectorAll('a').forEach(link => {
-                    link.addEventListener('click', () => {
-                        mobileNav.classList.remove('show');
-                        body.style.overflow = '';
-                    });
-                });
-            }
+            // Melhorias na navegação mobile - REMOVIDO DUPLICADO
+            // O menu mobile já está sendo controlado pelo script no início da página
 
             // Melhorias na acessibilidade
             document.addEventListener('keydown', (e) => {
