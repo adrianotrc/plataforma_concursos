@@ -1524,13 +1524,19 @@ async function carregarMetricasProgresso(planoId) {
     }
     
     try {
-        // Timeout de 10 segundos para evitar travamento
+        console.log('Iniciando carregamento de métricas de progresso para plano:', planoId);
+        
+        // Timeout de 15 segundos para mobile (mais generoso)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => {
+            console.log('Timeout atingido para carregamento de progresso');
+            controller.abort();
+        }, 15000);
         
         const response = await calcularMetricasProgresso(currentUser.uid, planoId);
         clearTimeout(timeoutId);
         
+        console.log('Métricas de progresso carregadas com sucesso:', response);
         metricasProgresso = response;
         
         // Salva no cache
@@ -1584,18 +1590,46 @@ async function carregarMetricasProgresso(planoId) {
             progressoPorcentagem.textContent = `${metricasProgresso.porcentagemConclusao}%`;
         }
         
-        // Gera o gráfico de progresso de forma assíncrona com prioridade baixa
-        requestIdleCallback(() => {
-            gerarGraficoProgresso(planoId);
-        }, { timeout: 2000 });
+        // Gera o gráfico de progresso de forma assíncrona
+        // Usa requestIdleCallback se disponível, senão usa setTimeout
+        if (window.requestIdleCallback) {
+            requestIdleCallback(() => {
+                gerarGraficoProgresso(planoId);
+            }, { timeout: 2000 });
+        } else {
+            // Fallback para navegadores que não suportam requestIdleCallback
+            setTimeout(() => {
+                gerarGraficoProgresso(planoId);
+            }, 100);
+        }
         
     } catch (error) {
         console.error('Erro ao carregar métricas de progresso:', error);
+        console.error('Detalhes do erro:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        
         if (progressoContainer) {
+            let errorMessage = 'Erro ao carregar progresso. Tente novamente.';
+            
+            // Mensagens de erro mais específicas
+            if (error.name === 'AbortError') {
+                errorMessage = 'Tempo limite excedido. Verifique sua conexão e tente novamente.';
+            } else if (error.message.includes('fetch')) {
+                errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+            } else if (error.message.includes('404')) {
+                errorMessage = 'Dados de progresso não encontrados.';
+            }
+            
             progressoContainer.innerHTML = `
                 <div class="error-progresso">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>Erro ao carregar progresso. Tente novamente.</p>
+                    <p>${errorMessage}</p>
+                    <button onclick="carregarMetricasProgresso('${planoId}')" class="btn btn-primary" style="margin-top: 8px;">
+                        Tentar Novamente
+                    </button>
                 </div>
             `;
         }
@@ -1657,15 +1691,32 @@ function renderizarProgressoFromCache() {
 
 // Função para gerar gráfico de progresso por semana
 function gerarGraficoProgresso(planoId) {
+    console.log('Iniciando geração do gráfico de progresso para plano:', planoId);
+    
     const graficoContainer = document.getElementById('grafico-progresso');
-    if (!graficoContainer) return;
+    if (!graficoContainer) {
+        console.error('Container do gráfico não encontrado');
+        return;
+    }
     
     // Usa planoAbertoAtual se disponível, senão usa planoSelecionado
     const planoParaGrafico = planoAbertoAtual || planoSelecionado;
-    if (!planoParaGrafico) return;
+    if (!planoParaGrafico) {
+        console.error('Plano para gráfico não encontrado');
+        return;
+    }
     
     // Se não há dados de progresso, não gera o gráfico
-    if (!metricasProgresso) return;
+    if (!metricasProgresso) {
+        console.error('Dados de métricas de progresso não encontrados');
+        return;
+    }
+    
+    console.log('Dados disponíveis para gráfico:', {
+        planoParaGrafico: !!planoParaGrafico,
+        metricasProgresso: !!metricasProgresso,
+        semanas: planoParaGrafico.cronograma_semanal_detalhado?.length || 0
+    });
     
     const semanas = planoParaGrafico.cronograma_semanal_detalhado || [];
     const progresso = metricasProgresso?.progresso || [];
@@ -1769,7 +1820,18 @@ function gerarGraficoProgresso(planoId) {
         `;
     });
     
-    graficoContainer.innerHTML = graficoHtml;
+    try {
+        graficoContainer.innerHTML = graficoHtml;
+        console.log('Gráfico de progresso gerado com sucesso');
+    } catch (error) {
+        console.error('Erro ao gerar gráfico de progresso:', error);
+        graficoContainer.innerHTML = `
+            <div class="error-progresso">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Erro ao gerar gráfico. Tente novamente.</p>
+            </div>
+        `;
+    }
 }
 
 // Função para carregar progresso existente
