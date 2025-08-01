@@ -751,8 +751,8 @@ def processar_refinamento_em_background(user_id, job_id, original_plan, feedback
         if tipo_refinamento == "tempo-total":
             tipo_instrucao = "\n### TIPO DE AJUSTE: ALTERAÇÃO DE TEMPO TOTAL DOS DIAS\nO usuário selecionou 'Alterar tempo total dos dias'. INTERPRETE o pedido como uma solicitação para modificar o tempo total disponível para cada dia de estudo. Ajuste `disponibilidade_semanal_minutos` conforme solicitado."
         elif tipo_refinamento == "duracao-sessoes":
-            tipo_instrucao = "\n### TIPO DE AJUSTE: ALTERAÇÃO DE DURAÇÃO DAS SESSÕES\nO usuário selecionou 'Alterar duração das sessões'. INTERPRETE o pedido como uma solicitação para modificar apenas `duracao_sessao_minutos`. IMPORTANTE: Mantenha o tempo total dos dias inalterado. Se o tempo total do dia for 25 min e você mudar para ciclos de 10 min, crie 2 atividades de 10 min + 1 de 5 min = 25 min total. NUNCA ultrapasse o tempo total original. CRÍTICO: Redistribua DIFERENTES matérias para cada atividade, NÃO multiplique a mesma matéria. Use matérias diferentes do plano original para cada sessão."
-            tipo_instrucao += "\n\n### ALGORITMO OBRIGATÓRIO PARA MUDANÇA DE DURAÇÃO DE SESSÕES:\n1. Identifique todas as matérias do plano original (ex: Direito Constitucional, Português, Matemática, etc.)\n2. Para cada dia, pegue as matérias que estavam programadas para aquele dia\n3. Redistribua essas matérias em sessões menores usando a nova duração\n4. Se faltarem matérias, pegue outras do plano original que não estavam naquele dia\n5. NUNCA repita a mesma matéria no mesmo dia\n6. NUNCA ultrapasse o tempo total original do dia"
+            tipo_instrucao = "\n### TIPO DE AJUSTE: ALTERAÇÃO DE DURAÇÃO DAS SESSÕES\nO usuário selecionou 'Alterar duração das sessões'. INTERPRETE o pedido como uma solicitação para modificar APENAS `duracao_sessao_minutos`. \n\n🚨 **REGRA CRÍTICA - TEMPO TOTAL INALTERADO**: Você DEVE manter EXATAMENTE o mesmo tempo total de cada dia conforme `disponibilidade_semanal_minutos`. NUNCA altere o tempo total dos dias.\n\n📊 **EXEMPLO OBRIGATÓRIO**: Se o dia tem 120 minutos total e você muda para ciclos de 25 min:\n- Crie 4 atividades de 25 min + 1 de 20 min = 120 min total\n- NUNCA crie 5 atividades de 25 min = 125 min (ERRO!)\n- NUNCA crie 3 atividades de 25 min = 75 min (ERRO!)\n\n🔄 **REDISTRIBUIÇÃO DE MATÉRIAS**: Use DIFERENTES matérias do plano original para cada atividade. NÃO multiplique a mesma matéria várias vezes."
+            tipo_instrucao += "\n\n### ALGORITMO OBRIGATÓRIO PARA MUDANÇA DE DURAÇÃO DE SESSÕES:\n1. ✅ MANTENHA o tempo total de cada dia conforme `disponibilidade_semanal_minutos`\n2. ✅ Ajuste APENAS `duracao_sessao_minutos` para o novo valor\n3. ✅ Calcule quantas sessões cabem no tempo total: tempo_total ÷ nova_duracao\n4. ✅ Se sobrar tempo, crie uma sessão menor para completar o total\n5. ✅ Use DIFERENTES matérias do plano original para cada sessão\n6. ✅ NUNCA ultrapasse o tempo total original do dia\n7. ✅ NUNCA repita a mesma matéria no mesmo dia"
         elif tipo_refinamento == "mover-dias":
             tipo_instrucao = "\n### TIPO DE AJUSTE: MOVER ATIVIDADES ENTRE DIAS\nO usuário selecionou 'Mover atividades entre dias'. INTERPRETE o pedido como uma solicitação para transferir atividades de um dia para outro, mantendo duração e métodos."
         else:
@@ -762,6 +762,12 @@ def processar_refinamento_em_background(user_id, job_id, original_plan, feedback
         
         ### REGRA FUNDAMENTAL SOBRE REDISTRIBUIÇÃO DE MATÉRIAS:
         Quando você precisar criar múltiplas atividades em um dia (ex: mudar duração de sessões), SEMPRE use matérias diferentes do plano original. NUNCA multiplique a mesma matéria várias vezes. Exemplo: se o plano original tem Direito Constitucional, Português, Matemática e você precisa criar 3 atividades, use uma matéria diferente para cada atividade.
+        
+        ### INSTRUÇÕES CRÍTICAS PARA ESPECIFICIDADE (OBRIGATÓRIO):
+        🚨 **SEJA ESPECÍFICO, NÃO GENÉRICO**: NUNCA use termos como "Fundamentos de [matéria]", "Conceitos Básicos", "Noções Gerais". 
+        ✅ **SEMPRE USE**: Tópicos específicos como "Lógica Proposicional", "Concordância Verbal", "Atos Administrativos".
+        🔄 **VARIAÇÃO OBRIGATÓRIA**: Se uma matéria aparece múltiplas vezes, use tópicos DIFERENTES. Se repetir matéria + tópico, use método DIFERENTE.
+        📚 **MÉTODOS VARIADOS**: Estudo de Teoria, Resolução de Exercícios, Exercícios de Fixação, Revisão com Autoexplicação, Criação de Mapa Mental, Leitura de Lei Seca, Simulados, Vídeoaulas.
         
         ### PLANO ORIGINAL (JSON):
         {json.dumps(original_plan, indent=2)}
@@ -785,12 +791,15 @@ def processar_refinamento_em_background(user_id, job_id, original_plan, feedback
    • RESPEITE EXATAMENTE o tempo total informado para cada dia.
    • Se o tempo total for reduzido, mantenha as matérias mais importantes e remova as menos prioritárias.
 
-3. SE o aluno pedir MUDANÇA DE DURAÇÃO DE SESSÕES (ex.: "mudar ciclos para 10 minutos"):
+3. SE o aluno pedir MUDANÇA DE DURAÇÃO DE SESSÕES (ex.: "mudar ciclos para 25 minutos"):
    • Apenas ajuste `duracao_sessao_minutos` para o novo valor.
-   • MANTENHA o tempo total dos dias inalterado.
-   • Redistribua as atividades para usar a nova duração de sessão.
-   • Exemplo: se dia tem 25 min total e você muda para ciclos de 10 min, crie 2 atividades de 10 min + 1 de 5 min = 25 min total.
-   • NUNCA ultrapasse o tempo total original do dia.
+   • 🚨 **CRÍTICO**: MANTENHA EXATAMENTE o tempo total dos dias conforme `disponibilidade_semanal_minutos`.
+   • Calcule quantas sessões cabem: tempo_total ÷ nova_duracao.
+   • Se sobrar tempo, crie uma sessão menor para completar o total.
+   • Exemplo: se dia tem 120 min total e você muda para ciclos de 25 min:
+     - Crie 4 atividades de 25 min + 1 de 20 min = 120 min total ✅
+     - NUNCA crie 5 atividades de 25 min = 125 min (ERRO!) ❌
+     - NUNCA crie 3 atividades de 25 min = 75 min (ERRO!) ❌
    • CRÍTICO: Use DIFERENTES matérias do plano original para cada atividade. NÃO multiplique a mesma matéria várias vezes.
 
 4. SE o aluno pedir MUDANÇA DE DIA (ex.: "mover tudo de segunda para terça"):
@@ -807,6 +816,8 @@ def processar_refinamento_em_background(user_id, job_id, original_plan, feedback
 8. Atualize 'resumo_estrategico' adicionando ao final uma linha iniciada por "Ajuste realizado:" explicando a mudança.
 9. SEMPRE considere as técnicas preferidas do aluno ao fazer ajustes nos métodos de estudo.
 10. NÃO REPITA a mesma matéria no mesmo dia. Cada atividade em um dia deve ser de uma matéria diferente.
+11. **ESPECIFICIDADE OBRIGATÓRIA**: NUNCA use tópicos genéricos como "Fundamentos", "Conceitos Básicos". SEMPRE use tópicos específicos e relevantes.
+12. **VARIAÇÃO DE MÉTODOS**: Use métodos diferentes (Teoria, Exercícios, Revisão, Mapas, Lei Seca) para evitar repetição.
 
 Lista oficial de nomes de dias (use exatamente estes): Domingo, Segunda-feira, Terça-feira, Quarta-feira, Quinta-feira, Sexta-feira, Sábado.
 
@@ -817,25 +828,27 @@ Lista oficial de nomes de dias (use exatamente estes): Domingo, Segunda-feira, T
 2. Pedido: "Limitar todos os dias a 25 minutos"
    → Reduza `disponibilidade_semanal_minutos` de cada dia para 25 minutos, ajuste `duracao_sessao_minutos` para 25, mantenha apenas 1 atividade por dia.
 
-3. Pedido: "Mudar ciclos para 10 minutos"
-   → Apenas ajuste `duracao_sessao_minutos` para 10, mantenha o tempo total dos dias. Ex: se dia tem 25 min total, crie 2 atividades de 10 min + 1 de 5 min = 25 min total. Use matérias diferentes para cada atividade (ex: Direito Constitucional, Português, Matemática).
+3. Pedido: "Mudar ciclos para 25 minutos"
+   → Apenas ajuste `duracao_sessao_minutos` para 25, mantenha o tempo total dos dias. Ex: se dia tem 120 min total, crie 4 atividades de 25 min + 1 de 20 min = 120 min total. Use matérias diferentes para cada atividade (ex: Direito Constitucional, Português, Matemática).
 
 4. Pedido: "Reduzir domingo para 60 minutos"
    → Ajuste apenas `disponibilidade_semanal_minutos` do domingo para 60, redistribua as atividades.
 
 ### EXEMPLO ESPECÍFICO DE REDISTRIBUIÇÃO:
-Plano original: Domingo tem 30 min total, 1 atividade de Direito Constitucional (30 min)
-Pedido: "Mudar ciclos para 10 minutos"
+Plano original: Domingo tem 120 min total, 1 atividade de Direito Constitucional (120 min)
+Pedido: "Mudar ciclos para 25 minutos"
 Resultado CORRETO: 
-- Direito Constitucional (10 min)
-- Português (10 min) 
-- Matemática (10 min)
-= 30 min total, 3 matérias diferentes
+- Direito Constitucional (25 min)
+- Português (25 min) 
+- Matemática (25 min)
+- Raciocínio Lógico (25 min)
+- Informática (20 min)
+= 120 min total, 5 matérias diferentes (última sessão menor para completar)
 
 ### FORMATO DE SAÍDA
 Retorne UM ÚNICO objeto JSON com a chave 'plano_de_estudos'. Nenhum texto fora do JSON.
 '''
-        system_message = "Você é um assistente especializado em ajustar planos de estudo. INTERPRETE CORRETAMENTE os pedidos: 'limitar tempo' = reduzir tempo total dos dias; 'mudar ciclos' = alterar duração das sessões; 'mudar dias' = mover atividades entre dias. Quando o usuário pedir mudanças de tempo, reescreva completamente o plano. Quando pedir mudanças específicas, modifique apenas o necessário. Sempre retorne JSON válido."
+        system_message = "Você é um assistente especializado em ajustar planos de estudo. INTERPRETE CORRETAMENTE os pedidos: 'limitar tempo' = reduzir tempo total dos dias; 'mudar ciclos' = alterar duração das sessões; 'mudar dias' = mover atividades entre dias. Quando o usuário pedir mudanças de tempo, reescreva completamente o plano. Quando pedir mudanças específicas, modifique apenas o necessário. SEMPRE use tópicos específicos (evite 'Fundamentos', 'Conceitos Básicos'). VARIE métodos e tópicos para evitar repetição. Sempre retorne JSON válido."
 
         resultado_ia = call_openai_api(prompt, system_message)
 
