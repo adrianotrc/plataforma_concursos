@@ -1,0 +1,47 @@
+[
+  {
+    "texto_enunciado": "Considerando a Constituição Federal, julgue o item a seguir. O direito à vida é inviolável e abrange tanto o direito de nascer quanto o direito de não ser morto.",
+    "resposta_correta": "Certo",
+    "banca": "Cebraspe",
+    "concurso": "Polícia Federal - Agente de Polícia Federal",
+    "ano": "2021",
+    "materia": "Direito Constitucional",
+    "topico": "Direito à Vida"
+  },
+  {
+    "texto_enunciado": "Em relação aos juros compostos, analise a seguinte afirmação: O montante de um capital aplicado a juros compostos é sempre maior que o montante do mesmo capital aplicado a juros simples, para a mesma taxa e prazo.",
+    "resposta_correta": "Certo",
+    "banca": "FGV",
+    "concurso": "Banco do Brasil - Escriturário",
+    "ano": "2022",
+    "materia": "Matemática Financeira",
+    "topico": "Juros Compostos"
+  },
+  {
+    "texto_enunciado": "A respeito da análise sintática, considere a frase: 'O professor explicou a matéria aos alunos.' Nesta frase, 'aos alunos' exerce a função de objeto indireto.",
+    "resposta_correta": "Certo",
+    "banca": "VUNESP",
+    "concurso": "Prefeitura de São Paulo - Agente de Fiscalização",
+    "ano": "2023",
+    "materia": "Língua Portuguesa",
+    "topico": "Análise Sintática"
+  },
+  {
+    "texto_enunciado": "Sobre as modalidades de licitação, é correto afirmar que a concorrência é obrigatória para obras e serviços de engenharia de valor superior ao estabelecido em lei.",
+    "resposta_correta": "Certo",
+    "banca": "Cespe",
+    "concurso": "Tribunal de Contas da União - Auditor",
+    "ano": "2022",
+    "materia": "Direito Administrativo",
+    "topico": "Modalidades de Licitação"
+  },
+  {
+    "texto_enunciado": "A respeito da Revolução Industrial, é correto afirmar que ela teve início na Inglaterra no século XVIII e caracterizou-se pela substituição do trabalho artesanal pelo trabalho assalariado e pelo uso de máquinas.",
+    "resposta_correta": "Certo",
+    "banca": "IADES",
+    "concurso": "Instituto Rio Branco - Diplomata",
+    "ano": "2021",
+    "materia": "História",
+    "topico": "Revolução Industrial"
+  }
+] 
