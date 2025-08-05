@@ -20,6 +20,224 @@ let currentUser = null;
 let unsubHistorico = null;
 let sessaoAberta = null;
 let ultimoJobIdSolicitado = null;
+let topicosSelecionados = new Set();
+
+// --- LISTA DE MATÉRIAS DISPONÍVEIS ---
+const MATERIAS_DISPONIVEIS = [
+    "Língua Portuguesa", "Raciocínio Lógico", "Matemática", "Matemática Financeira",
+    "Informática", "Legislação Aplicada", "Direito Constitucional", "Direito Administrativo",
+    "Administração Pública", "Administração Geral", "Atualidades", "Ética no Serviço Público",
+    "Direitos Humanos", "Direito Penal", "Direito Processual Penal", "Direito Civil",
+    "Direito Processual Civil", "Arquivologia", "Gestão de Pessoas",
+    "Administração Financeira e Orçamentária", "Língua Inglesa", "Contabilidade Pública",
+    "Contabilidade Geral", "Direito Tributário", "Legislação Tributária", "História",
+    "Geografia", "Economia", "Economia Monetária", "Economia Internacional", "Economia Fiscal",
+    "Auditoria", "Auditoria Governamental", "Direito Internacional", "Direito Internacional Privado",
+    "Direito Internacional Público", "Direito Internacional Penal", "Relações Internacionais",
+    "Ciências Políticas", "Direito Concorrencial", "Direito Previdenciário", "Direito Financeiro",
+    "Lógica Formal", "Outros"
+];
+
+// --- SUGESTÕES DE TÓPICOS POR MATÉRIA ---
+const TOPICOS_SUGERIDOS = {
+    "Língua Portuguesa": [
+        "Análise Sintática",
+        "Concordância Verbal",
+        "Regência Verbal",
+        "Uso da Vírgula",
+        "Uso da Crase",
+        "Pronomes e suas funções",
+        "Plural de Substantivos",
+        "Figuras de Linguagem",
+        "Acordo Ortográfico",
+        "Locuções Prepositivas",
+        "Uso de Pronomes Relativos"
+    ],
+    "Matemática Financeira": [
+        "Juros Compostos",
+        "Taxa de Juros",
+        "Valor Presente e Futuro",
+        "Séries de Pagamentos",
+        "Amortização",
+        "Desconto",
+        "Equivalência de Capitais"
+    ],
+    "Direito Constitucional": [
+        "Direitos Fundamentais",
+        "Direito à Vida",
+        "Direitos e Deveres Individuais e Coletivos",
+        "Fundamentos da República",
+        "Competências Legislativas",
+        "Competência do Tribunal de Contas",
+        "Competências do Poder Legislativo"
+    ],
+    "Direito Administrativo": [
+        "Modalidades de Licitação",
+        "Princípios da Administração Pública",
+        "Ato Administrativo",
+        "Contrato Administrativo",
+        "Serviço Público",
+        "Responsabilidade Civil do Estado",
+        "Processo Administrativo",
+        "Organizações Sociais",
+        "Parcerias Público-Privadas",
+        "Consórcios Públicos",
+        "Afastamento cautelar de dirigentes",
+        "Nomeação e Aprovação de Conselheiros",
+        "Acesso à Informação",
+        "Extinção de Contrato de Concessão",
+        "Divisão Territorial do Distrito Federal",
+        "Processo Administrativo e Sigilo",
+        "Função do Ministério Público junto ao Tribunal de Contas"
+    ],
+    "Contabilidade Pública": [
+        "Superávit Financeiro",
+        "Despesas de Exercícios Anteriores",
+        "Demonstração dos Fluxos de Caixa",
+        "Provisões no Passivo",
+        "Restos a Pagar",
+        "Reavaliação de Ativos",
+        "Depreciação, Amortização e Exaustão",
+        "Dívida Fundada"
+    ],
+    "Direito Financeiro": [
+        "Princípios Orçamentários",
+        "Lei de Diretrizes Orçamentárias",
+        "Emissão de Títulos da Dívida Pública",
+        "Crédito Extraordinário"
+    ],
+    "Auditoria Governamental": [
+        "Planejamento da Auditoria",
+        "Relatório de Auditoria",
+        "Responsabilidade do Auditor"
+    ],
+    "Auditoria": [
+        "Risco Inerente",
+        "Amostragem Estatística",
+        "Materialidade em Auditoria",
+        "Testes de Controle",
+        "Princípios da Auditoria Governamental"
+    ],
+    "Direito Tributário": [
+        "Competência Tributária",
+        "Lançamento de Tributos"
+    ],
+    "Administração Financeira e Orçamentária": [
+        "Despesas Correntes",
+        "Regra de Ouro Orçamentária",
+        "Restos a Pagar"
+    ],
+    "Geografia": [
+        "Clima",
+        "Relevo Brasileiro",
+        "Bacias Hidrográficas",
+        "Urbanização no Brasil",
+        "Integração Econômica",
+        "Conhecimentos sobre o Distrito Federal",
+        "Política Internacional",
+        "Estado-nação",
+        "Biomas Brasileiros",
+        "Monções",
+        "Formação de Dobramentos Modernos",
+        "Sahel",
+        "Agronegócio",
+        "Biomas do Brasil",
+        "Hemisférios da Terra"
+    ],
+    "História": [
+        "Revolta de Beckman",
+        "Política Pombalina",
+        "Inconfidência Mineira",
+        "Transferência da Corte Portuguesa",
+        "Constituição de 1824",
+        "Guerra do Paraguai",
+        "Política do Café com Leite",
+        "Estado Novo",
+        "Plano de Metas de Juscelino Kubitschek",
+        "Redemocratização do Brasil",
+        "Reforma Protestante",
+        "Iluminismo",
+        "Revolução Francesa",
+        "Congresso de Viena",
+        "Primeira Guerra Mundial",
+        "Crise de 1929",
+        "Guerra Fria",
+        "Descolonização da África e da Ásia",
+        "Queda do Muro de Berlim",
+        "Globalização",
+        "Conflitos Diplomáticos",
+        "Política Externa do Brasil",
+        "Mercantilismo",
+        "Doutrina Truman",
+        "Revolta da Vacina",
+        "Renascimento",
+        "Revolução de 1930",
+        "Revolução Industrial",
+        "Abolicionismo e Lei Áurea",
+        "Plano Marshall",
+        "Tenentismo",
+        "Perestroika e Glasnost",
+        "Lei de Terras de 1850",
+        "Apartheid"
+    ],
+    "Raciocínio Lógico": [
+        "Conjunções",
+        "Negação de Proposições",
+        "Tabela-Verdade"
+    ],
+    "Economia": [
+        "Inflação de Custos",
+        "Curva de Laffer",
+        "Desigualdade de Renda"
+    ],
+    "Economia Monetária": [
+        "Regimes de Câmbio",
+        "Política Monetária"
+    ],
+    "Economia Internacional": [
+        "Teoria da Vantagem Comparativa",
+        "Balanço de Pagamentos"
+    ],
+    "Economia Fiscal": [
+        "Superávit Primário"
+    ],
+    "Direito Internacional": [
+        "Princípios das Relações Internacionais",
+        "Princípio do Pacta Sunt Servanda",
+        "Nacionalidade",
+        "Celebração de Tratados",
+        "Asilo Político",
+        "Responsabilidade de Proteger (R2P)",
+        "Nacionalidade e Carreira Diplomática"
+    ],
+    "Direito Internacional Privado": [
+        "Homologação de Sentenças Estrangeiras"
+    ],
+    "Direito Internacional Público": [
+        "Imunidade de Jurisdição dos Estados Estrangeiros"
+    ],
+    "Direito Internacional Penal": [
+        "Competência do Tribunal Penal Internacional"
+    ],
+    "Relações Internacionais": [
+        "Teoria Realista"
+    ],
+    "Ciências Políticas": [
+        "Teoria da Paz Democrática"
+    ],
+    "Direito Concorrencial": [
+        "Cartéis e Práticas Anticoncorrenciais"
+    ],
+    "Língua Inglesa": [
+        "Voz Passiva",
+        "Phrasal Verbs",
+        "Vocabulário Econômico",
+        "Expressões Idiomáticas"
+    ],
+    "Direito Penal": [
+        "Extradição de Brasileiro Nato"
+    ]
+};
 
 // --- FUNÇÕES DE UI ---
 
@@ -33,6 +251,141 @@ function showToast(message, type = 'success', duration = 5000) {
         toast.classList.remove('show');
         setTimeout(() => document.body.removeChild(toast), 500);
     }, duration);
+}
+
+function filtrarMaterias(termo) {
+    return MATERIAS_DISPONIVEIS.filter(materia => 
+        materia.toLowerCase().includes(termo.toLowerCase())
+    );
+}
+
+function mostrarSugestoesMateria(termo) {
+    const sugestoesContainer = document.getElementById('materia-sugestoes');
+    const materiasFiltradas = filtrarMaterias(termo);
+    
+    if (materiasFiltradas.length === 0 || termo.length < 2) {
+        sugestoesContainer.style.display = 'none';
+        return;
+    }
+    
+    sugestoesContainer.innerHTML = materiasFiltradas.map(materia => 
+        `<div class="sugestao-item" data-materia="${materia}">${materia}</div>`
+    ).join('');
+    
+    sugestoesContainer.style.display = 'block';
+}
+
+function adicionarTopico(topico) {
+    const topicoLimpo = topico.trim();
+    
+    if (!topicoLimpo || topicosSelecionados.has(topicoLimpo)) {
+        return;
+    }
+    
+    topicosSelecionados.add(topicoLimpo);
+    atualizarTopicosSelecionados();
+    
+    // Limpa o input
+    document.getElementById('exercicio-topico').value = '';
+    
+    showToast(`Tópico "${topicoLimpo}" adicionado!`, 'success', 2000);
+}
+
+function removerTopico(topico) {
+    topicosSelecionados.delete(topico);
+    atualizarTopicosSelecionados();
+    showToast(`Tópico "${topico}" removido!`, 'info', 2000);
+}
+
+function atualizarTopicosSelecionados() {
+    const container = document.getElementById('topicos-selecionados');
+    
+    if (!container) return;
+    
+    if (topicosSelecionados.size === 0) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+    
+    container.innerHTML = Array.from(topicosSelecionados).map(topico => `
+        <div class="topico-tag">
+            ${topico}
+            <button type="button" class="remove-btn" data-topico="${topico}">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `).join('');
+    
+    container.style.display = 'flex';
+}
+
+function atualizarSugestoesTopicos() {
+    const materiaInput = document.getElementById('exercicio-materia');
+    const topicoInput = document.getElementById('exercicio-topico');
+    const sugestoesContainer = document.getElementById('sugestoes-topicos');
+    
+    if (!materiaInput || !topicoInput) return;
+    
+    const materiaSelecionada = materiaInput.value;
+    const topicosSugeridos = TOPICOS_SUGERIDOS[materiaSelecionada] || [];
+    
+    // Remove container anterior se existir
+    if (sugestoesContainer) {
+        sugestoesContainer.remove();
+    }
+    
+    if (topicosSugeridos.length > 0) {
+        // Cria novo container de sugestões
+        const novoContainer = document.createElement('div');
+        novoContainer.id = 'sugestoes-topicos';
+        novoContainer.style.cssText = `
+            margin-top: 8px;
+            padding: 8px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        `;
+        
+        novoContainer.innerHTML = `
+            <small style="color: #6b7280; font-size: 0.875rem; display: block; margin-bottom: 8px;">
+                <i class="fas fa-lightbulb"></i> Sugestões de tópicos para ${materiaSelecionada}:
+            </small>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                ${topicosSugeridos.map(topico => `
+                    <button type="button" class="btn-topico-sugerido" 
+                            style="background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; 
+                                   padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; 
+                                   cursor: pointer; transition: all 0.2s;">
+                        ${topico}
+                    </button>
+                `).join('')}
+            </div>
+        `;
+        
+        // Insere após o input de tópico
+        topicoInput.parentNode.insertBefore(novoContainer, topicoInput.nextSibling);
+        
+        // Adiciona event listeners aos botões de sugestão
+        novoContainer.querySelectorAll('.btn-topico-sugerido').forEach(btn => {
+            btn.addEventListener('click', () => {
+                adicionarTopico(btn.textContent.trim());
+            });
+            
+            btn.addEventListener('mouseenter', () => {
+                btn.style.background = '#c7d2fe';
+            });
+            
+            btn.addEventListener('mouseleave', () => {
+                btn.style.background = '#e0e7ff';
+            });
+        });
+    }
+}
+
+function processarTextoNegrito(texto) {
+    // Converte **texto** para <strong>texto</strong>
+    return texto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 }
 
 function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsuario = {}) {
@@ -66,7 +419,8 @@ function exibirSessaoDeExercicios(exercicios, jaCorrigido = false, respostasUsua
             opcoesOrdenadas.forEach(opcao => {
                 const isChecked = respostasUsuario && respostasUsuario[index] === opcao.letra ? 'checked' : '';
                 const isDisabled = jaCorrigido ? 'disabled' : '';
-                exerciciosHtml += `<li class="opcao-item"><input type="radio" name="questao-${index}" id="q${index}-${opcao.letra}" value="${opcao.letra}" ${isChecked} ${isDisabled}><label for="q${index}-${opcao.letra}"><strong>${opcao.letra})</strong> ${opcao.texto}</label></li>`;
+                const textoProcessado = processarTextoNegrito(opcao.texto);
+                exerciciosHtml += `<li class="opcao-item"><input type="radio" name="questao-${index}" id="q${index}-${opcao.letra}" value="${opcao.letra}" ${isChecked} ${isDisabled}><label for="q${index}-${opcao.letra}"><strong>${opcao.letra})</strong> ${textoProcessado}</label></li>`;
             });
         }
         
@@ -252,10 +606,85 @@ async function salvarCorrecaoNoFirestore(respostasUsuario, acertos) {
 }
 
 btnAbrirForm?.addEventListener('click', () => { formExercicios.style.display = 'block'; });
-btnFecharForm?.addEventListener('click', () => { formExercicios.style.display = 'none'; });
+btnFecharForm?.addEventListener('click', () => { 
+    formExercicios.style.display = 'none'; 
+    // Limpa os tópicos selecionados
+    topicosSelecionados.clear();
+    atualizarTopicosSelecionados();
+    document.getElementById('exercicio-materia').value = '';
+    document.getElementById('exercicio-topico').value = '';
+});
+
+// Event listeners para autocomplete de matéria
+const materiaInput = document.getElementById('exercicio-materia');
+if (materiaInput) {
+    materiaInput.addEventListener('input', (e) => {
+        mostrarSugestoesMateria(e.target.value);
+    });
+    
+    materiaInput.addEventListener('focus', () => {
+        if (materiaInput.value.length >= 2) {
+            mostrarSugestoesMateria(materiaInput.value);
+        }
+    });
+    
+    // Event listener para seleção de matéria
+    document.getElementById('materia-sugestoes')?.addEventListener('click', (e) => {
+        const sugestaoItem = e.target.closest('.sugestao-item');
+        if (sugestaoItem) {
+            const materia = sugestaoItem.dataset.materia;
+            materiaInput.value = materia;
+            document.getElementById('materia-sugestoes').style.display = 'none';
+            atualizarSugestoesTopicos();
+        }
+    });
+    
+    // Esconde sugestões ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#exercicio-materia') && !e.target.closest('#materia-sugestoes')) {
+            document.getElementById('materia-sugestoes').style.display = 'none';
+        }
+    });
+}
+
+// Event listener para múltipla seleção de tópicos
+const topicoInput = document.getElementById('exercicio-topico');
+if (topicoInput) {
+    topicoInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const topico = topicoInput.value.trim();
+            if (topico) {
+                adicionarTopico(topico);
+            }
+        }
+    });
+}
+
+// Event listener para remoção de tópicos
+document.addEventListener('click', (e) => {
+    const removeBtn = e.target.closest('.remove-btn');
+    if (removeBtn) {
+        const topico = removeBtn.dataset.topico;
+        removerTopico(topico);
+    }
+});
 
 formExercicios?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // Validações
+    const materia = document.getElementById('exercicio-materia').value.trim();
+    if (!materia) {
+        showToast('Por favor, selecione uma matéria.', 'error');
+        return;
+    }
+    
+    if (topicosSelecionados.size === 0) {
+        showToast('Por favor, selecione pelo menos um tópico.', 'error');
+        return;
+    }
+    
     const quantidade = parseInt(document.getElementById('exercicio-quantidade').value) || 0;
     if (quantidade < 1 || quantidade > 20) {
         showToast('Por favor, insira uma quantidade de exercícios entre 1 e 20.', 'error');
@@ -264,8 +693,8 @@ formExercicios?.addEventListener('submit', async (e) => {
     
     const dados = {
         userId: currentUser.uid,
-        materia: document.getElementById('exercicio-materia').value,
-        topico: document.getElementById('exercicio-topico').value,
+        materia: materia,
+        topico: Array.from(topicosSelecionados).join(', '), // Envia os tópicos selecionados
         quantidade: quantidade,
         banca: document.getElementById('exercicio-banca').value,
         tipo_questao: document.getElementById('exercicio-tipo').value

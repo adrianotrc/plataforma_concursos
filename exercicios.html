@@ -72,8 +72,27 @@
                 </button>
                 <form id="form-exercicios" class="feature-card" style="display: none; margin-bottom: 24px;">
                     <h3 style="margin-bottom: 20px; text-align: center;">Gerar Exercícios Sob Demanda</h3>
-                    <div class="form-field-group"><label for="exercicio-materia">Matéria</label><input type="text" id="exercicio-materia" required placeholder="Ex: Direito Constitucional"></div>
-                    <div class="form-field-group"><label for="exercicio-topico">Tópico Específico</label><input type="text" id="exercicio-topico" required placeholder="Ex: Artigo 5º, Direitos e Deveres Individuais e Coletivos"></div>
+                    
+                    <!-- Seleção de Matéria -->
+                    <div class="form-field-group">
+                        <label for="exercicio-materia">Matéria</label>
+                        <input type="text" id="exercicio-materia" required placeholder="Digite para buscar a matéria..." autocomplete="off">
+                        <div id="materia-sugestoes" class="sugestoes-dropdown" style="display: none;"></div>
+                        <small style="color: #6b7280; font-size: 0.875rem; margin-top: 4px; display: block;">
+                            <i class="fas fa-info-circle"></i> Digite para buscar e selecionar a matéria desejada
+                        </small>
+                    </div>
+                    
+                    <!-- Seleção de Tópico -->
+                    <div class="form-field-group">
+                        <label for="exercicio-topico">Tópico(s) Específico(s)</label>
+                        <input type="text" id="exercicio-topico" placeholder="Digite ou selecione os tópicos desejados...">
+                        <div id="topicos-selecionados" class="topicos-tags" style="display: none; margin-top: 8px;"></div>
+                        <small style="color: #6b7280; font-size: 0.875rem; margin-top: 4px; display: block;">
+                            <i class="fas fa-info-circle"></i> Você pode selecionar múltiplos tópicos para uma sessão mais abrangente
+                        </small>
+                    </div>
+                    
                     <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
                         <div class="form-field-group">
                             <label for="exercicio-quantidade">Quantidade</label>
@@ -84,7 +103,7 @@
                         </div>
                         <div class="form-field-group">
                             <label for="exercicio-banca">Banca (Opcional)</label>
-                            <input type="text" id="exercicio-banca" placeholder="Ex: Cespe, FGV">
+                            <input type="text" id="exercicio-banca" placeholder="Ex: Cespe, FGV, VUNESP">
                         </div>
                         <div class="form-field-group">
                             <label for="exercicio-tipo">Tipo de Questão</label>

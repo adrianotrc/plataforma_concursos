@@ -3390,3 +3390,109 @@ body.dark-mode .plano-orientacao p {
 body.dark-mode .plano-orientacao i {
     color: #fbbf24;
 }
+
+/* Estilos para autocomplete de matéria */
+.sugestoes-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.sugestao-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.2s;
+}
+
+.sugestao-item:hover {
+    background-color: #f8fafc;
+}
+
+.sugestao-item:last-child {
+    border-bottom: none;
+}
+
+.sugestao-item.selecionada {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+/* Estilos para múltipla seleção de tópicos */
+.topicos-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.topico-tag {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.topico-tag:hover {
+    background: #c7d2fe;
+}
+
+.topico-tag .remove-btn {
+    background: none;
+    border: none;
+    color: #3730a3;
+    cursor: pointer;
+    font-size: 0.875rem;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.topico-tag .remove-btn:hover {
+    background: #a5b4fc;
+    color: white;
+}
+
+/* Ajuste para o campo de matéria ter posição relativa */
+.form-field-group {
+    position: relative;
+}
+
+/* Estilos para negrito nas alternativas */
+.opcao-item label strong {
+    font-weight: 600;
+}
+
+/* Melhorar responsividade */
+@media (max-width: 768px) {
+    .sugestoes-dropdown {
+        max-height: 150px;
+    }
+    
+    .topicos-tags {
+        gap: 4px;
+    }
+    
+    .topico-tag {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+    }
+}
