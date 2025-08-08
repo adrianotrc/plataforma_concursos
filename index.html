@@ -31,7 +31,7 @@
                     <a href="#beneficios">Benefícios</a>
                     <a href="#planos">Planos</a>
                     <a href="#sobre">Sobre</a>
-                    <button class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
+                    <button id="btn-auth-desktop" class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
                 </nav>
                 <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fas fa-bars"></i></button>
             </div>
@@ -40,7 +40,7 @@
                 <a href="#beneficios">Benefícios</a>
                 <a href="#planos">Planos</a>
                 <a href="#sobre">Sobre</a>
-                <button class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
+                <button id="btn-auth-mobile" class="btn btn-primary" onclick="window.location.href='login.html'">Entrar / Cadastrar</button>
             </nav>
             <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
         </div>
@@ -733,5 +733,57 @@
         });
     </script>
     <script src="confirmation-modal.js"></script>
+    <script type="module">
+        import { auth } from './firebase-config.js';
+        import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+        function formatDisplayName(user) {
+            if (!user) return '';
+            if (user.displayName && user.displayName.trim().length > 0) {
+                return user.displayName.split(' ')[0];
+            }
+            const email = user.email || '';
+            return email.includes('@') ? email.split('@')[0] : (email || 'Minha conta');
+        }
+
+        function setButtonAsLogin(btn) {
+            if (!btn) return;
+            btn.textContent = 'Entrar / Cadastrar';
+            btn.classList.remove('btn-outline');
+            btn.classList.add('btn-primary');
+            btn.onclick = () => { window.location.href = 'login.html'; };
+        }
+
+        function setButtonAsUser(btn, user) {
+            if (!btn) return;
+            const name = formatDisplayName(user);
+            btn.textContent = name;
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline');
+            btn.onclick = () => { window.location.href = 'home.html'; };
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnDesktop = document.getElementById('btn-auth-desktop');
+            const btnMobile = document.getElementById('btn-auth-mobile');
+
+            // Estado inicial padrão (não logado)
+            setButtonAsLogin(btnDesktop);
+            setButtonAsLogin(btnMobile);
+
+            onAuthStateChanged(auth, async (user) => {
+                // Atualiza rótulo e ação conforme o estado
+                if (user) {
+                    // Garante dados mais recentes
+                    try { await user.reload(); } catch (_) {}
+                    setButtonAsUser(btnDesktop, user);
+                    setButtonAsUser(btnMobile, user);
+                } else {
+                    setButtonAsLogin(btnDesktop);
+                    setButtonAsLogin(btnMobile);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
