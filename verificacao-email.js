@@ -4,6 +4,7 @@ import { auth, db } from './firebase-config.js';
 import { 
     sendEmailVerification, 
     onAuthStateChanged,
+    applyActionCode,
     signOut 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -183,25 +184,40 @@ function initializePage() {
     // Restaura cooldown se houver
     restoreCooldownIfNeeded();
 
-    // Verifica se há usuário logado
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // Recarrega o usuário para obter o status mais recente
-            await user.reload();
-            const updatedUser = auth.currentUser;
-            
-            // Se o usuário já está verificado, redireciona
-            if (updatedUser.emailVerified) {
-                try {
-                    const userDocRef = doc(db, "users", updatedUser.uid);
-                    await setDoc(userDocRef, { emailVerificado: true, verificadoEm: serverTimestamp() }, { merge: true });
-                } catch (_) {}
-                showMessage('✅ E-mail já confirmado! Redirecionando...', 'success');
-                setTimeout(() => { window.location.href = 'login.html?verified=true'; }, 1500);
+    // Trata o oobCode (verifyEmail) mesmo sem estar logado
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    const oobCode = params.get('oobCode');
+    if (mode === 'verifyEmail' && oobCode) {
+        (async () => {
+            try {
+                await applyActionCode(auth, oobCode);
+                showMessage('✅ E-mail confirmado! Agora você pode fazer login.', 'success');
+                // Tenta sincronizar Firestore se usuário estiver logado
+                if (auth.currentUser?.uid) {
+                    try {
+                        const userDocRef = doc(db, "users", auth.currentUser.uid);
+                        await setDoc(userDocRef, { emailVerificado: true, verificadoEm: serverTimestamp() }, { merge: true });
+                    } catch (_) {}
+                }
+            } catch (err) {
+                console.error('Erro ao aplicar código de verificação:', err);
+                showMessage('❌ Link de verificação inválido ou expirado. Solicite outro e-mail.', 'error');
             }
-        } else {
-            // Se não há usuário logado, redireciona para login
-            window.location.href = 'login.html';
+        })();
+    }
+
+    // Observa sessão para caso o usuário esteja logado e já verificado
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) return; // não redireciona; permite uso sem login
+        await user.reload();
+        const updatedUser = auth.currentUser;
+        if (updatedUser.emailVerified) {
+            try {
+                const userDocRef = doc(db, "users", updatedUser.uid);
+                await setDoc(userDocRef, { emailVerificado: true, verificadoEm: serverTimestamp() }, { merge: true });
+            } catch (_) {}
+            showMessage('✅ E-mail confirmado! Agora você pode fazer login.', 'success');
         }
     });
 }
