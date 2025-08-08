@@ -56,6 +56,18 @@
         </div>
     </div>
     <script type="module" src="auth.js"></script>
+    <script>
+      // Se vier de um link de verificação mal configurado que trouxe para o login,
+      // encaminha para verificar-email para aplicar o oobCode
+      (function(){
+        const p=new URLSearchParams(location.search);
+        if(p.get('mode')==='verifyEmail' && p.get('oobCode')){
+          const email=p.get('email')||'';
+          const target=`verificar-email.html?${p.toString()}${email?`&email=${encodeURIComponent(email)}`:''}`;
+          location.replace(target);
+        }
+      })();
+    </script>
     <div id="cookie-banner" class="cookie-consent-banner">
         <p>Nós utilizamos cookies essenciais e de preferência para garantir o melhor funcionamento da nossa plataforma. Ao continuar, você concorda com a nossa <a href="privacidade.html" target="_blank">Política de Privacidade</a>.</p>
         <button id="accept-cookies-btn" class="btn btn-primary">Aceitar</button>

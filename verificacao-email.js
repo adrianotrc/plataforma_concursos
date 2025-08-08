@@ -129,12 +129,13 @@ async function reenviarEmailVerificacao() {
         
         if (auth.currentUser) {
             // Após confirmar, redirecionaremos para a tela de login com flag de sucesso
-            const allowedOrigins = ['localhost', '127.0.0.1', 'iaprovas.com.br', 'www.iaprovas.com.br'];
-            const originHost = window.location.hostname;
-            const continueUrl = allowedOrigins.includes(originHost)
-                ? `${window.location.origin}/login.html?verified=true`
-                : `${window.location.protocol}//iaprovas.com.br/login.html?verified=true`;
-            const actionCodeSettings = { url: continueUrl };
+            const allowedHosts = ['localhost', '127.0.0.1', 'iaprovas.com.br', 'www.iaprovas.com.br'];
+            const host = window.location.hostname;
+            const base = allowedHosts.includes(host)
+                ? window.location.origin
+                : `${window.location.protocol}//iaprovas.com.br`;
+            // Continue URL deve vir para verificar-email.html para que possamos aplicar o oobCode
+            const actionCodeSettings = { url: `${base}/verificar-email.html` };
             await sendEmailVerification(auth.currentUser, actionCodeSettings);
             showMessage('✅ E-mail reenviado! Verifique sua caixa de entrada e a pasta de spam.', 'success');
             startCooldown(60);
@@ -192,6 +193,8 @@ function initializePage() {
         (async () => {
             try {
                 await applyActionCode(auth, oobCode);
+                // Tentar atualizar o estado local de emailVerified
+                try { await auth.currentUser?.reload(); } catch (_) {}
                 showMessage('✅ E-mail confirmado! Agora você pode fazer login.', 'success');
                 // Tenta sincronizar Firestore se usuário estiver logado
                 if (auth.currentUser?.uid) {

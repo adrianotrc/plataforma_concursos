@@ -163,8 +163,9 @@ if (formCadastro) {
                 await enviarEmailBoasVindas(user.email, nome);
             
                 // 3. AGUARDA o envio do e-mail de VERIFICAÇÃO do Firebase
+                // Continue URL DEVE ser a tela de verificação para aplicar o oobCode no retorno
                 await sendEmailVerification(user, {
-                    url: `${window.location.origin}/verificar-email.html?uid=${encodeURIComponent(user.uid)}`
+                    url: `${window.location.origin}/verificar-email.html`
                 });
                 // Registra horário do último envio para controle de cooldown na página de verificação
                 try { localStorage.setItem('lastVerificationEmailSentAt', String(Date.now())); } catch (_) {}
