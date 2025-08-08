@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verificar E-mail - IAprovas</title>
-    <link rel="stylesheet" href="styles.css"> 
+    <link rel="stylesheet" href="styles-clean.css?v=1.2"> 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -21,43 +21,45 @@
                     <div class="verificacao-icon">
                         <i class="fas fa-envelope-open-text"></i>
                     </div>
-                    <h1>Verifique seu E-mail</h1>
+                    <h1>Verifique seu e-mail</h1>
                     <p>Enviamos um link de confirmação para <span id="user-email" class="email-highlight"></span></p>
                 </div>
-                
+
                 <div class="verificacao-content">
-                    <div class="verificacao-steps">
-                        <div class="step">
-                            <div class="step-number">1</div>
-                            <div class="step-text">Abra seu e-mail</div>
+                    <div class="stepper" aria-label="Passos para confirmar o e-mail">
+                        <div class="stepper-item step-center">
+                            <div class="step-counter">1</div>
+                            <div class="step-label">Abra seu e-mail</div>
                         </div>
-                        <div class="step">
-                            <div class="step-number">2</div>
-                            <div class="step-text">Clique no link de confirmação</div>
+                        <div class="stepper-item step-center">
+                            <div class="step-counter">2</div>
+                            <div class="step-label">Clique em “Confirmar e-mail”</div>
                         </div>
-                        <div class="step">
-                            <div class="step-number">3</div>
-                            <div class="step-text">Volte aqui e faça login</div>
+                        <div class="stepper-item step-center">
+                            <div class="step-counter">3</div>
+                            <div class="step-label">Realize o login</div>
                         </div>
                     </div>
-                    
+
+                    <!-- ações rápidas removidas a pedido do usuário -->
+
                     <div class="verificacao-actions">
                         <button id="btn-verificar-email" class="btn btn-primary btn-full">
                             <i class="fas fa-sync-alt"></i>
                             Verificar se foi confirmado
                         </button>
-                        
+
                         <button id="btn-reenviar-email" class="btn btn-outline btn-full">
                             <i class="fas fa-paper-plane"></i>
                             Reenviar e-mail de confirmação
                         </button>
                     </div>
-                    
+
                     <div id="verificacao-message" class="verificacao-message" style="display: none;"></div>
                 </div>
-                
+
                 <div class="verificacao-footer">
-                    <p>Não recebeu o e-mail? Verifique sua pasta de spam.</p>
+                    <p>Não recebeu? Confira a pasta de spam ou aguarde alguns minutos.</p>
                     <div class="verificacao-links">
                         <a href="login.html">Já confirmei, fazer login</a>
                         <span class="separator">•</span>

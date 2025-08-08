@@ -39,14 +39,46 @@ function showMessage(message, type = 'info') {
     }
 }
 
+// Inicia um cooldown visual e funcional no botão de reenvio; persiste em localStorage
+function startCooldown(seconds) {
+    let remaining = seconds;
+    btnReenviarEmail.disabled = true;
+    const baseLabel = '<i class="fas fa-paper-plane"></i> Reenviar e-mail de confirmação';
+    const tick = () => {
+        btnReenviarEmail.innerHTML = `${baseLabel} · aguarde ${remaining}s`;
+        remaining -= 1;
+        if (remaining < 0) {
+            btnReenviarEmail.disabled = false;
+            btnReenviarEmail.innerHTML = baseLabel;
+            clearInterval(intervalId);
+            try { localStorage.removeItem('lastVerificationEmailSentAt'); } catch (_) {}
+        }
+    };
+    tick();
+    const intervalId = setInterval(tick, 1000);
+}
+
+function restoreCooldownIfNeeded() {
+    try {
+        const last = Number(localStorage.getItem('lastVerificationEmailSentAt'));
+        if (Number.isFinite(last)) {
+            const elapsed = Math.floor((Date.now() - last) / 1000);
+            const remaining = 60 - elapsed;
+            if (remaining > 0) startCooldown(remaining);
+        }
+    } catch (_) {}
+}
+
 // Verifica se o e-mail foi confirmado
 async function verificarStatusEmail() {
     try {
         btnVerificarEmail.disabled = true;
         btnVerificarEmail.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
         
-        // Recarrega o usuário para obter o status mais recente
-        await auth.currentUser?.reload();
+        // Enforce reload da sessão para refletir o estado mais recente do Auth
+        if (auth.currentUser) {
+            await auth.currentUser.reload();
+        }
         
         // Debug: mostra informações do usuário
         console.log('Verificação de status - Usuário atual:', {
@@ -55,20 +87,11 @@ async function verificarStatusEmail() {
             uid: auth.currentUser?.uid
         });
         
-        // Abordagem híbrida: verifica tanto Firebase quanto Firestore
-        const userDocRef = doc(db, "users", auth.currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        const userData = userDoc.data();
-        
-        console.log('Verificação híbrida:', {
-            firebaseVerified: auth.currentUser?.emailVerified,
-            firestoreData: userData
-        });
-        
-        // Se Firebase diz que foi verificado OU se temos dados no Firestore
-        if (auth.currentUser?.emailVerified || userData) {
+        // Usa apenas o sinal do Firebase. Firestore não é fonte de verdade.
+        if (auth.currentUser && auth.currentUser.emailVerified) {
             console.log('E-mail verificado! Redirecionando...');
             
+            const userDocRef = doc(db, "users", auth.currentUser.uid);
             // Atualiza o status no Firestore
             await setDoc(userDocRef, { 
                 emailVerificado: true,
@@ -104,10 +127,17 @@ async function reenviarEmailVerificacao() {
         btnReenviarEmail.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
         
         if (auth.currentUser) {
-            await sendEmailVerification(auth.currentUser, {
-                url: window.location.origin + '/verificar-email.html'
-            });
-            showMessage('✅ E-mail de verificação reenviado! Verifique sua caixa de entrada.', 'success');
+            // Após confirmar, redirecionaremos para a tela de login com flag de sucesso
+            const allowedOrigins = ['localhost', '127.0.0.1', 'iaprovas.com.br', 'www.iaprovas.com.br'];
+            const originHost = window.location.hostname;
+            const continueUrl = allowedOrigins.includes(originHost)
+                ? `${window.location.origin}/login.html?verified=true`
+                : `${window.location.protocol}//iaprovas.com.br/login.html?verified=true`;
+            const actionCodeSettings = { url: continueUrl };
+            await sendEmailVerification(auth.currentUser, actionCodeSettings);
+            showMessage('✅ E-mail reenviado! Verifique sua caixa de entrada e a pasta de spam.', 'success');
+            startCooldown(60);
+            try { localStorage.setItem('lastVerificationEmailSentAt', String(Date.now())); } catch (_) {}
         } else {
             showMessage('❌ Usuário não encontrado. Faça login novamente.', 'error');
         }
@@ -116,13 +146,18 @@ async function reenviarEmailVerificacao() {
         
         // Tratamento específico para rate limiting
         if (error.code === 'auth/too-many-requests') {
-            showMessage('❌ Muitas tentativas. Aguarde alguns minutos antes de reenviar.', 'error');
+            showMessage('❌ Muitas tentativas. Aguarde alguns minutos antes de tentar reenviar novamente.', 'error');
+            startCooldown(120);
+        } else if (error.code === 'auth/invalid-continue-uri' || error.code === 'auth/unauthorized-continue-uri') {
+            showMessage('❌ URL de redirecionamento não autorizada no Firebase. Verifique as configurações de domínios autorizados.', 'error');
         } else {
             showMessage('Erro ao reenviar e-mail. Tente novamente.', 'error');
         }
     } finally {
-        btnReenviarEmail.disabled = false;
-        btnReenviarEmail.innerHTML = '<i class="fas fa-paper-plane"></i> Reenviar e-mail de confirmação';
+        if (!btnReenviarEmail.disabled) {
+            btnReenviarEmail.disabled = false;
+            btnReenviarEmail.innerHTML = '<i class="fas fa-paper-plane"></i> Reenviar e-mail de confirmação';
+        }
     }
 }
 
@@ -133,6 +168,8 @@ function initializePage() {
     if (email && userEmailElement) {
         userEmailElement.textContent = email;
     }
+
+    // Removido: botão abrir e-mail (não faz sentido no fluxo)
     
     // Event listeners
     if (btnVerificarEmail) {
@@ -143,6 +180,9 @@ function initializePage() {
         btnReenviarEmail.addEventListener('click', reenviarEmailVerificacao);
     }
     
+    // Restaura cooldown se houver
+    restoreCooldownIfNeeded();
+
     // Verifica se há usuário logado
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -152,10 +192,12 @@ function initializePage() {
             
             // Se o usuário já está verificado, redireciona
             if (updatedUser.emailVerified) {
+                try {
+                    const userDocRef = doc(db, "users", updatedUser.uid);
+                    await setDoc(userDocRef, { emailVerificado: true, verificadoEm: serverTimestamp() }, { merge: true });
+                } catch (_) {}
                 showMessage('✅ E-mail já confirmado! Redirecionando...', 'success');
-                setTimeout(() => {
-                    window.location.href = 'login.html?verified=true';
-                }, 2000);
+                setTimeout(() => { window.location.href = 'login.html?verified=true'; }, 1500);
             }
         } else {
             // Se não há usuário logado, redireciona para login

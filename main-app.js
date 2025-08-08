@@ -147,6 +147,17 @@ function initializeApp() {
             }
             state.userData = userDocSnap.data();
             
+            // Impede acesso a páginas protegidas se e-mail não estiver verificado
+            if (!user.emailVerified) {
+                const emailParam = encodeURIComponent(user.email);
+                const paginaAtual = window.location.pathname.split('/').pop();
+                const paginasProtegidas = ['home.html', 'cronograma.html', 'exercicios.html', 'dicas-estrategicas.html', 'meu-perfil.html', 'discursivas.html', 'material-de-estudo.html'];
+                if (paginasProtegidas.includes(paginaAtual)) {
+                    window.location.href = `verificar-email.html?email=${emailParam}`;
+                    return;
+                }
+            }
+
             await carregarDadosDoUsuario(user.uid);
             updateUserInfo(user, state.userData);
             controlarAcessoFuncionalidades(state.userData.plano);

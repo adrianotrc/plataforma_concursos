@@ -65,26 +65,22 @@ if (formLogin) {
                 uid: updatedUser.uid
             });
 
-            // Verifica se o e-mail foi confirmado (abordagem híbrida)
-            const userDocRef = doc(db, "users", updatedUser.uid);
-            const userDoc = await getDoc(userDocRef);
-            const userData = userDoc.data();
-            
-            console.log('Dados do usuário no Firestore:', userData);
-            console.log('Status emailVerified do Firebase:', updatedUser.emailVerified);
-            
-            // Se o Firebase diz que não foi verificado, mas temos dados no Firestore
-            // vamos permitir o login (usuário pode ter confirmado mas Firebase não atualizou)
-            if (!updatedUser.emailVerified && userData) {
-                console.log('Firebase não detectou verificação, mas permitindo login...');
-                // Atualiza o status no Firestore para indicar que foi verificado
-                await setDoc(userDocRef, { 
-                    emailVerificado: true,
-                    verificadoEm: serverTimestamp()
-                }, { merge: true });
+            // Bloqueia login se e-mail ainda não foi verificado
+            if (!updatedUser.emailVerified) {
+                console.warn('Login bloqueado: e-mail não verificado.');
+                const emailParam = encodeURIComponent(updatedUser.email);
+                // Redireciona para a página de verificação, onde o usuário pode reenviar o e-mail
+                window.location.href = `verificar-email.html?email=${emailParam}`;
+                return;
             }
 
-            console.log('Continuando com login...');
+            // Sincroniza Firestore para refletir verificação concluída
+            try {
+                const userDocRef = doc(db, "users", updatedUser.uid);
+                await setDoc(userDocRef, { emailVerificado: true, verificadoEm: serverTimestamp() }, { merge: true });
+            } catch (_) { /* noop */ }
+
+            console.log('Email verificado. Continuando com login...');
 
             // Lógica de redirect inteligente para o LOGIN
             const postLoginParams = new URLSearchParams(window.location.search);
@@ -168,8 +164,10 @@ if (formCadastro) {
             
                 // 3. AGUARDA o envio do e-mail de VERIFICAÇÃO do Firebase
                 await sendEmailVerification(user, {
-                    url: window.location.origin + '/verificar-email.html'
+                    url: `${window.location.origin}/verificar-email.html?uid=${encodeURIComponent(user.uid)}`
                 });
+                // Registra horário do último envio para controle de cooldown na página de verificação
+                try { localStorage.setItem('lastVerificationEmailSentAt', String(Date.now())); } catch (_) {}
             
                 // 4. Redireciona o usuário
                 window.location.href = `verificar-email.html?email=${encodeURIComponent(email)}`;
