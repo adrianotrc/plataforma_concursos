@@ -203,13 +203,13 @@ function initializePage() {
                         await setDoc(userDocRef, { emailVerificado: true, verificadoEm: serverTimestamp() }, { merge: true });
                     } catch (_) {}
                 }
-                // Redireciona automaticamente para o login com flag de sucesso
+                // Redireciona automaticamente para o login com flag de sucesso (delay reduzido)
                 setTimeout(() => {
                     const host = window.location.hostname;
                     const allowedHosts = ['localhost', '127.0.0.1', 'iaprovas.com.br', 'www.iaprovas.com.br'];
                     const base = allowedHosts.includes(host) ? window.location.origin : `${window.location.protocol}//iaprovas.com.br`;
                     window.location.replace(`${base}/login.html?verified=true`);
-                }, 800);
+                }, 200);
             } catch (err) {
                 console.error('Erro ao aplicar código de verificação:', err);
                 showMessage('❌ Link de verificação inválido ou expirado. Solicite outro e-mail.', 'error');
