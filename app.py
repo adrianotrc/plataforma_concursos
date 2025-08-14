@@ -15,6 +15,9 @@ from openai import OpenAI
 import stripe
 import resend
 import numpy as np
+from babel.dates import format_date
+import traceback
+from firebase_admin import credentials, firestore, auth as firebase_auth
 
 
 load_dotenv()
@@ -1555,11 +1558,18 @@ def create_checkout_session():
 
         # IDs dos produtos de produção no Stripe
         price_ids = {
-            'basico': 'price_1RbNwKI6qNljWf7uteg6oRkd',
-            'intermediario': 'price_1RbNwKI6qNljWf7usjgSzXQ3',
-            'premium': 'price_1RbNwKI6qNljWf7u9ubuSbsI',
-            'anual': 'price_1RbNwKI6qNljWf7uWXU6dGod',
+            'basico': 'price_1Rw2qDI6qNljWf7uvyv6bAU3',
+            'intermediario': 'price_1Rw2qnI6qNljWf7ux393MN2y',
+            'premium': 'price_1Rw2rDI6qNljWf7uWnPUO5Nj',
+            'anual': 'price_1Rw2rpI6qNljWf7uLqUuOjKb',
         }
+
+        # price_ids = {
+        #     'basico': 'price_1RbARyI6qNljWf7uGw17462K',
+        #     'intermediario': 'price_1RbAoGI6qNljWf7ukTkebZgt',
+        #     'premium': 'price_1RbAoWI6qNljWf7uMd3PI1bh',
+        #     'anual': 'price_1RbAokI6qNljWf7uFlJ9UusN',
+        # }
 
         price_id = price_ids.get(plan)
         if not price_id:
@@ -1600,194 +1610,80 @@ def stripe_webhook():
     endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
     event = None
 
-    print("\n--- Webhook da Stripe recebido! ---")
-
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
-    except ValueError as e:
-        print("Erro de payload inválido no webhook:", e)
-        return 'Invalid payload', 400
-    except stripe.error.SignatureVerificationError as e:
-        print("Erro de verificação de assinatura no webhook:", e)
-        return 'Invalid signature', 400
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+    except (ValueError, stripe.error.SignatureVerificationError) as e:
+        print(f"Erro no webhook: {e}")
+        return 'Webhook Error', 400
 
+    # --- LÓGICA DE CADA EVENTO ---
+
+    # EVENTO: COMPRA BEM-SUCEDIDA
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         user_id = session.get('client_reference_id')
         stripe_customer_id = session.get('customer')
+        subscription_id = session.get('subscription')
 
-        if user_id and stripe_customer_id:
-            try:
-                user_ref = db.collection('users').document(user_id)
-                user_doc = user_ref.get()
-                if user_doc.exists:
-                    user_data = user_doc.to_dict()
-                    user_email = user_data.get('email')
-                    user_nome = user_data.get('nome', 'estudante')
+        if not all([user_id, stripe_customer_id, subscription_id]):
+            return 'Webhook Error: Missing data', 400
 
-                    # Atualiza plano no Firestore
-                    user_ref.update({
-                        'plano': 'premium', # Simplificando para 'premium' em qualquer assinatura
-                        'stripeCustomerId': stripe_customer_id
-                    })
+        try:
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            price_id = subscription['items']['data'][0]['price']['id']
 
-                    # Envia e-mail de confirmação de assinatura PROFISSIONAL
-                    assunto = "🎉 Assinatura Confirmada - Bem-vindo ao IAprovas Premium!"
-                    
-                    # Template HTML profissional para confirmação de pagamento
-                    frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
-                    portal_url = f"{frontend_url}/criar-portal-stripe"
-                    
-                    conteudo_html = f"""
-                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-                        <!-- Header com gradiente -->
-                        <div style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); padding: 32px 24px; text-align: center; border-radius: 12px 12px 0 0;">
-                            <div style="background: white; width: 60px; height: 60px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-                                <span style="font-size: 24px;">📚</span>
-                            </div>
-                            <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">IAprovas</h1>
-                            <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 16px;">Sua aprovação com IA</p>
-                        </div>
-                        
-                        <!-- Conteúdo principal -->
-                        <div style="padding: 40px 24px; background: white;">
-                            <!-- Ícone de sucesso -->
-                            <div style="text-align: center; margin-bottom: 32px;">
-                                <div style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); width: 80px; height: 80px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-                                    <span style="color: white; font-size: 32px;">✓</span>
-                                </div>
-                                <h2 style="color: #1f2937; margin: 0; font-size: 28px; font-weight: bold;">Pagamento Confirmado!</h2>
-                                <p style="color: #6b7280; margin: 8px 0 0 0; font-size: 18px;">Sua jornada para a aprovação começou agora</p>
-                            </div>
-                            
-                            <!-- Informações da assinatura -->
-                            <div style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 24px 0;">
-                                <h3 style="color: #1f2937; margin: 0 0 16px 0; font-size: 18px; font-weight: 600;">📋 Detalhes da sua Assinatura</h3>
-                                <div style="display: grid; gap: 12px;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                        <span style="color: #6b7280; font-weight: 500;">Plano</span>
-                                        <span style="color: #1f2937; font-weight: bold;">Premium</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                        <span style="color: #6b7280; font-weight: 500;">Status</span>
-                                        <span style="color: #1d4ed8; font-weight: bold;">✅ Ativo</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
-                                        <span style="color: #6b7280; font-weight: 500;">Cobrança</span>
-                                        <span style="color: #1f2937; font-weight: bold;">Mensal Automática</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Próximos passos -->
-                            <div style="margin: 32px 0;">
-                                <h3 style="color: #1f2937; margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">🚀 Seus Próximos Passos</h3>
-                                <div style="display: grid; gap: 16px;">
-                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                        <div style="background: #1d4ed8; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0;">1</div>
-                                        <div>
-                                            <strong style="color: #1f2937;">Acesse seu Dashboard</strong>
-                                            <br><span style="color: #6b7280; font-size: 14px;">Comece explorando sua área personalizada</span>
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                        <div style="background: #1d4ed8; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0;">2</div>
-                                        <div>
-                                            <strong style="color: #1f2937;">Crie seu Primeiro Cronograma</strong>
-                                            <br><span style="color: #6b7280; font-size: 14px;">Gere um plano de estudos personalizado com IA</span>
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                        <div style="background: #1d4ed8; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0;">3</div>
-                                        <div>
-                                            <strong style="color: #1f2937;">Pratique com Exercícios IA</strong>
-                                            <br><span style="color: #6b7280; font-size: 14px;">Treine com questões adaptadas ao seu nível</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Botão principal -->
-                            <div style="text-align: center; margin: 32px 0;">
-                                <a href="{frontend_url}/home.html" style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(29, 78, 216, 0.3);">
-                                    🚀 Acessar Meu Dashboard
-                                </a>
-                            </div>
-                            
-                            <!-- Links rápidos -->
-                            <div style="background: #fffbeb; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px; margin: 24px 0;">
-                                <h4 style="color: #92400e; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">🔗 Links Úteis</h4>
-                                <div style="display: grid; gap: 8px;">
-                                    <a href="{frontend_url}/cronograma.html" style="color: #92400e; text-decoration: none; font-size: 14px;">📊 Criar Cronograma de Estudos</a>
-                                    <a href="{frontend_url}/exercicios.html" style="color: #92400e; text-decoration: none; font-size: 14px;">💡 Resolver Exercícios com IA</a>
-                                    <a href="{frontend_url}/discursivas.html" style="color: #92400e; text-decoration: none; font-size: 14px;">✍️ Treinar Redações</a>
-                                    <a href="{frontend_url}/meu-perfil.html" style="color: #92400e; text-decoration: none; font-size: 14px;">👤 Gerenciar Meu Perfil</a>
-                                </div>
-                            </div>
-                            
-                            <!-- Gerenciamento da assinatura -->
-                            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px; margin: 24px 0;">
-                                <h4 style="color: #1d4ed8; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">⚙️ Gerenciar Assinatura</h4>
-                                <p style="color: #1e40af; margin: 0 0 12px 0; font-size: 14px; line-height: 1.5;">Você pode cancelar a qualquer momento através do seu perfil, sem taxas ou burocracias.</p>
-                                <a href="mailto:contato@iaprovas.com.br?subject=Gerenciar Assinatura" style="color: #1d4ed8; text-decoration: none; font-size: 14px; font-weight: 500;">📧 Entrar em contato para suporte</a>
-                            </div>
-                            
-                            <!-- Satisfação -->
-                            <div style="text-align: center; margin: 32px 0; padding: 20px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px;">
-                                <h4 style="color: #1d4ed8; margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">😊 Satisfação Garantida</h4>
-                                <p style="color: #1d4ed8; margin: 0; font-size: 14px;">Cancele a qualquer momento pelo seu perfil, sem complicações.</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Footer -->
-                        <div style="background: #f8fafc; padding: 24px; text-align: center; border-radius: 0 0 12px 12px; border-top: 1px solid #e2e8f0;">
-                            <p style="color: #6b7280; margin: 0 0 16px 0; font-size: 14px;">
-                                IAprovas - Sua aprovação com Inteligência Artificial<br>
-                                Se precisar de ajuda: <a href="mailto:contato@iaprovas.com.br" style="color: #1d4ed8;">contato@iaprovas.com.br</a>
-                            </p>
-                        </div>
-                    </div>
-                    """
-                    
-                    conteudo_texto = f"""
-                    🎉 ASSINATURA CONFIRMADA - IAprovas Premium
+            # Passo 2: Mapear o ID do preço de volta para o nome do plano
+            # ATENÇÃO: Use os mesmos IDs de PREÇO de TESTE que você já configurou na rota /create-checkout-session
+            price_ids_reverso = {
+                'price_1Rw2qDI6qNljWf7uvyv6bAU3': 'basico',
+                'price_1Rw2qnI6qNljWf7ux393MN2y': 'intermediario',
+                'price_1Rw2rDI6qNljWf7uWnPUO5Nj': 'premium',
+                'price_1Rw2rpI6qNljWf7uLqUuOjKb': 'anual',
+            }
+            
+            # price_ids_reverso = {
+            #     'price_1RbARyI6qNljWf7uGw17462K': 'basico',
+            #     'price_1RbAoGI6qNljWf7ukTkebZgt': 'intermediario',
+            #     'price_1RbAoWI6qNljWf7uMd3PI1bh': 'premium',
+            #     'price_1RbAokI6qNljWf7uFlJ9UusN': 'anual',
+            # }
+            plano_comprado = price_ids_reverso.get(price_id, 'premium')
+            user_ref = db.collection('users').document(user_id)
+            user_doc = user_ref.get()
 
-                    Olá, {user_nome}!
+            if user_doc.exists:
+                user_data = user_doc.to_dict()
+                user_email = user_data.get('email')
+                user_nome = user_data.get('nome', 'estudante')
 
-                    Sua assinatura do IAprovas Premium foi ativada com sucesso!
+                user_ref.update({
+                    'plano': plano_comprado, 'stripeCustomerId': stripe_customer_id,
+                    'stripeSubscriptionId': subscription_id, 'assinaturaStatus': 'ativa',
+                    'trialFim': firestore.DELETE_FIELD
+                })
+                print(f"SUCESSO: Usuário {user_id} assinou o plano '{plano_comprado}'.")
 
-                    PRÓXIMOS PASSOS:
-                    1. Acesse seu dashboard: {frontend_url}/home.html
-                    2. Crie seu primeiro cronograma de estudos
-                    3. Pratique com exercícios gerados por IA
-                    4. Treine redações com correção automática
+                funcionalidades = {
+                    'basico': ["Cronogramas com IA (10 por dia)", "Dicas Estratégicas (10 por dia)"],
+                    'intermediario': ["Cronogramas (15 por dia)", "Dicas (15 por dia)", "Exercícios com IA (15 por dia)"],
+                    'premium': ["Cronogramas (20 por dia)", "Exercícios (20 por dia)", "Questões Discursivas (20 por dia)"],
+                    'anual': ["Todas as funcionalidades com limites do plano Premium"]
+                }
+                lista_html_funcionalidades = "".join([f'<li style="margin-bottom: 8px;">✅ {feat}</li>' for feat in funcionalidades.get(plano_comprado, [])])
+                assunto = f"🎉 Assinatura Confirmada - Bem-vindo ao IAprovas {plano_comprado.capitalize()}!"
+                frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+                
+                # Template de e-mail de confirmação
+                conteudo_html = f"""
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                    <div style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); padding: 24px; text-align: center;"><h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">IAprovas</h1></div>
+                    <div style="padding: 32px 24px;"><h2 style="color: #1f2937; margin: 0 0 16px 0; font-size: 22px; font-weight: bold;">Pagamento Confirmado!</h2><p style="color: #475569; margin: 0 0 24px 0; font-size: 16px; line-height: 1.5;">Olá, {user_nome}, sua jornada para a aprovação começou agora!</p><div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 24px;"><div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;"><span style="color: #64748b;">Plano Contratado:</span><span style="color: #1f2937; font-weight: bold;">{plano_comprado.capitalize()}</span></div><div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px;"><span style="color: #64748b;">Status:</span><span style="color: #16a34a; font-weight: bold;">✅ Ativo</span></div></div><p style="color: #475569; font-size: 16px;">Com seu plano, você tem acesso a:</p><ul style="color: #475569; list-style-type: none; padding-left: 0; margin-bottom: 24px;">{lista_html_funcionalidades}</ul><div style="text-align: center;"><a href="{frontend_url}/home.html" style="background-color: #2563eb; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 600;">Acessar Meu Dashboard</a></div></div></div>
+                """
+                enviar_email(user_email, user_nome, assunto, conteudo_html, "")
+        except Exception as e:
+            print(f"ERRO CRÍTICO no webhook checkout.session.completed: {e}")
+            traceback.print_exc()
 
-                    DETALHES DA ASSINATURA:
-                    - Plano: Premium
-                    - Status: Ativo ✅
-                    - Cobrança: Mensal automática
-                    - Cancelamento: A qualquer momento pelo perfil
-
-                    LINKS ÚTEIS:
-                    - Dashboard: {frontend_url}/home.html
-                    - Cronograma: {frontend_url}/cronograma.html
-                    - Exercícios: {frontend_url}/exercicios.html
-                    - Perfil: {frontend_url}/meu-perfil.html
-
-                    SUPORTE:
-                    Para gerenciar sua assinatura ou tirar dúvidas:
-                    📧 contato@iaprovas.com.br
-
-                    Bons estudos!
-                    Equipe IAprovas
-                    """
-                    
-                    enviar_email(user_email, user_nome, assunto, conteudo_html, conteudo_texto)
-
-            except Exception as e:
-                print(f"Erro no webhook checkout.session.completed: {e}")
     elif event['type'] == 'invoice.payment_failed':
         # FALHA DE PAGAMENTO - Primeira tentativa
         invoice = event['data']['object']
@@ -1894,6 +1790,143 @@ def stripe_webhook():
         except Exception as e:
             print(f"Erro no webhook invoice.payment_failed: {e}")
 
+    elif event['type'] == 'customer.subscription.updated':
+        subscription = event.data.object
+        previous_attributes = event.data.get('previous_attributes', {})
+        stripe_customer_id = subscription.get('customer')
+        
+        user_query = db.collection('users').where('stripeCustomerId', '==', stripe_customer_id).limit(1)
+        docs = list(user_query.stream())
+        if not docs: return 'Success', 200
+        user_doc = docs[0]
+        user_data = user_doc.to_dict()
+        user_email = user_data.get('email')
+        user_nome = user_data.get('nome', 'estudante')
+
+        # Cenário 1: O usuário cancelou a assinatura
+        if subscription.get('cancel_at_period_end') and not previous_attributes.get('cancel_at_period_end'):
+            cancel_timestamp = subscription.get('cancel_at')
+            cancel_date = datetime.fromtimestamp(cancel_timestamp - 1, tz=timezone.utc)
+
+            if user_data.get('assinaturaStatus') != 'cancelada':
+                user_doc.reference.update({'assinaturaStatus': 'cancelada', 'dataFimAcesso': cancel_date})
+            
+            for doc in docs:
+                user_data = doc.to_dict()
+                if user_data.get('assinaturaStatus') != 'cancelada':
+                    doc.reference.update({
+                        'assinaturaStatus': 'cancelada',
+                        'dataFimAcesso': cancel_date
+                    })
+                
+                user_email = user_data.get('email')
+                user_nome = user_data.get('nome', 'estudante')
+                plano_cancelado = user_data.get('plano', 'Premium')
+                data_formatada_br = format_date(cancel_date, "d 'de' MMMM 'de' yyyy", locale='pt_BR')
+                assunto = "😔 Vimos que você cancelou sua assinatura IAprovas"
+                frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+
+                # Template de e-mail profissional
+                conteudo_html = f"""
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                    <div style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); padding: 24px; text-align: center;">
+                        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">IAprovas</h1>
+                    </div>
+                    <div style="padding: 32px 24px;">
+                        <h2 style="color: #1f2937; margin: 0 0 16px 0; font-size: 22px; font-weight: bold;">Sua assinatura foi cancelada</h2>
+                        <p style="color: #475569; margin: 0 0 24px 0; font-size: 16px; line-height: 1.5;">Olá, {user_nome}, este é um e-mail para confirmar que o cancelamento da sua assinatura do plano <strong>{plano_cancelado.capitalize()}</strong> foi agendado.</p>
+                        <div style="background: #f1f5f9; border-radius: 8px; padding: 16px; margin-bottom: 24px; text-align: center;">
+                            <p style="color: #475569; margin: 0 0 4px 0;">Seu acesso continua ativo até:</p>
+                            <p style="color: #1f2937; font-weight: bold; font-size: 18px; margin: 0;">{data_formatada_br}</p>
+                        </div>
+                        <p style="color: #475569; font-size: 16px;">Seus dados e cronogramas serão mantidos caso decida voltar. Se o cancelamento foi um engano ou se você mudar de ideia, é fácil reativar.</p>
+                        <div style="text-align: center; margin-top: 32px;">
+                            <a href="{frontend_url}/meu-perfil.html" style="background-color: #16a34a; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 600;">Reativar minha assinatura</a>
+                        </div>
+                    </div>
+                </div>
+                """
+                conteudo_texto = f"Olá, {user_nome}. Confirmamos o cancelamento da sua assinatura {plano_cancelado.capitalize()}. Seu acesso continua até {data_formatada_br}."
+                
+                enviar_email(user_email, user_nome, assunto, conteudo_html, conteudo_texto)
+                print(f"E-mail de cancelamento enviado e Firestore atualizado para o usuário {doc.id}.")
+                break
+        
+        # Cenário 2: O usuário REATIVOU a assinatura (desistiu do cancelamento)
+        elif not subscription.get('cancel_at_period_end') and previous_attributes.get('cancel_at_period_end'):
+            user_doc.reference.update({
+                'assinaturaStatus': 'ativa',
+                'dataFimAcesso': firestore.DELETE_FIELD
+            })
+
+            plano_reativado = user_data.get('plano', 'Premium')
+            assunto = f"✅ Sua assinatura do plano {plano_reativado.capitalize()} foi reativada!"
+            conteudo_html = f"""
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); padding: 24px; text-align: center;"><h1 style="color: white; margin: 0;">IAprovas</h1></div>
+                <div style="padding: 32px 24px;">
+                    <h2 style="margin: 0 0 16px 0;">Assinatura Reativada!</h2>
+                    <p>Olá, {user_nome},</p>
+                    <p>Confirmamos que sua assinatura do plano <strong>{plano_reativado.capitalize()}</strong> foi reativada com sucesso. A cobrança continuará normalmente no próximo ciclo.</p>
+                    <p>Ficamos felizes em ter você de volta!</p>
+                </div>
+            </div>
+            """
+            enviar_email(user_email, user_nome, assunto, conteudo_html, "")
+            print(f"Assinatura do usuário {user_doc.id} foi reativada.")
+
+        # Cenário 3: O usuário mudou de plano (upgrade/downgrade)
+        elif 'items' in previous_attributes:
+            try:
+                price_id = subscription['items']['data'][0]['price']['id']
+                
+                price_ids_reverso = {
+                    'price_1Rw2qDI6qNljWf7uvyv6bAU3': 'basico',
+                    'price_1Rw2qnI6qNljWf7ux393MN2y': 'intermediario',
+                    'price_1Rw2rDI6qNljWf7uWnPUO5Nj': 'premium',
+                    'price_1Rw2rpI6qNljWf7uLqUuOjKb': 'anual',
+                }
+                
+                # price_ids_reverso = {
+                #     'price_1RbARyI6qNljWf7uGw17462K': 'basico',
+                #     'price_1RbAoGI6qNljWf7ukTkebZgt': 'intermediario',
+                #     'price_1RbAoWI6qNljWf7uMd3PI1bh': 'premium',
+                #     'price_1RbAokI6qNljWf7uFlJ9UusN': 'anual',
+                # }
+                novo_plano = price_ids_reverso.get(price_id, 'premium')
+
+                users_ref = db.collection('users')
+                query = users_ref.where('stripeCustomerId', '==', stripe_customer_id).limit(1)
+                docs = query.stream()
+
+                for doc in docs:
+                    # Atualiza o plano no Firestore
+                    doc.reference.update({'plano': novo_plano})
+                    
+                    user_data = doc.to_dict()
+                    user_email = user_data.get('email')
+                    user_nome = user_data.get('nome', 'estudante')
+
+                    # Envia e-mail de confirmação da alteração de plano
+                    assunto = f"✅ Seu plano IAprovas foi atualizado para {novo_plano.capitalize()}!"
+                    conteudo_html = f"""
+                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); padding: 24px; text-align: center;"><h1 style="color: white; margin: 0;">IAprovas</h1></div>
+                        <div style="padding: 32px 24px;">
+                            <h2 style="margin: 0 0 16px 0;">Plano Atualizado</h2>
+                            <p>Olá, {user_nome},</p>
+                            <p>Confirmamos que sua assinatura foi alterada com sucesso para o plano <strong>{novo_plano.capitalize()}</strong>.</p>
+                            <p>Os novos benefícios já estão disponíveis na sua conta. A cobrança será ajustada na sua próxima fatura.</p>
+                        </div>
+                    </div>
+                    """
+                    conteudo_texto = f"Olá, {user_nome}. Seu plano foi alterado para {novo_plano.capitalize()}."
+                    enviar_email(user_email, user_nome, assunto, conteudo_html, conteudo_texto)
+                    print(f"Plano do usuário {doc.id} atualizado para '{novo_plano}'.")
+                    break
+            except Exception as e:
+                print(f"ERRO ao processar atualização de plano: {e}")
+
     elif event['type'] == 'customer.subscription.deleted':
         subscription = event['data']['object']
         stripe_customer_id = subscription.get('customer')
@@ -1908,10 +1941,13 @@ def stripe_webhook():
                 user_data = doc.to_dict()
                 user_email = user_data.get('email')
                 user_nome = user_data.get('nome', 'estudante')
+                plano_antigo = user_data.get('plano', 'pago')
 
-                # ✅ DESATIVA A CONTA (CRÍTICO)
+
+                # Desativa a conta no Firestore
                 doc.reference.update({
-                    'plano': 'trial',  # Reverte para trial
+                    'plano': 'trial',
+                    'assinaturaStatus': 'expirada',
                     'assinaturaCancelada': True,
                     'dataCancelamento': firestore.SERVER_TIMESTAMP
                 })
@@ -1942,8 +1978,8 @@ def stripe_webhook():
                         <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin: 24px 0;">
                                                          <h3 style="color: #dc2626; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">📋 O que aconteceu?</h3>
                              <p style="color: #dc2626; margin: 0; font-size: 14px; line-height: 1.5;">
-                                 Sua assinatura foi <strong>cancelada definitivamente</strong>. Isso ocorreu por:
-                             </p>
+                                Sua assinatura do plano <strong>{plano_antigo.capitalize()}</strong> foi <strong>cancelada definitivamente</strong>. Isso ocorreu por:
+                            </p>
                              <ul style="color: #dc2626; margin: 12px 0 0 0; font-size: 14px; line-height: 1.5;">
                                  <li>Múltiplas tentativas de cobrança falharam</li>
                                  <li>Cancelamento solicitado pelo usuário</li>
@@ -1956,7 +1992,7 @@ def stripe_webhook():
                         <div style="background: #fffbeb; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px; margin: 24px 0;">
                             <h3 style="color: #92400e; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">🔒 Status da sua conta</h3>
                             <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.5;">
-                                <strong>Acesso premium removido:</strong> Você retornou ao plano trial com funcionalidades limitadas.
+                                <strong>Acesso {plano_antigo.capitalize()} removido:</strong> Você retornou ao plano trial com funcionalidades limitadas.
                             </p>
                         </div>
                         
@@ -2024,6 +2060,76 @@ def stripe_webhook():
                 break # Para após encontrar o usuário
         except Exception as e:
             print(f"Erro no webhook customer.subscription.deleted: {e}")
+
+    elif event['type'] == 'invoice.payment_succeeded':
+        invoice = event['data']['object']
+        stripe_customer_id = invoice.get('customer')
+        
+        # Ignora o primeiro pagamento, que já é tratado pelo 'checkout.session.completed'
+        if invoice.get('billing_reason') == 'subscription_cycle':
+            users_ref = db.collection('users')
+            query = users_ref.where('stripeCustomerId', '==', stripe_customer_id).limit(1)
+            docs = query.stream()
+
+            for doc in docs:
+                user_data = doc.to_dict()
+                user_email = user_data.get('email')
+                user_nome = user_data.get('nome', 'estudante')
+                plano = user_data.get('plano', '')
+
+                assunto = f"✅ Sua assinatura do IAprovas foi renovada!"
+                conteudo_html = f"""
+                <p>Olá, {user_nome},</p>
+                <p>Confirmamos a renovação mensal da sua assinatura do plano <strong>{plano.capitalize()}</strong>.</p>
+                <p>Seu acesso continua normal. Agradecemos por continuar conosco!</p>
+                <p>Bons estudos!</p>
+                """
+                conteudo_texto = f"Olá, {user_nome}. Sua assinatura do plano {plano.capitalize()} foi renovada com sucesso."
+                
+                enviar_email(user_email, user_nome, assunto, conteudo_html, conteudo_texto)
+                print(f"Renovação de assinatura processada para {doc.id}.")
+                break
+    
+    elif event['type'] == 'invoice.payment_succeeded':
+        invoice = event['data']['object']
+        if invoice.get('billing_reason') == 'subscription_cycle':
+            stripe_customer_id = invoice.get('customer')
+
+    elif event['type'] == 'customer.updated':
+        previous_attributes = event.data.get('previous_attributes', {})
+        if any(key in previous_attributes for key in ['address', 'name', 'phone']):
+            stripe_customer_id = event.data.object.get('id')
+            user_query = db.collection('users').where('stripeCustomerId', '==', stripe_customer_id).limit(1)
+            docs = list(user_query.stream())
+            if not docs: return 'Success', 200
+            user_doc = docs[0]
+            user_data = user_doc.to_dict()
+            user_email = user_data.get('email')
+            user_nome = user_data.get('nome', 'estudante')
+            assunto = "Seus dados de faturamento foram atualizados"
+            conteudo_html = f"""
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;"><div style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); padding: 24px; text-align: center;"><h1 style="color: white; margin: 0;">IAprovas</h1></div><div style="padding: 32px 24px;"><h2 style="margin: 0 0 16px 0;">Dados de Faturamento Atualizados</h2><p>Olá, {user_nome},</p><p>Confirmamos que seus dados de faturamento (como nome ou endereço) foram atualizados.</p><p>Se você não reconhece esta alteração, por favor, contate nosso suporte.</p></div></div>
+            """
+            enviar_email(user_email, user_nome, assunto, conteudo_html, "")
+            print(f"E-mail de atualização de dados de faturamento enviado para {user_doc.id}.")
+    
+    # NOVO EVENTO: MÉTODO DE PAGAMENTO ATUALIZADO (EX: NOVO CARTÃO)
+    elif event['type'] == 'payment_method.attached':
+        stripe_customer_id = event.data.object.get('customer')
+        user_query = db.collection('users').where('stripeCustomerId', '==', stripe_customer_id).limit(1)
+        docs = list(user_query.stream())
+        if not docs: return 'Success', 200
+        user_doc = docs[0]
+        user_data = user_doc.to_dict()
+        user_email = user_data.get('email')
+        user_nome = user_data.get('nome', 'estudante')
+        assunto = "Seu método de pagamento foi atualizado"
+        conteudo_html = f"""
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;"><div style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); padding: 24px; text-align: center;"><h1 style="color: white; margin: 0;">IAprovas</h1></div><div style="padding: 32px 24px;"><h2 style="margin: 0 0 16px 0;">Método de Pagamento Atualizado</h2><p>Olá, {user_nome},</p><p>Confirmamos que um novo método de pagamento foi adicionado à sua conta IAprovas.</p><p>Se você realizou esta alteração, está tudo certo. Caso não reconheça esta atividade, por favor, entre em contato com nosso suporte.</p></div></div>
+        """
+        enviar_email(user_email, user_nome, assunto, conteudo_html, "")
+        print(f"E-mail de atualização de método de pagamento enviado para {user_doc.id}.")
+
 
     return 'Success', 200
 

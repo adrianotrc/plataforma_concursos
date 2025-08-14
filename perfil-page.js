@@ -59,6 +59,23 @@ function inicializarPaginaCompleta() {
         btnGerenciarAssinatura.innerHTML = '<i class="fas fa-star"></i> Fazer Upgrade de Plano';
     }
 
+    const mensagemDiv = document.getElementById('mensagem-cancelamento');
+    const { assinaturaStatus, dataFimAcesso } = state.userData; // Pega os dados do state
+
+    if (assinaturaStatus === 'cancelada' && dataFimAcesso) {
+        const dataFim = new Date(dataFimAcesso.seconds * 1000);
+        const dataFormatada = dataFim.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        const planoFormatado = plano.charAt(0).toUpperCase() + plano.slice(1);
+        mensagemDiv.innerHTML = `Sua assinatura do plano <strong>${planoFormatado}</strong> foi cancelada. Seu acesso continua até <strong>${dataFormatada}</strong>.`;
+        mensagemDiv.style.display = 'block';
+    } else {
+        mensagemDiv.style.display = 'none'; // Garante que a mensagem esteja oculta
+    }
+
     // 4. CONFIGURA TODOS OS EVENTOS (LISTENERS)
 
     // Formulário de Perfil
@@ -141,12 +158,20 @@ function inicializarPaginaCompleta() {
             btnGerenciarAssinatura.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abrindo portal...';
             try {
                 const response = await criarSessaoPortal(state.user.uid);
-                if (response.url) window.location.href = response.url;
-                else throw new Error('URL do portal não recebida.');
+                if (response.url) {
+                    window.open(response.url, '_blank');
+                    // ADICIONE A LINHA ABAIXO PARA CORRIGIR O LOOP
+                    btnGerenciarAssinatura.innerHTML = '<i class="fas fa-cog"></i> Gerenciar Assinatura';
+                } else {
+                    throw new Error('URL do portal não recebida.');
+                }
             } catch (error) {
                 showToast(`Erro ao abrir o portal: ${error.message}`, 'error');
                 btnGerenciarAssinatura.disabled = false;
                 btnGerenciarAssinatura.innerHTML = '<i class="fas fa-cog"></i> Gerenciar Assinatura';
+            } finally {
+                // A linha abaixo já estava aqui e ajuda, mas a de cima é mais imediata
+               hideSpinner(btnGerenciarAssinatura);
             }
         } else {
             showToast('ID de assinatura não encontrado. Contate o suporte.', 'error');

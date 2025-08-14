@@ -3496,3 +3496,19 @@ body.dark-mode .plano-orientacao i {
         padding: 3px 6px;
     }
 }
+
+.feature-card.disabled {
+    opacity: 0.6;
+    pointer-events: none; /* Impede cliques no bloco */
+    user-select: none; /* Impede a seleção de texto */
+    background-color: #f1f5f9; /* Um fundo cinza claro para indicar inatividade */
+}
+
+.feature-card.disabled .feature-icon {
+    filter: grayscale(80%);
+}
+
+.feature-card.disabled .btn {
+    background-color: #9ca3af; /* Cor do botão desativado */
+    pointer-events: none;
+}

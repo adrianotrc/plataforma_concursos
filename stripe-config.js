@@ -1,2 +1,4 @@
 // stripe-config.js
-export const STRIPE_PUBLISHABLE_KEY = 'pk_live_51RZZhoI6qNljWf7uI7u1uO0yMPRCZmr8tkL8aU9fwCVUq81eEFV02Qemdhli5XXo588cML8s7w4gPNgGyvbrLEkI00H5nPZBDF';
+// export const STRIPE_PUBLISHABLE_KEY = 'pk_live_51RZZhoI6qNljWf7uI7u1uO0yMPRCZmr8tkL8aU9fwCVUq81eEFV02Qemdhli5XXo588cML8s7w4gPNgGyvbrLEkI00H5nPZBDF';
+
+export const STRIPE_PUBLISHABLE_KEY = 'pk_test_51RZZhoI6qNljWf7uvh20KHBCb86LkW2qOamfwqFNTTsIqy7lwTrHk1yvskFx2Ljj3nk8nXLV861oUgclUz2DTrk100djHCZe3B';
