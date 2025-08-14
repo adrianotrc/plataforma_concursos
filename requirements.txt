@@ -35,3 +35,5 @@ tqdm==4.67.1
 
 # Production Server
 gunicorn
+
+Babel==2.15.0
