@@ -737,6 +737,11 @@ formExercicios?.addEventListener('submit', async (e) => {
         onComplete: (result) => {
             // Limpa o formulário e atualiza contadores
             formExercicios.reset();
+            
+            // ADICIONE ESTAS DUAS LINHAS
+            topicosSelecionados.clear();
+            atualizarTopicosSelecionados();
+
             renderUsageInfo();
             
             // Aviso curto

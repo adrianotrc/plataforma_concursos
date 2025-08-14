@@ -48,16 +48,13 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 
 # --- Lógica de Gerenciamento de Limites de Uso ---
 PLAN_LIMITS = {
-    'trial': {'cronogramas': 5, 'exercicios': 5, 'discursivas': 5, 'correcoes_discursivas': 5, 'dicas': 5},
-    'basico': {'cronogramas': 10, 'exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10},
-    'intermediario': {'cronogramas': 15, 'exercicios': 15, 'discursivas': 15, 'correcoes_discursivas': 15, 'dicas': 15},
-    'premium': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20},
-    'anual': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20, 'flashcards': 30}
+    'trial': {'cronogramas': 5, 'exercicios': 5, 'discursivas': 5, 'correcoes_discursivas': 5, 'dicas': 5, 'flashcards': 5},
+    'basico': {'cronogramas': 10, 'exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10, 'flashcards': 10},
+    'intermediario': {'cronogramas': 15, 'exercicios': 15, 'discursivas': 15, 'correcoes_discursivas': 15, 'dicas': 15, 'flashcards': 15},
+    'premium': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20, 'flashcards': 20},
+    'anual': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20, 'flashcards': 20}
 }
 
-# Adiciona limite para flashcards nos demais planos
-for plano in ['trial', 'basico', 'intermediario', 'premium']:
-    PLAN_LIMITS[plano]['flashcards'] = 10 if plano == 'trial' else 30
 
 def check_usage_and_update(user_id, feature):
     try:

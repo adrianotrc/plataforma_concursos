@@ -1236,6 +1236,9 @@ seletorCronograma?.addEventListener('change', async (e) => {
         // Carrega progresso automaticamente
         await carregarMetricasProgresso(plano.jobId || plano.id);
         progressoContainer.style.display = 'block';
+
+        exibirPlanoComProgresso(plano);
+
     }
 });
 

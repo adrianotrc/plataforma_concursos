@@ -345,13 +345,13 @@
                         </a>
                     </div>
                     
-                    <div class="option-card" onclick="window.open('mailto:contato@iaprovas.com.br?subject=Dúvidas sobre Planos', '_blank')">
+                    <div class="option-card" id="card-suporte">
                         <div class="option-icon">
                             <i class="fas fa-headset"></i>
                         </div>
                         <div class="option-title">Falar com Suporte</div>
                         <div class="option-description">Tire suas dúvidas ou receba ajuda personalizada da nossa equipe</div>
-                        <a href="#" class="option-btn" onclick="window.open('mailto:contato@iaprovas.com.br?subject=Dúvidas sobre Planos', '_blank')">
+                        <a href="#" class="option-btn">
                             <i class="fas fa-envelope"></i> Contatar
                         </a>
                     </div>
@@ -385,6 +385,20 @@
         </div>
     </div>
     
+    <div id="suporte-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3>Contato do Suporte</h3>
+            <p>Para qualquer dúvida ou problema, por favor, envie um e-mail para:</p>
+            <div class="email-box">
+                <span id="email-contato">contato@iaprovas.com.br</span>
+                <button id="btn-copiar-email" title="Copiar E-mail"><i class="far fa-copy"></i></button>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-fechar-modal" class="btn btn-primary">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Analytics de cancelamento
         if (typeof gtag !== 'undefined') {
@@ -398,7 +412,43 @@
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const sessionId = urlParams.get('session_id');
+            const cardSuporte = document.getElementById('card-suporte');
+            const suporteModal = document.getElementById('suporte-modal');
+            const btnFecharModal = document.getElementById('btn-fechar-modal');
+            const btnCopiarEmail = document.getElementById('btn-copiar-email');
+            const emailContato = document.getElementById('email-contato');
+
+            if (cardSuporte) {
+                cardSuporte.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    suporteModal.style.display = 'flex';
+                });
+            }
+
+            if (btnFecharModal) {
+                btnFecharModal.addEventListener('click', () => {
+                    suporteModal.style.display = 'none';
+                });
+            }
+
+            if (suporteModal) {
+                suporteModal.addEventListener('click', (e) => {
+                    if (e.target === suporteModal) {
+                        suporteModal.style.display = 'none';
+                    }
+                });
+            }
             
+            if (btnCopiarEmail) {
+                btnCopiarEmail.addEventListener('click', () => {
+                    navigator.clipboard.writeText(emailContato.textContent).then(() => {
+                        alert('E-mail copiado para a área de transferência!');
+                    }).catch(err => {
+                        console.error('Erro ao copiar e-mail: ', err);
+                        alert('Não foi possível copiar o e-mail.');
+                    });
+                });
+            }
             if (sessionId) {
                 console.log('Sessão de pagamento cancelada:', sessionId);
                 // Aqui poderia adicionar lógica específica baseada na sessão
