@@ -8,26 +8,54 @@ export const state = { user: null, metrics: { diasEstudo: 0, exerciciosRealizado
 
 function controlarAcessoFuncionalidades(plano) {
     const permissoes = {
-        'trial': ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas', 'estudo'],
-        'basico': ['dashboard', 'cronograma', 'dicas', 'estudo'],
-        'intermediario': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'estudo'],
-        'premium': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas', 'estudo'],
-        'anual': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas', 'estudo']
+        'trial': ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas', 'estudo', 'flashcards'],
+        'basico': ['dashboard', 'cronograma', 'dicas', 'estudo', 'flashcards'],
+        'intermediario': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'estudo', 'flashcards'],
+        'premium': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas', 'estudo', 'flashcards'],
+        'anual': ['dashboard', 'cronograma', 'dicas', 'exercicios', 'discursivas', 'estudo', 'flashcards']
     };
 
-    const todasFuncionalidades = ['dashboard', 'cronograma', 'exercicios', 'discursivas', 'dicas', 'estudo'];
+    const todasFuncionalidades = {
+        'dashboard': 'home.html',
+        'cronograma': 'cronograma.html',
+        'exercicios': 'exercicios.html',
+        'discursivas': 'discursivas.html',
+        'dicas': 'dicas-estrategicas.html',
+        'flashcards': 'flashcards.html',
+        'estudo': 'material-de-estudo.html'
+    };
+
     const funcionalidadesPermitidas = permissoes[plano] || [];
 
-    todasFuncionalidades.forEach(func => {
-        const elemento = document.getElementById(`nav-${func}`);
-        if (elemento) {
-            if (funcionalidadesPermitidas.includes(func)) {
-                elemento.classList.remove('disabled');
+    // Itera sobre todas as funcionalidades possíveis
+    for (const func in todasFuncionalidades) {
+        const permitido = funcionalidadesPermitidas.includes(func);
+        const arquivoHtml = todasFuncionalidades[func];
+
+        // 1. Controla o link da barra lateral (lógica que você já tinha)
+        const navElemento = document.getElementById(`nav-${func}`);
+        if (navElemento) {
+            if (permitido) {
+                navElemento.classList.remove('disabled');
             } else {
-                elemento.classList.add('disabled');
+                navElemento.classList.add('disabled');
             }
         }
-    });
+
+        // 2. Controla o bloco da feature card na home.html
+        // Procura pelo link que aponta para a página da funcionalidade
+        const featureLink = document.querySelector(`.feature-card a[href="${arquivoHtml}"]`);
+        if (featureLink) {
+            const featureCard = featureLink.closest('.feature-card');
+            if (featureCard) {
+                if (permitido) {
+                    featureCard.classList.remove('disabled');
+                } else {
+                    featureCard.classList.add('disabled');
+                }
+            }
+        }
+    }
 }
 
 function calcularMetricas() {
