@@ -11609,3 +11609,38 @@ body.dark-mode .result-area-highlight {
 }
 
 .benefit-
+
+/* ================================================= */
+/* CORREÇÃO COMPLETA PARA DISPOSITIVOS MÓVEIS      */
+/* ================================================= */
+
+/* Regra para telas com largura máxima de 768px (tablets e celulares) */
+@media (max-width: 768px) {
+
+    /* 1. CORRIGE O "TEXTO PEQUENO" */
+    body, p, li, input, button, textarea {
+      font-size: 16px;
+    }
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.2em; }
+  
+    /* 2. CORRIGE "ELEMENTOS CLICÁVEIS PRÓXIMOS" */
+    .cta-button, .nav-links a, .footer-links a {
+      padding: 12px 15px;
+      margin: 8px 5px;
+    }
+  
+    /* 3. CORRIGE "CONTEÚDO MAIS LARGO QUE A TELA" */
+    img, iframe, video {
+      max-width: 100%;
+      height: auto;
+    }
+    
+    body, .container, .header, .hero, .features, .pricing, .footer {
+      width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    
+  }
