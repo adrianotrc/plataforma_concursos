@@ -48,11 +48,11 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 
 # --- Lógica de Gerenciamento de Limites de Uso ---
 PLAN_LIMITS = {
-    'trial': {'cronogramas': 5, 'exercicios': 5, 'discursivas': 5, 'correcoes_discursivas': 5, 'dicas': 5, 'flashcards': 5},
-    'basico': {'cronogramas': 10, 'exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10, 'flashcards': 10},
-    'intermediario': {'cronogramas': 15, 'exercicios': 15, 'discursivas': 15, 'correcoes_discursivas': 15, 'dicas': 15, 'flashcards': 15},
-    'premium': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20, 'flashcards': 20},
-    'anual': {'cronogramas': 20, 'exercicios': 20, 'discursivas': 20, 'correcoes_discursivas': 20, 'dicas': 20, 'flashcards': 20}
+    'trial': {'cronogramas': 10, 'exercicios': 10, 'discursivas': 10, 'correcoes_discursivas': 10, 'dicas': 10, 'flashcards': 10},
+    'basico': {'cronogramas': 25, 'exercicios': 25, 'discursivas': 25, 'correcoes_discursivas': 25, 'dicas': 25, 'flashcards': 25},
+    'intermediario': {'cronogramas': 50, 'exercicios': 50, 'discursivas': 50, 'correcoes_discursivas': 50, 'dicas': 50, 'flashcards': 50},
+    'premium': {'cronogramas': 100, 'exercicios': 100, 'discursivas': 100, 'correcoes_discursivas': 100, 'dicas': 100, 'flashcards': 100},
+    'anual': {'cronogramas': 100, 'exercicios': 100, 'discursivas': 100, 'correcoes_discursivas': 100, 'dicas': 100, 'flashcards': 100}
 }
 
 
@@ -1661,9 +1661,9 @@ def stripe_webhook():
                 print(f"SUCESSO: Usuário {user_id} assinou o plano '{plano_comprado}'.")
 
                 funcionalidades = {
-                    'basico': ["Cronogramas com IA (10 por dia)", "Dicas Estratégicas (10 por dia)"],
-                    'intermediario': ["Cronogramas (15 por dia)", "Dicas (15 por dia)", "Exercícios com IA (15 por dia)"],
-                    'premium': ["Cronogramas (20 por dia)", "Exercícios (20 por dia)", "Questões Discursivas (20 por dia)"],
+                            'basico': ["Cronogramas com IA (25 por dia)", "Dicas Estratégicas (25 por dia)"],
+        'intermediario': ["Cronogramas (50 por dia)", "Dicas (50 por dia)", "Exercícios com IA (50 por dia)"],
+        'premium': ["Cronogramas (100 por dia)", "Exercícios (100 por dia)", "Questões Discursivas (100 por dia)"],
                     'anual': ["Todas as funcionalidades com limites do plano Premium"]
                 }
                 lista_html_funcionalidades = "".join([f'<li style="margin-bottom: 8px;">✅ {feat}</li>' for feat in funcionalidades.get(plano_comprado, [])])
