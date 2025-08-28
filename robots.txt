@@ -1,0 +1,45 @@
+User-agent: *
+Allow: /
+
+# Páginas principais - permitir indexação
+Allow: /index.html
+Allow: /home.html
+Allow: /cronograma.html
+Allow: /exercicios.html
+Allow: /discursivas.html
+Allow: /flashcards.html
+Allow: /dicas-estrategicas.html
+Allow: /material-de-estudo.html
+Allow: /faq.html
+
+# Páginas de autenticação - permitir indexação mas com prioridade menor
+Allow: /login.html
+Allow: /cadastro.html
+
+# Páginas legais - permitir indexação
+Allow: /termos.html
+Allow: /privacidade.html
+
+# Bloquear arquivos de sistema e configuração
+Disallow: /venv/
+Disallow: /scripts/
+Disallow: /outros_documentos/
+Disallow: /*.py
+Disallow: /*.js
+Disallow: /*.css
+Disallow: /*.json
+Disallow: /*.txt
+Disallow: /*.pdf
+Disallow: /*.xlsx
+Disallow: /*.docx
+Disallow: /*.png
+Disallow: /*.jpg
+Disallow: /*.jpeg
+Disallow: /*.gif
+Disallow: /*.svg
+
+# Sitemap
+Sitemap: https://iaprovas.com.br/sitemap.xml
+
+# Crawl-delay para não sobrecarregar o servidor
+Crawl-delay: 1
