@@ -2191,7 +2191,7 @@ function abrirModalPasteEdital(materiaCard) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
                 <h3>Colar Tópicos do Edital - ${materia}</h3>
                 <button type="button" class="modal-close">×</button>
@@ -2199,16 +2199,36 @@ function abrirModalPasteEdital(materiaCard) {
             <div class="modal-body">
                 <p style="margin-bottom: 16px; color: #6b7280; font-size: 0.9em;">
                     Cole aqui o texto do edital relacionado a <strong>${materia}</strong>. 
-                    A IA irá extrair automaticamente os tópicos relevantes.
+                    <br><strong>🚀 Melhorado:</strong> O sistema agora detecta tópicos mesmo com quebras de linha e extrai TODOS os tópicos numerados.
+                    <br><small>💡 Funciona com: "1. Tópico", "1) Tópico", "1 - Tópico", etc.</small>
                 </p>
                 <div class="form-field-group">
                     <label for="texto-edital">Texto do edital:</label>
                     <textarea id="texto-edital" rows="8" placeholder="Cole aqui o texto do edital..."></textarea>
                 </div>
+                
+                <div class="form-field-group" style="margin-top: 16px;">
+                    <label style="display: flex; align-items: center; font-weight: normal; cursor: pointer;">
+                        <input type="checkbox" id="nao-separar-topicos" style="margin-right: 8px;">
+                        <strong>Não separar tópicos</strong> - manter texto integral como um único tópico
+                    </label>
+                    <small style="display: block; margin-top: 5px; color: #6b7280;">
+                        ✅ Marque esta opção se a separação automática não estiver funcionando bem
+                    </small>
+                </div>
+                
+                <div id="preview-topicos" style="display: none; margin-top: 20px; padding: 16px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                    <h4 style="margin: 0 0 12px 0; color: #0ea5e9; font-size: 0.95em;"><i class="fas fa-eye"></i> Preview dos Tópicos Detectados:</h4>
+                    <div id="lista-preview-topicos" style="max-height: 200px; overflow-y: auto;"></div>
+                    <small style="color: #6b7280; margin-top: 10px; display: block;">
+                        💡 Se a detecção não estiver boa, marque "Não separar tópicos" acima.
+                    </small>
+                </div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost">Cancelar</button>
-                <button type="button" class="btn btn-primary">Processar</button>
+                <button type="button" class="btn btn-primary" id="btn-detectar">Detectar Tópicos</button>
+                <button type="button" class="btn btn-primary" id="btn-confirmar" style="display: none;">Confirmar Tópicos</button>
             </div>
         </div>
     `;
@@ -2219,18 +2239,74 @@ function abrirModalPasteEdital(materiaCard) {
     // Event listeners
     const closeBtn = modal.querySelector('.modal-close');
     const cancelBtn = modal.querySelector('.btn-ghost');
-    const confirmBtn = modal.querySelector('.btn-primary');
+    const btnDetectar = modal.querySelector('#btn-detectar');
+    const btnConfirmar = modal.querySelector('#btn-confirmar');
     const textarea = modal.querySelector('#texto-edital');
+    const naoSepararCheckbox = modal.querySelector('#nao-separar-topicos');
+    const previewContainer = modal.querySelector('#preview-topicos');
+    const listaPreview = modal.querySelector('#lista-preview-topicos');
     
     closeBtn.addEventListener('click', () => modal.remove());
     cancelBtn.addEventListener('click', () => modal.remove());
-    confirmBtn.addEventListener('click', () => processarTextoEdital(confirmBtn, materia));
+    
+    // Evento para detectar tópicos e mostrar preview
+    btnDetectar.addEventListener('click', () => {
+        const texto = textarea.value.trim();
+        if (!texto) {
+            showToast('Por favor, cole o texto do edital.', 'error');
+            return;
+        }
+        
+        if (naoSepararCheckbox.checked) {
+            // Não separa - usa texto integral
+            listaPreview.innerHTML = `
+                <div style="padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <strong style="color: #374151;">Texto integral (1 tópico):</strong><br>
+                    <span style="font-size: 0.85em; color: #6b7280; line-height: 1.4;">${texto.substring(0, 300)}${texto.length > 300 ? '...' : ''}</span>
+                </div>
+            `;
+        } else {
+            // Usa detecção automática
+            const topicos = simularProcessamentoIA(texto);
+            if (topicos.length > 0) {
+                listaPreview.innerHTML = topicos.map((topico, index) => `
+                    <div style="padding: 10px; background: white; border-radius: 6px; border: 1px solid #e5e7eb; margin-bottom: 6px;">
+                        <strong style="color: #0ea5e9;">${index + 1}.</strong> 
+                        <span style="color: #374151; font-size: 0.9em;">${topico}</span>
+                    </div>
+                `).join('');
+            } else {
+                listaPreview.innerHTML = `
+                    <div style="padding: 12px; background: #fffbeb; border-radius: 6px; border: 1px solid #fbbf24; color: #92400e;">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Nenhum tópico detectado automaticamente.</strong>
+                        <br><small>💡 Sugestão: marque "Não separar tópicos" para usar o texto integral.</small>
+                    </div>
+                `;
+            }
+        }
+        
+        previewContainer.style.display = 'block';
+        btnDetectar.style.display = 'none';
+        btnConfirmar.style.display = 'inline-block';
+    });
+    
+    // Reseta preview quando texto ou opção muda
+    textarea.addEventListener('input', resetarPreview);
+    naoSepararCheckbox.addEventListener('change', resetarPreview);
+    
+    function resetarPreview() {
+        previewContainer.style.display = 'none';
+        btnDetectar.style.display = 'inline-block';
+        btnConfirmar.style.display = 'none';
+    }
+    
+    btnConfirmar.addEventListener('click', () => processarTextoEdital(btnConfirmar, materia, naoSepararCheckbox.checked));
     
     // Foca no textarea
     textarea.focus();
 }
 
-function processarTextoEdital(button, materia) {
+function processarTextoEdital(button, materia, naoSeparar = false) {
     const modal = button.closest('.modal-overlay');
     const textarea = modal.querySelector('#texto-edital');
     const texto = textarea.value.trim();
@@ -2241,14 +2317,29 @@ function processarTextoEdital(button, materia) {
     }
     
     // Mostra loading
-    const confirmBtn = modal.querySelector('.btn-primary');
-    const originalText = confirmBtn.textContent;
-    confirmBtn.textContent = 'Processando...';
-    confirmBtn.disabled = true;
+    button.textContent = 'Processando...';
+    button.disabled = true;
     
     // Simula processamento da IA (por enquanto)
     setTimeout(() => {
-        const topicos = simularProcessamentoIA(texto);
+        let topicos;
+        
+        if (naoSeparar) {
+            // Usa texto integral como um único tópico
+            topicos = [texto];
+            console.log('📝 Texto usado integralmente (sem separação)');
+        } else {
+            // Usa detecção automática melhorada
+            topicos = simularProcessamentoIA(texto);
+            console.log(`📋 ${topicos.length} tópicos detectados automaticamente`);
+        }
+        
+        if (topicos.length === 0) {
+            showToast('Nenhum tópico foi extraído. Tente usar a opção "Não separar tópicos".', 'warning');
+            button.textContent = 'Confirmar Tópicos';
+            button.disabled = false;
+            return;
+        }
         
         // Adiciona os tópicos processados
         const materiaCard = document.querySelector(`.materia-card[data-materia="${materia}"]`);
@@ -2267,68 +2358,158 @@ function processarTextoEdital(button, materia) {
         
         modal.remove();
         
-        if (topicos.length > 0) {
-            showToast(`${topicos.length} tópicos extraídos do edital!`, 'success');
-        } else {
-            showToast('Nenhum tópico foi encontrado no texto. Tente colar um texto mais específico.', 'warning');
-        }
+        const mensagem = naoSeparar ? 
+            'Texto do edital adicionado como tópico único!' : 
+            `${topicos.length} tópicos extraídos do edital!`;
+            
+        showToast(mensagem, 'success');
     }, 1000); // Simula tempo de processamento
 }
 
-function simularProcessamentoIA(texto) {
-    // Simulação melhorada - em produção seria uma chamada para a IA
+function detectarPadraoNumeracao(texto) {
+    const linhas = texto.split('\n').filter(linha => linha.trim().length > 0);
+    const padroes = [
+        { nome: 'Números com ponto', regex: /^\s*\d+\.\s*(.+)/, exemplo: '1. Tópico' },
+        { nome: 'Números com parênteses', regex: /^\s*\d+\)\s*(.+)/, exemplo: '1) Tópico' },
+        { nome: 'Números com hífen', regex: /^\s*\d+\s*[-–]\s*(.+)/, exemplo: '1 - Tópico' },
+        { nome: 'Números simples', regex: /^\s*\d+\s+(.+)/, exemplo: '1 Tópico' },
+        { nome: 'Letras com ponto', regex: /^\s*[a-z]\)\s*(.+)/i, exemplo: 'a) Tópico' },
+        { nome: 'Romanos', regex: /^\s*[IVX]+[\.\)]\s*(.+)/i, exemplo: 'I. Tópico' },
+        { nome: 'Hífen/Bullet', regex: /^\s*[-•]\s*(.+)/, exemplo: '- Tópico' },
+        { nome: 'Numeração decimal', regex: /^\s*\d+\.\d+\s*[-.]?\s*(.+)/, exemplo: '1.1 Tópico' }
+    ];
+    
+    let melhorPadrao = null;
+    let maiorScore = 0;
+    
+    for (const padrao of padroes) {
+        let matches = 0;
+        for (const linha of linhas) {
+            if (padrao.regex.test(linha)) {
+                matches++;
+            }
+        }
+        
+        const score = matches / linhas.length;
+        if (score > maiorScore && matches >= 2) { // Pelo menos 2 matches
+            maiorScore = score;
+            melhorPadrao = { ...padrao, matches, score };
+        }
+    }
+    
+    return melhorPadrao;
+}
+
+function extrairTopicosPorNumeracao(texto) {
+    // Lista robusta de padrões de numeração
+    const padroesDivisao = [
+        /(\d+\.\s)/g, // "1. ", "2. "
+        /(\d+\)\s)/g, // "1) ", "2) "
+        /(\d+\s*[-–]\s)/g, // "1 - ", "2 – "
+        /(\d+\s+)(?=[A-ZÁÉÍÓÚÇ])/g, // "1 " seguido de maiúscula
+        /([a-z]\)\s)/gi, // "a) ", "b) "
+        /([IVX]+[\.\)]\s)/gi, // "I. ", "II) "
+        /(^\d+\.\d+\s)/gm // "1.1 ", "2.1 "
+    ];
+    
+    let melhorDivisao = null;
+    let maiorQuantidade = 0;
+    
+    // Testa cada padrão para ver qual encontra mais divisões
+    for (const padrao of padroesDivisao) {
+        const matches = texto.match(padrao);
+        if (matches && matches.length > maiorQuantidade) {
+            maiorQuantidade = matches.length;
+            melhorDivisao = padrao;
+        }
+    }
+    
+    if (!melhorDivisao || maiorQuantidade < 2) {
+        console.log('⚠️ Nenhum padrão de numeração consistente encontrado');
+        return [];
+    }
+    
+    console.log(`📋 Melhor padrão encontrado com ${maiorQuantidade} divisões`);
+    
+    // Divide o texto usando o melhor padrão
+    const partes = texto.split(melhorDivisao);
     const topicos = [];
-    const linhas = texto.split('\n');
     
-    linhas.forEach(linha => {
-        // Padrão 1: "1. Tópico"
-        let match = linha.match(/^\d+\.\s*(.+)/);
-        if (match) {
-            topicos.push(match[1].trim());
-            return;
-        }
+    // A primeira parte pode não ter numeração, então começamos do índice 1
+    for (let i = 1; i < partes.length; i++) {
+        let topico = partes[i].trim();
         
-        // Padrão 2: "1) Tópico"
-        match = linha.match(/^\d+\)\s*(.+)/);
-        if (match) {
-            topicos.push(match[1].trim());
-            return;
-        }
+        // Remove quebras de linha desnecessárias e junta o texto
+        topico = topico
+            .replace(/\n+/g, ' ') // Substitui quebras por espaços
+            .replace(/\s+/g, ' ') // Remove espaços duplicados
+            .trim();
         
-        // Padrão 3: "- Tópico"
-        match = linha.match(/^[-•]\s*(.+)/);
-        if (match) {
-            topicos.push(match[1].trim());
-            return;
+        // Filtra tópicos muito curtos ou vazios
+        if (topico.length > 10) {
+            topicos.push(topico);
         }
-        
-        // Padrão 4: Linha que contém palavras-chave
-        const palavrasChave = ['conceito', 'princípio', 'organização', 'poder', 'ato', 'agente', 'processo', 'licitação', 'contrato', 'controle', 'responsabilidade', 'improbidade', 'lei', 'norma', 'regulamento', 'decreto', 'portaria', 'resolução'];
-        const linhaLower = linha.toLowerCase();
-        
-        if (palavrasChave.some(palavra => linhaLower.includes(palavra)) && linha.trim().length > 10) {
-            topicos.push(linha.trim());
-        }
-    });
+    }
     
-    // Se não encontrou nenhum tópico, tenta extrair frases que parecem tópicos
-    if (topicos.length === 0) {
-        const frases = texto.split(/[.!?]/).filter(frase => 
-            frase.trim().length > 15 && 
-            frase.trim().length < 100 &&
-            !frase.trim().toLowerCase().includes('artigo') &&
-            !frase.trim().toLowerCase().includes('inciso')
-        );
+    return topicos;
+}
+
+function simularProcessamentoIA(texto) {
+    console.log('🔄 Iniciando processamento inteligente de tópicos...');
+    
+    // Primeiro, tenta extrair por numeração (método mais robusto para editais)
+    let topicos = extrairTopicosPorNumeracao(texto);
+    
+    if (topicos.length > 0) {
+        console.log(`✅ ${topicos.length} tópicos extraídos por numeração`);
+        return topicos.slice(0, 50); // Limita para evitar excessos
+    }
+    
+    // Fallback: Método linha por linha (apenas se numeração falhar)
+    console.log('⚠️ Fallback: tentando detecção linha por linha...');
+    
+    const linhas = texto.split('\n').filter(linha => linha.trim().length > 0);
+    topicos = [];
+    
+    // Detecta automaticamente o padrão de numeração linha por linha
+    const padraoDetectado = detectarPadraoNumeracao(texto);
+    
+    if (padraoDetectado && padraoDetectado.score >= 0.3) {
+        console.log(`📋 Padrão detectado: ${padraoDetectado.nome} (${padraoDetectado.matches} matches)`);
         
-        frases.slice(0, 5).forEach(frase => {
-            const fraseLimpa = frase.trim();
-            if (fraseLimpa) {
-                topicos.push(fraseLimpa);
+        linhas.forEach(linha => {
+            const match = linha.match(padraoDetectado.regex);
+            if (match && match[1]) {
+                const topico = match[1].trim();
+                if (topico.length > 3) {
+                    topicos.push(topico);
+                }
+            }
+        });
+    } else {
+        // Último recurso: busca por palavras-chave
+        console.log('⚠️ Último recurso: busca por palavras-chave...');
+        
+        const palavrasChave = ['conceito', 'princípio', 'organização', 'poder', 'ato', 'agente', 'processo', 'licitação', 'contrato', 'controle', 'responsabilidade', 'improbidade', 'lei', 'norma', 'regulamento', 'decreto', 'portaria', 'resolução', 'direito', 'dever', 'competência', 'teoria', 'fundamentos'];
+        
+        linhas.forEach(linha => {
+            const linhaLower = linha.toLowerCase();
+            const linhaTrim = linha.trim();
+            
+            if (palavrasChave.some(palavra => linhaLower.includes(palavra)) && 
+                linhaTrim.length > 15 && linhaTrim.length < 200) {
+                topicos.push(linhaTrim);
             }
         });
     }
     
-    return topicos;
+    // Remove duplicatas e limpa
+    const topicosLimpos = [...new Set(topicos)]
+        .filter(topico => topico && topico.length > 5)
+        .slice(0, 50);
+    
+    console.log(`🎯 Total final: ${topicosLimpos.length} tópicos processados`);
+    return topicosLimpos;
 }
 
 function capturarMateriasComTopicos() {
